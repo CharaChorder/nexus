@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 
 from pynput import keyboard, mouse
@@ -12,6 +12,7 @@ MODIFIER_KEYS: list = [keyboard.Key.ctrl, keyboard.Key.ctrl_l, keyboard.Key.ctrl
                        keyboard.Key.alt_l, keyboard.Key.alt_r, keyboard.Key.alt_gr, keyboard.Key.cmd,
                        keyboard.Key.cmd_l, keyboard.Key.cmd_r]
 NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
+CHORD_CHAR_THRESHOLD: int = 30  # milliseconds between characters in a chord to be considered a chord
 
 logging.basicConfig(filename="log.txt", level=logging.DEBUG, format="%(asctime)s - %(message)s")
 q: Queue = Queue()
@@ -52,26 +53,33 @@ def main():
     word: str = ""  # word to be logged, reset on non-chord keys
     word_start_time: datetime | None = None
     word_end_time: datetime | None = None
+    chars_since_last_bs: int = 0
+    avg_char_time_after_last_bs: timedelta | None = None
 
     modifier_keys: set = set()
 
     def log_and_reset_word():
         """Log word to file and reset word metadata"""
-        nonlocal word, word_start_time, word_end_time
-        if word:  # Don't log if word is empty
+        nonlocal word, word_start_time, word_end_time, chars_since_last_bs, avg_char_time_after_last_bs
+        if not word:  # Don't log if word is empty
             return
-        if len(word) > 1:  # only log words with more than one character
+
+        # Only log words that have more than one character and are not chords
+        if len(word) > 1 and avg_char_time_after_last_bs and avg_char_time_after_last_bs > timedelta(
+                milliseconds=CHORD_CHAR_THRESHOLD):
             log_word(word, word_start_time, word_end_time)
         word = ""
         word_start_time = None
         word_end_time = None
+        chars_since_last_bs = 0
+        avg_char_time_after_last_bs = None
 
     while True:
         try:
             action: ActionType
             key: keyboard.Key | keyboard.KeyCode | mouse.Button
-            time: datetime
-            action, key, time = q.get(block=False)
+            time_pressed: datetime
+            action, key, time_pressed = q.get(block=False)
 
             # Update modifier keys
             if action == ActionType.PRESS and key in MODIFIER_KEYS:
@@ -87,6 +95,8 @@ def main():
             # On backspace, remove last char from word if word is not empty
             if key == keyboard.Key.backspace and word:
                 word = word[:-1]
+                chars_since_last_bs = 0
+                avg_char_time_after_last_bs = None
                 q.task_done()
                 continue
 
@@ -100,9 +110,16 @@ def main():
             # Add new char to word and update word timing if no modifier keys are pressed
             if not modifier_keys:
                 word += key.char
+                chars_since_last_bs += 1
                 if not word_start_time:
-                    word_start_time = time
-                word_end_time = time
+                    word_start_time = time_pressed
+                elif chars_since_last_bs > 1 and avg_char_time_after_last_bs:
+                    # Should only get here if chars_since_last_bs > 2
+                    avg_char_time_after_last_bs = (avg_char_time_after_last_bs * (chars_since_last_bs - 1) +
+                                                   (time_pressed - word_end_time)) / chars_since_last_bs
+                elif chars_since_last_bs > 1:
+                    avg_char_time_after_last_bs = time_pressed - word_end_time
+                word_end_time = time_pressed
                 q.task_done()
         except EmptyException:  # queue is empty
             # If word is older than NEW_WORD_THRESHOLD seconds, log and reset word
