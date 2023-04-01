@@ -11,15 +11,14 @@ MODIFIER_KEYS = [keyboard.Key.ctrl, keyboard.Key.ctrl_l, keyboard.Key.ctrl_r, ke
                  keyboard.Key.alt_r, keyboard.Key.alt_gr, keyboard.Key.cmd, keyboard.Key.cmd_l, keyboard.Key.cmd_r]
 NEW_WORD_THRESHOLD = 5  # seconds after which character input is considered a new word
 
+logging.basicConfig(filename="log.txt", level=logging.DEBUG, format="%(asctime)s - %(message)s")
+q = Queue()
+
 
 class ActionType(Enum):
     """Enum for key action type"""
     PRESS = 1
     RELEASE = 2
-
-
-logging.basicConfig(filename="log.txt", level=logging.DEBUG, format="%(asctime)s - %(message)s")
-q = Queue()
 
 
 def on_press(key):
@@ -39,7 +38,7 @@ def on_click(x, y, button, pressed):
 
 def log_word(word, start_time, end_time):
     """Log word to file"""
-    logging.info(f"{word} - {start_time} - {end_time}")
+    logging.debug(f"{word} - {start_time} - {end_time}")
 
 
 def main():
@@ -51,13 +50,15 @@ def main():
     word = ""  # word to be logged, reset on non-chord keys
     word_start_time = None
     word_end_time = None
+
     modifier_keys = set()
 
     def log_and_reset_word():
         """Log word to file and reset word metadata"""
         nonlocal word, word_start_time, word_end_time
         if word:
-            log_word(word, word_start_time, word_end_time)
+            if len(word) > 1:  # only log words with more than one character
+                log_word(word, word_start_time, word_end_time)
             word = ""
             word_start_time = None
             word_end_time = None
