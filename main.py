@@ -1,18 +1,20 @@
 from datetime import datetime
 from enum import Enum
+
 from pynput import keyboard, mouse
 import logging
 from queue import Queue, Empty as EmptyException
 
 # Allowed keys in chord output: a-z, A-Z, 0-9, apostrophe, dash, underscore, slash, backslash, tilde
-ALLOWED_KEYS_IN_CHORD = [chr(i) for i in range(97, 123)] + [chr(i) for i in range(65, 91)] + \
-                        [chr(i) for i in range(48, 58)] + ["'", "-", "_", "/", "\\", "~"]
-MODIFIER_KEYS = [keyboard.Key.ctrl, keyboard.Key.ctrl_l, keyboard.Key.ctrl_r, keyboard.Key.alt, keyboard.Key.alt_l,
-                 keyboard.Key.alt_r, keyboard.Key.alt_gr, keyboard.Key.cmd, keyboard.Key.cmd_l, keyboard.Key.cmd_r]
-NEW_WORD_THRESHOLD = 5  # seconds after which character input is considered a new word
+ALLOWED_KEYS_IN_CHORD: list = [chr(i) for i in range(97, 123)] + [chr(i) for i in range(65, 91)] + \
+                              [chr(i) for i in range(48, 58)] + ["'", "-", "_", "/", "\\", "~"]
+MODIFIER_KEYS: list = [keyboard.Key.ctrl, keyboard.Key.ctrl_l, keyboard.Key.ctrl_r, keyboard.Key.alt,
+                       keyboard.Key.alt_l, keyboard.Key.alt_r, keyboard.Key.alt_gr, keyboard.Key.cmd,
+                       keyboard.Key.cmd_l, keyboard.Key.cmd_r]
+NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
 
 logging.basicConfig(filename="log.txt", level=logging.DEBUG, format="%(asctime)s - %(message)s")
-q = Queue()
+q: Queue = Queue()
 
 
 class ActionType(Enum):
@@ -42,29 +44,33 @@ def log_word(word, start_time, end_time):
 
 
 def main():
-    listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+    listener: keyboard.Listener = keyboard.Listener(on_press=on_press, on_release=on_release)
     listener.start()
-    mouse_listener = mouse.Listener(on_click=on_click)
+    mouse_listener: mouse.Listener = mouse.Listener(on_click=on_click)
     mouse_listener.start()
 
-    word = ""  # word to be logged, reset on non-chord keys
-    word_start_time = None
-    word_end_time = None
+    word: str = ""  # word to be logged, reset on non-chord keys
+    word_start_time: datetime | None = None
+    word_end_time: datetime | None = None
 
-    modifier_keys = set()
+    modifier_keys: set = set()
 
     def log_and_reset_word():
         """Log word to file and reset word metadata"""
         nonlocal word, word_start_time, word_end_time
-        if word:
-            if len(word) > 1:  # only log words with more than one character
-                log_word(word, word_start_time, word_end_time)
-            word = ""
-            word_start_time = None
-            word_end_time = None
+        if word:  # Don't log if word is empty
+            return
+        if len(word) > 1:  # only log words with more than one character
+            log_word(word, word_start_time, word_end_time)
+        word = ""
+        word_start_time = None
+        word_end_time = None
 
     while True:
         try:
+            action: ActionType
+            key: keyboard.Key | keyboard.KeyCode | mouse.Button
+            time: datetime
             action, key, time = q.get(block=False)
 
             # Update modifier keys
