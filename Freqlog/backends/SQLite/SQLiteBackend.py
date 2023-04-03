@@ -49,11 +49,11 @@ class SQLiteBackend(Backend):
     def log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """Log a word entry, creating it if it doesn't exist"""
         try:
-            freq, lastused, avgtime = self.get_word_metadata(word)
+            freq, last_used, avg_time = self.get_word_metadata(word)
             freq += 1
-            avgtime = (avgtime * (freq - 1) + (end_time - start_time)) / freq
+            avg_time = (avg_time * (freq - 1) + (end_time - start_time)) / freq
             self._execute("UPDATE freqlog SET frequency=?, lastused=?, avgtime=? WHERE word=?",
-                          (freq, end_time.timestamp(), avgtime.total_seconds(), word))
+                          (freq, end_time.timestamp(), avg_time.total_seconds(), word))
         except KeyError:
             self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?)",
                           (word, 1, end_time.timestamp(), (end_time - start_time).total_seconds()))

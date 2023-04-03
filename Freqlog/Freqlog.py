@@ -27,6 +27,13 @@ class ActionType(Enum):
     RELEASE = 2
 
 
+class CaseSensitivity(Enum):
+    """Enum for case sensitivity"""
+    CASE_INSENSITIVE = 1
+    CASE_SENSITIVE = 2
+    CASE_SENSITIVE_FIRST_CHAR = 3
+
+
 class Freqlog:
 
     def _on_press(self, key: keyboard.Key | keyboard.KeyCode) -> None:
@@ -68,14 +75,24 @@ class Freqlog:
 
         modifier_keys: set = set()
 
-        def _log_and_reset_word() -> None:
+        def _log_and_reset_word(min_length: int = 1,
+                                case_sensitivity: CaseSensitivity = CaseSensitivity.CASE_SENSITIVE_FIRST_CHAR) -> None:
             """Log word to file and reset word metadata"""
             nonlocal word, word_start_time, word_end_time, chars_since_last_bs, avg_char_time_after_last_bs
             if not word:  # Don't log if word is empty
                 return
 
-            # Only log words that have more than one character and are not chords
-            if len(word) > 1 and avg_char_time_after_last_bs and avg_char_time_after_last_bs > timedelta(
+            # Normalize case if necessary
+            match case_sensitivity:
+                case CaseSensitivity.CASE_INSENSITIVE:
+                    word = word.lower()
+                case CaseSensitivity.CASE_SENSITIVE_FIRST_CHAR:
+                    word = word[0].lower() + word[1:]
+                case CaseSensitivity.CASE_SENSITIVE:
+                    pass
+
+            # Only log words that have more than min_length characters and are not chords
+            if len(word) > min_length and avg_char_time_after_last_bs and avg_char_time_after_last_bs > timedelta(
                     milliseconds=CHORD_CHAR_THRESHOLD):
                 self.log_word(word, word_start_time, word_end_time)
             word = ""
