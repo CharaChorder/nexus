@@ -1,11 +1,8 @@
-import sys
+import signal
 
-from Freqlog.Freqlog import Freqlog
+from Freqlog import Freqlog
 
 if __name__ == "__main__":
     freqlog = Freqlog()
-    try:
-        freqlog.start_logging()
-    except KeyboardInterrupt:
-        freqlog.stop_logging()
-        sys.exit(0)
+    signal.signal(signal.SIGINT, lambda *_: freqlog.stop_logging())
+    freqlog.start_logging()

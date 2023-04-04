@@ -1,1 +1,1 @@
-from Freqlog import Freqlog
+from .Freqlog import Freqlog

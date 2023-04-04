@@ -3,17 +3,15 @@ from datetime import datetime, timedelta
 from enum import Enum
 from queue import Queue, Empty as EmptyException
 
-from pynput import keyboard, mouse
+from pynput import keyboard as kbd, mouse
 
-from Freqlog.backends.Backend import Backend
-from Freqlog.backends.SQLite.SQLiteBackend import SQLiteBackend
+from .backends import Backend, SQLiteBackend
 
 # Allowed keys in chord output: a-z, A-Z, 0-9, apostrophe, dash, underscore, slash, backslash, tilde
 ALLOWED_KEYS_IN_CHORD: list = [chr(i) for i in range(97, 123)] + [chr(i) for i in range(65, 91)] + \
                               [chr(i) for i in range(48, 58)] + ["'", "-", "_", "/", "\\", "~"]
-MODIFIER_KEYS: list = [keyboard.Key.ctrl, keyboard.Key.ctrl_l, keyboard.Key.ctrl_r, keyboard.Key.alt,
-                       keyboard.Key.alt_l, keyboard.Key.alt_r, keyboard.Key.alt_gr, keyboard.Key.cmd,
-                       keyboard.Key.cmd_l, keyboard.Key.cmd_r]
+MODIFIER_KEYS: list = [kbd.Key.ctrl, kbd.Key.ctrl_l, kbd.Key.ctrl_r, kbd.Key.alt, kbd.Key.alt_l, kbd.Key.alt_r,
+                       kbd.Key.alt_gr, kbd.Key.cmd, kbd.Key.cmd_l, kbd.Key.cmd_r]
 NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
 CHORD_CHAR_THRESHOLD: int = 30  # milliseconds between characters in a chord to be considered a chord
 DB_PATH: str = "nexus_freqlog_db.sqlite3"
@@ -36,15 +34,15 @@ class CaseSensitivity(Enum):
 
 class Freqlog:
 
-    def _on_press(self, key: keyboard.Key | keyboard.KeyCode) -> None:
+    def _on_press(self, key: kbd.Key | kbd.KeyCode) -> None:
         """Store PRESS, key and current time in queue"""
         self.q.put((ActionType.PRESS, key, datetime.now()))
 
-    def _on_release(self, key: keyboard.Key | keyboard.KeyCode) -> None:
+    def _on_release(self, key: kbd.Key | kbd.KeyCode) -> None:
         """"Store RELEASE, key and current time in queue"""
         self.q.put((ActionType.RELEASE, key, datetime.now()))
 
-    def _on_click(self, x, y, button: mouse.Button, pressed) -> None:
+    def _on_click(self, _x, _y, button: mouse.Button, _pressed) -> None:
         """Store PRESS, key and current time in queue"""
         self.q.put((ActionType.PRESS, button, datetime.now()))
 
@@ -56,12 +54,12 @@ class Freqlog:
     def __init__(self):
         self.backend: Backend = SQLiteBackend(DB_PATH)
         self.q: Queue = Queue()
-        self.listener: keyboard.Listener | None = None
+        self.listener: kbd.Listener | None = None
         self.mouse_listener: mouse.Listener | None = None
         self.logging: bool = False
 
     def start_logging(self) -> None:
-        self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
+        self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release)
         self.listener.start()
         self.mouse_listener = mouse.Listener(on_click=self._on_click)
         self.mouse_listener.start()
@@ -104,7 +102,7 @@ class Freqlog:
         while True:
             try:
                 action: ActionType
-                key: keyboard.Key | keyboard.KeyCode | mouse.Button
+                key: kbd.Key | kbd.KeyCode | mouse.Button
                 time_pressed: datetime
                 action, key, time_pressed = self.q.get(block=False)
 
@@ -120,7 +118,7 @@ class Freqlog:
                     continue
 
                 # On backspace, remove last char from word if word is not empty
-                if key == keyboard.Key.backspace and word:
+                if key == kbd.Key.backspace and word:
                     word = word[:-1]
                     chars_since_last_bs = 0
                     avg_char_time_after_last_bs = None
@@ -128,7 +126,7 @@ class Freqlog:
                     continue
 
                 # On non-chord key, log and reset word if it exists
-                if not (isinstance(key, keyboard.KeyCode) and key.char in ALLOWED_KEYS_IN_CHORD):
+                if not (isinstance(key, kbd.KeyCode) and key.char in ALLOWED_KEYS_IN_CHORD):
                     if word:
                         _log_and_reset_word()
                     self.q.task_done()
