@@ -1,37 +1,15 @@
 import logging
 from datetime import datetime, timedelta
-from enum import Enum
-from queue import Queue, Empty as EmptyException
+from queue import Empty as EmptyException, Queue
 
 from pynput import keyboard as kbd, mouse
 
 from .backends import Backend, SQLiteBackend
-
-# Allowed keys in chord output: a-z, A-Z, 0-9, apostrophe, dash, underscore, slash, backslash, tilde
-ALLOWED_KEYS_IN_CHORD: list = [chr(i) for i in range(97, 123)] + [chr(i) for i in range(65, 91)] + \
-                              [chr(i) for i in range(48, 58)] + ["'", "-", "_", "/", "\\", "~"]
-MODIFIER_KEYS: list = [kbd.Key.ctrl, kbd.Key.ctrl_l, kbd.Key.ctrl_r, kbd.Key.alt, kbd.Key.alt_l, kbd.Key.alt_r,
-                       kbd.Key.alt_gr, kbd.Key.cmd, kbd.Key.cmd_l, kbd.Key.cmd_r]
-NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
-CHORD_CHAR_THRESHOLD: int = 30  # milliseconds between characters in a chord to be considered a chord
-DB_PATH: str = "nexus_freqlog_db.sqlite3"
-
-logging.basicConfig(filename="log.txt", level=logging.DEBUG, format="%(asctime)s - %(message)s")
+from .Definitions import ActionType, Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
+    Defaults, WordMetadata, WordMetadataAttr
 
 
-class ActionType(Enum):
-    """Enum for key action type"""
-    PRESS = 1
-    RELEASE = 2
-
-
-class CaseSensitivity(Enum):
-    """Enum for case sensitivity"""
-    CASE_INSENSITIVE = 1
-    CASE_SENSITIVE = 2
-    CASE_SENSITIVE_FIRST_CHAR = 3
-
-
+# TODO: Add more (info) logging
 class Freqlog:
 
     def _on_press(self, key: kbd.Key | kbd.KeyCode) -> None:
@@ -46,24 +24,37 @@ class Freqlog:
         """Store PRESS, key and current time in queue"""
         self.q.put((ActionType.PRESS, button, datetime.now()))
 
-    def log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
-        """Log word to file"""
-        logging.debug(f"{word} - {start_time} - {end_time}")
+    def _log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
+        """Log word to store"""
+        logging.debug(f"Word: {word} - {start_time} - {end_time}")
         self.backend.log_word(word, start_time, end_time)
 
-    def __init__(self):
-        self.backend: Backend = SQLiteBackend(DB_PATH)
+    def _log_chord(self, chord: str, start_time: datetime, end_time: datetime) -> None:
+        """Log chord to store"""
+        logging.debug(f"Chord: {chord} - {start_time} - {end_time}")
+        self.backend.log_chord(chord, start_time, end_time)
+
+    def __init__(self, db_path: str = Defaults.DEFAULT_DB_PATH):
+        self.backend: Backend = SQLiteBackend(db_path)
         self.q: Queue = Queue()
         self.listener: kbd.Listener | None = None
         self.mouse_listener: mouse.Listener | None = None
-        self.logging: bool = False
+        self.is_logging: bool = False
 
-    def start_logging(self) -> None:
+    def start_logging(self, new_word_threshold: int = Defaults.DEFAULT_NEW_WORD_THRESHOLD,
+                      chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD,
+                      allowed_keys_in_chord: set | str | None = None, modifier_keys: set | None = None) -> None:
+        if allowed_keys_in_chord is None:
+            allowed_keys_in_chord = Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD
+        elif isinstance(allowed_keys_in_chord, str):
+            allowed_keys_in_chord = set(allowed_keys_in_chord)
+        if modifier_keys is None:
+            modifier_keys = Defaults.DEFAULT_MODIFIER_KEYS
         self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release)
         self.listener.start()
         self.mouse_listener = mouse.Listener(on_click=self._on_click)
         self.mouse_listener.start()
-        self.logging = True
+        self.is_logging = True
 
         word: str = ""  # word to be logged, reset on non-chord keys
         word_start_time: datetime | None = None
@@ -71,28 +62,33 @@ class Freqlog:
         chars_since_last_bs: int = 0
         avg_char_time_after_last_bs: timedelta | None = None
 
-        modifier_keys: set = set()
+        active_modifier_keys: set = set()
 
-        def _log_and_reset_word(min_length: int = 1,
-                                case_sensitivity: CaseSensitivity = CaseSensitivity.CASE_SENSITIVE_FIRST_CHAR) -> None:
+        def _log_and_reset_word(min_length: int = 1) -> None:
             """Log word to file and reset word metadata"""
             nonlocal word, word_start_time, word_end_time, chars_since_last_bs, avg_char_time_after_last_bs
             if not word:  # Don't log if word is empty
                 return
 
-            # Normalize case if necessary
-            match case_sensitivity:
-                case CaseSensitivity.CASE_INSENSITIVE:
-                    word = word.lower()
-                case CaseSensitivity.CASE_SENSITIVE_FIRST_CHAR:
-                    word = word[0].lower() + word[1:]
-                case CaseSensitivity.CASE_SENSITIVE:
-                    pass
+            # Note: Now done on retrieval
+            # # Normalize case if necessary
+            # match case_sensitivity:
+            #     case CaseSensitivity.INSENSITIVE:
+            #         word = word.lower()
+            #     case CaseSensitivity.SENSITIVE_FIRST_CHAR:
+            #         word = word[0].lower() + word[1:]
+            #     case CaseSensitivity.SENSITIVE:
+            #         pass
 
             # Only log words that have more than min_length characters and are not chords
-            if len(word) > min_length and avg_char_time_after_last_bs and avg_char_time_after_last_bs > timedelta(
-                    milliseconds=CHORD_CHAR_THRESHOLD):
-                self.log_word(word, word_start_time, word_end_time)
+            if len(word) > min_length:
+                if avg_char_time_after_last_bs and avg_char_time_after_last_bs > timedelta(
+                        milliseconds=chord_char_threshold):
+                    self._log_word(word, word_start_time, word_end_time)
+                else:
+                    # TODO: Switch over when chord logging implemented
+                    # self._log_chord(word, word_start_time, word_end_time)
+                    pass
             word = ""
             word_start_time = None
             word_end_time = None
@@ -107,10 +103,10 @@ class Freqlog:
                 action, key, time_pressed = self.q.get(block=False)
 
                 # Update modifier keys
-                if action == ActionType.PRESS and key in MODIFIER_KEYS:
-                    modifier_keys.add(key)
-                elif action == ActionType.RELEASE and key in MODIFIER_KEYS:
-                    modifier_keys.remove(key)
+                if action == ActionType.PRESS and key in modifier_keys:
+                    active_modifier_keys.add(key)
+                elif action == ActionType.RELEASE and key in modifier_keys:
+                    active_modifier_keys.remove(key)
 
                 # Ignore non-modifier release events
                 if action == ActionType.RELEASE:
@@ -126,14 +122,14 @@ class Freqlog:
                     continue
 
                 # On non-chord key, log and reset word if it exists
-                if not (isinstance(key, kbd.KeyCode) and key.char in ALLOWED_KEYS_IN_CHORD):
+                if not (isinstance(key, kbd.KeyCode) and key.char in allowed_keys_in_chord):
                     if word:
                         _log_and_reset_word()
                     self.q.task_done()
                     continue
 
                 # Add new char to word and update word timing if no modifier keys are pressed
-                if not modifier_keys:
+                if not active_modifier_keys:
                     word += key.char
                     chars_since_last_bs += 1
                     if not word_start_time:
@@ -148,12 +144,69 @@ class Freqlog:
                     self.q.task_done()
             except EmptyException:  # queue is empty
                 # If word is older than NEW_WORD_THRESHOLD seconds, log and reset word
-                if word and (datetime.now() - word_end_time).total_seconds() > NEW_WORD_THRESHOLD:
+                if word and (datetime.now() - word_end_time).total_seconds() > new_word_threshold:
                     _log_and_reset_word()
-                elif not word and not self.logging:
+                elif not word and not self.is_logging:
                     break
 
     def stop_logging(self) -> None:
         self.listener.stop()
         self.mouse_listener.stop()
-        self.logging = False
+        self.is_logging = False
+
+    def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata:
+        """Get metadata for a word"""
+        return self.backend.get_word_metadata(word, case)
+
+    def get_chord_metadata(self, chord: str) -> WordMetadata:
+        """
+        Get metadata for a chord
+        :raises KeyError: if chord is not found
+        """
+        return self.backend.get_chord_metadata(chord)
+
+    def check_banned(self, word: str, case: CaseSensitivity) -> bool:
+        """
+        Check if a word is banned
+        :returns: True if word is banned, False otherwise
+        """
+        return self.backend.check_banned(word, case)
+
+    def ban_word(self, word: str, case: CaseSensitivity) -> None:
+        """Ban a word from being logged"""
+        self.backend.ban_word(word, case)
+
+    def unban_word(self, word: str, case: CaseSensitivity) -> None:
+        """Unban a word"""
+        self.backend.unban_word(word, case)
+
+    def list_words(self, limit: int, sort_by: WordMetadataAttr,
+                   reverse: bool, case: CaseSensitivity) -> set[WordMetadata]:
+        """
+        List words in the store
+        :param limit: Maximum number of words to return
+        :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed
+        :param reverse: Reverse sort order
+        :param case: Case sensitivity
+        """
+        return self.backend.list_words(limit, sort_by, reverse, case)
+
+    def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
+                    reverse: bool, case: CaseSensitivity) -> set[ChordMetadata]:
+        """
+        List chords in the store
+        :param limit: Maximum number of chords to return
+        :param sort_by: Attribute to sort by: chord, frequency, last_used, average_speed
+        :param reverse: Reverse sort order
+        :param case: Case sensitivity
+        """
+        return self.backend.list_chords(limit, sort_by, reverse, case)
+
+    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) -> list[Banlist]:
+        """
+        List banned words
+        :param limit: Maximum number of banned words to return
+        :param sort_by: Attribute to sort by: word
+        :param reverse: Reverse sort order
+        """
+        return self.backend.list_banned_words(limit, sort_by, reverse)
