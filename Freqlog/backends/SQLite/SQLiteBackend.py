@@ -42,6 +42,7 @@ class SQLiteBackend(Backend):
         Get metadata for a word
         :raises KeyError: if word is not found
         """
+        # TODO: Handle case sensitivity
         res = self._fetchone("SELECT frequency, lastused, avgspeed FROM freqlog WHERE word=?", (word,))
         if res:
             return WordMetadata(word, res[0], datetime.fromtimestamp(res[1]), timedelta(seconds=res[2]))

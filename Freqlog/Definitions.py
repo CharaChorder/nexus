@@ -38,6 +38,10 @@ class WordMetadata:
         self.last_used = last_used
         self.average_speed = average_speed
 
+    def __str__(self) -> str:
+        return f"Word: {self.word} | Frequency: {self.frequency} | Last used: {self.last_used} | " \
+               f"Average speed: {self.average_speed}"
+
 
 class WordMetadataAttr(Enum):
     """Enum for word metadata attributes"""
@@ -50,10 +54,13 @@ class WordMetadataAttr(Enum):
 class ChordMetadata:
     """Metadata for a chord"""
 
-    def __init__(self, chord: str, frequency: int, last_used: datetime, average_speed: timedelta) -> None:
+    def __init__(self, chord: str, frequency: int, last_used: datetime) -> None:
         self.chord = chord
         self.frequency = frequency
         self.last_used = last_used
+
+    def __str__(self) -> str:
+        return f"Chord: {self.chord} | Frequency: {self.frequency} | Last used: {self.last_used} | "
 
 
 class ChordMetadataAttr(Enum):
@@ -69,6 +76,9 @@ class Banlist:
     def __init__(self, word: str, date_added: datetime) -> None:
         self.word = word
         self.date_added = date_added
+
+    def __str__(self) -> str:
+        return f"Word: {self.word} | Date added: {self.date_added}"
 
 
 class BanlistAttr(Enum):

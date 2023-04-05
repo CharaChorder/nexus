@@ -40,13 +40,25 @@ if __name__ == "__main__":
                               help="Remove a modifier key from the default set",
                               choices={key.name for key in Defaults.DEFAULT_MODIFIER_KEYS})
 
-    # Word frequency
-    parser_get = subparsers.add_parser("word", help="Get words' frequency", parents=[path_arg, case_arg])
-    parser_get.add_argument("word", help="Word(s) to get frequency of", nargs="+")
+    # Get words
+    parser_words = subparsers.add_parser("words", help="Get list of freqlogged words",
+                                         parents=[path_arg, case_arg, num_arg, reverse_arg])
+    parser_words.add_argument("word", help="Word(s) to get data of", nargs="*")
+    parser_words.add_argument("-s", "--sort-by", default="frequency", help="Sort by",
+                              choices={attr.name for attr in WordMetadataAttr})
 
-    # Chord frequency
-    parser_get = subparsers.add_parser("chord", help="Get chords' frequency", parents=[path_arg])
-    parser_get.add_argument("chord", help="Chord(s) to get frequency of", nargs="+")
+    # Get chords
+    parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged",
+                                          parents=[path_arg, num_arg, reverse_arg])
+    parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
+    parser_chords.add_argument("-s", "--sort-by", default="frequency", help="Sort by",
+                               choices={attr.name for attr in ChordMetadataAttr})
+
+    # Get banned words
+    parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",
+                                          parents=[path_arg, num_arg, reverse_arg])
+    parser_banned.add_argument("-s", "--sort-by", default="dateadded", help="Sort by",
+                               choices={attr.name for attr in BanlistAttr})
 
     # Check ban
     parser_check = subparsers.add_parser("checkword", help="Check if a word is banned", parents=[path_arg, case_arg])
@@ -60,23 +72,7 @@ if __name__ == "__main__":
     parser_unban = subparsers.add_parser("unbanword", help="Unban a word", parents=[path_arg, case_arg])
     parser_unban.add_argument("word", help="Word(s) to unban", nargs="+")
 
-    # Get words
-    parser_words = subparsers.add_parser("words", help="Get list of stored words",
-                                         parents=[path_arg, case_arg, num_arg, reverse_arg])
-    parser_words.add_argument("-s", "--sort-by", default="frequency", help="Sort by",
-                              choices={attr.name for attr in WordMetadataAttr})
-
-    # Get chords
-    parser_chords = subparsers.add_parser("chords", help="Get list of stored chords",
-                                          parents=[path_arg, case_arg, num_arg, reverse_arg])
-    parser_chords.add_argument("-s", "--sort-by", default="frequency", help="Sort by",
-                               choices={attr.name for attr in ChordMetadataAttr})
-
-    # Get banned words
-    parser_banned = subparsers.add_parser("bannedwords", help="Get banned words",
-                                          parents=[path_arg, num_arg, reverse_arg])
-    parser_banned.add_argument("-s", "--sort-by", default="dateadded", help="Sort by",
-                               choices={attr.name for attr in BanlistAttr})
+    # Stop freqlogging
     parser_stop = subparsers.add_parser("stoplog", help="Stop logging")
     # parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args()
@@ -113,7 +109,7 @@ if __name__ == "__main__":
     # Parse commands
     if args.command == "stoplog":  # stop freqlogging
         # Kill freqlogging process
-        raise NotImplementedError  # TODO implement
+        raise NotImplementedError  # TODO: implement
 
     freqlog = Freqlog.Freqlog(args.freq_log_path)
     if args.command == "startlog":  # start freqlogging
@@ -121,22 +117,33 @@ if __name__ == "__main__":
         freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
                               Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
                                   args.add_modifier_key))
-    elif args.command == "word":  # get word frequency
-        print(freqlog.get_word_metadata(args.word, args.case))
-    elif args.command == "chord":  # get chord frequency
-        print(freqlog.get_chord_metadata(args.chord))
     elif args.command == "checkword":  # check if word is banned
         print(freqlog.check_banned(args.word, args.case))
     elif args.command == "banword":  # ban word
         freqlog.ban_word(args.word, args.case)
     elif args.command == "unbanword":  # unban word
         freqlog.unban_word(args.word, args.case)
+    # TODO: pretty print
+    # TODO: implement sort/num/reverse for specific words and chords
     elif args.command == "words":  # get words
-        print(freqlog.list_words(args.number, args.case, args.reverse, args.sort_by))
-        # TODO pretty print
+        if len(args.word) == 0:
+            print(freqlog.list_words(args.num, args.reverse, args.case, args.sort_by))
+        else:
+            for word in args.word:
+                res = freqlog.get_word_metadata(word, args.case)
+                if res is None:
+                    print(f"Word '{word}' not found")
+                else:
+                    print(res)
     elif args.command == "chords":  # get chords
-        print(freqlog.list_chords(args.number, args.case, args.reverse, args.sort_by))
-        # TODO pretty print
-    elif args.command == "bannedwords":  # get banned words
-        print(freqlog.list_banned_words(args.number, args.reverse, args.sort_by))
-        # TODO pretty print
+        if len(args.chord) == 0:
+            print(freqlog.list_chords(args.num, args.reverse, args.case, args.sort_by))
+        else:
+            for chord in args.chord:
+                res = freqlog.get_chord_metadata(chord)
+                if res is None:
+                    print(f"Chord '{chord}' not found")
+                else:
+                    print(res)
+    elif args.command == "banlist":  # get banned words
+        print(freqlog.list_banned_words(args.num, args.reverse, args.sort_by))
