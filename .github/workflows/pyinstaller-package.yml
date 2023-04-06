@@ -27,7 +27,7 @@ jobs:
       uses: JackMcKew/pyinstaller-action-windows@main
       with:
         path: src
-        spec: src/win32.spec
+        spec: win32.spec
     - uses: actions/upload-artifact@v3
       with:
         name: nexus.exe
