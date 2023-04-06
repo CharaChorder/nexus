@@ -48,20 +48,20 @@ if __name__ == "__main__":
     parser_words = subparsers.add_parser("words", help="Get list of freqlogged words",
                                          parents=[log_arg, path_arg, case_arg, num_arg, reverse_arg])
     parser_words.add_argument("word", help="Word(s) to get data of", nargs="*")
-    parser_words.add_argument("-s", "--sort-by", default="frequency", help="Sort by",
+    parser_words.add_argument("-s", "--sort-by", default="FREQUENCY", help="Sort by (default: FREQUENCY)",
                               choices={attr.name for attr in WordMetadataAttr})
 
     # Get chords
     parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged",
                                           parents=[log_arg, path_arg, num_arg, reverse_arg])
     parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
-    parser_chords.add_argument("-s", "--sort-by", default="frequency", help="Sort by",
+    parser_chords.add_argument("-s", "--sort-by", default="FREQUENCY", help="Sort by (default: FREQUENCY)",
                                choices={attr.name for attr in ChordMetadataAttr})
 
     # Get banned words
     parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",
                                           parents=[log_arg, path_arg, num_arg, reverse_arg])
-    parser_banned.add_argument("-s", "--sort-by", default="dateadded", help="Sort by",
+    parser_banned.add_argument("-s", "--sort-by", default="DATE_ADDED", help="Sort by (default: DATE_ADDED)",
                                choices={attr.name for attr in BanlistAttr})
 
     # Check ban
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         # TODO: implement sort/num/reverse for specific words and chords
         elif args.command == "words":  # get words
             if len(args.word) == 0:
-                for word in freqlog.list_words(args.num, WordMetadataAttr(args.sort_by), args.reverse, args.case):
+                for word in freqlog.list_words(args.num, WordMetadataAttr[args.sort_by], args.reverse, args.case):
                     print(word)
             else:
                 for word in args.word:
@@ -147,7 +147,7 @@ if __name__ == "__main__":
                         print(res)
         elif args.command == "chords":  # get chords
             if len(args.chord) == 0:
-                print(freqlog.list_chords(args.num, ChordMetadataAttr(args.sort_by), args.reverse, args.case))
+                print(freqlog.list_chords(args.num, ChordMetadataAttr[args.sort_by], args.reverse, args.case))
             else:
                 for chord in args.chord:
                     res = freqlog.get_chord_metadata(chord)
@@ -156,7 +156,7 @@ if __name__ == "__main__":
                     else:
                         print(res)
         elif args.command == "banlist":  # get banned words
-            print(freqlog.list_banned_words(args.num, BanlistAttr(args.sort_by), args.reverse))
+            print(freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by], args.reverse))
     except NotImplementedError:
         print(f"Error: The '{args.command}' command has not been implemented yet")
         sys.exit(1)

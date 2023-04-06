@@ -87,7 +87,7 @@ class SQLiteBackend(Backend):
         raise NotImplementedError  # TODO: implement
 
     def list_words(self, limit: int, sort_by: WordMetadataAttr,
-                   reverse: bool, case: CaseSensitivity) -> set[WordMetadata]:
+                   reverse: bool, case: CaseSensitivity) -> list[WordMetadata]:
         """
         List words in the store
         :param limit: Maximum number of words to return
@@ -96,25 +96,26 @@ class SQLiteBackend(Backend):
         :param case: Case sensitivity
         :raises ValueError: if sort_by is invalid
         """
+        sql_sort_by: str = ""  # WARNING: Will be loaded into SQL query, do not use user input
         match sort_by:
             case WordMetadataAttr.WORD:
-                sort_by = "word"
+                sql_sort_by = "word"
             case WordMetadataAttr.FREQUENCY:
-                sort_by = "frequency"
+                sql_sort_by = "frequency"
             case WordMetadataAttr.LAST_USED:
-                sort_by = "lastused"
+                sql_sort_by = "lastused"
             case WordMetadataAttr.AVERAGE_SPEED:
-                sort_by = "avgspeed"
+                sql_sort_by = "avgspeed"
             case _:
                 raise ValueError(f"Invalid sort_by value: {sort_by}")
         if reverse:
-            sort_by += " DESC"
-        res = self._fetchall(f"SELECT word, frequency, lastused, avgspeed FROM freqlog ORDER BY {sort_by} LIMIT ?",
+            sql_sort_by += " DESC"
+        res = self._fetchall(f"SELECT word, frequency, lastused, avgspeed FROM freqlog ORDER BY {sql_sort_by} LIMIT ?",
                              (limit,))
-        return set(WordMetadata(r[0], r[1], datetime.fromtimestamp(r[2]), timedelta(seconds=r[3])) for r in res)
+        return [WordMetadata(r[0], r[1], datetime.fromtimestamp(r[2]), timedelta(seconds=r[3])) for r in res]
 
     def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
-                    reverse: bool, case: CaseSensitivity) -> set[ChordMetadata]:
+                    reverse: bool, case: CaseSensitivity) -> list[ChordMetadata]:
         """
         List chords in the store
         :param limit: Maximum number of chords to return

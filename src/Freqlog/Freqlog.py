@@ -181,7 +181,7 @@ class Freqlog:
         self.backend.unban_word(word, case)
 
     def list_words(self, limit: int, sort_by: WordMetadataAttr,
-                   reverse: bool, case: CaseSensitivity) -> set[WordMetadata]:
+                   reverse: bool, case: CaseSensitivity) -> list[WordMetadata]:
         """
         List words in the store
         :param limit: Maximum number of words to return
@@ -192,7 +192,7 @@ class Freqlog:
         return self.backend.list_words(limit, sort_by, reverse, case)
 
     def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
-                    reverse: bool, case: CaseSensitivity) -> set[ChordMetadata]:
+                    reverse: bool, case: CaseSensitivity) -> list[ChordMetadata]:
         """
         List chords in the store
         :param limit: Maximum number of chords to return
