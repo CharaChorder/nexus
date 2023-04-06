@@ -1,0 +1,33 @@
+name: Package with Pyinstaller
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+    - name: Package for Linux
+      run: ./dist.sh
+    - uses: actions/upload-artifact@v3
+      with:
+        name: nexus
+        path: dist/nexus
+    - name: Package for Windows
+      uses: JackMcKew/pyinstaller-action-windows@main
+      with:
+        path: src
+    - uses: actions/upload-artifact@v3
+      with:
+        name: nexus.exe
+        path: src/dist/windows
