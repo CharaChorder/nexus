@@ -9,17 +9,17 @@ class Backend(ABC):
     """Base class for all backends"""
 
     @abstractmethod
-    def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata:
+    def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata | None:
         """
         Get metadata for a word
-        :raises KeyError: if word is not found
+        :returns: WordMetadata if word is found, None otherwise
         """
 
     @abstractmethod
-    def get_chord_metadata(self, chord: str) -> WordMetadata:
+    def get_chord_metadata(self, chord: str) -> ChordMetadata | None:
         """
         Get metadata for a chord
-        :raises KeyError: if chord is not found
+        :returns: ChordMetadata if chord is found, None otherwise
         """
 
     @abstractmethod

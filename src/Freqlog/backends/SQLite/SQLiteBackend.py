@@ -37,22 +37,19 @@ class SQLiteBackend(Backend):
             self.cursor.execute(query)
         return self.cursor.fetchall()
 
-    def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata:
+    def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata | None:
         """
         Get metadata for a word
-        :raises KeyError: if word is not found
+        :returns: WordMetadata if word is found, None otherwise
         """
         # TODO: Handle case sensitivity
         res = self._fetchone("SELECT frequency, lastused, avgspeed FROM freqlog WHERE word=?", (word,))
-        if res:
-            return WordMetadata(word, res[0], datetime.fromtimestamp(res[1]), timedelta(seconds=res[2]))
-        else:
-            raise KeyError(f"Word '{word}' not found")
+        return WordMetadata(word, res[0], datetime.fromtimestamp(res[1]), timedelta(seconds=res[2])) if res else None
 
-    def get_chord_metadata(self, chord: str) -> WordMetadata:
+    def get_chord_metadata(self, chord: str) -> ChordMetadata | None:
         """
         Get metadata for a chord
-        :raises KeyError: if chord is not found
+        :returns: ChordMetadata if chord is found, None otherwise
         """
         raise NotImplementedError  # TODO: implement
 
@@ -97,7 +94,24 @@ class SQLiteBackend(Backend):
         :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed
         :param reverse: Reverse sort order
         :param case: Case sensitivity
+        :raises ValueError: if sort_by is invalid
         """
+        match sort_by:
+            case WordMetadataAttr.WORD:
+                sort_by = "word"
+            case WordMetadataAttr.FREQUENCY:
+                sort_by = "frequency"
+            case WordMetadataAttr.LAST_USED:
+                sort_by = "lastused"
+            case WordMetadataAttr.AVERAGE_SPEED:
+                sort_by = "avgspeed"
+            case _:
+                raise ValueError(f"Invalid sort_by value: {sort_by}")
+        if reverse:
+            sort_by += " DESC"
+        res = self._fetchall(f"SELECT word, frequency, lastused, avgspeed FROM freqlog ORDER BY {sort_by} LIMIT ?",
+                             (limit,))
+        return set(WordMetadata(r[0], r[1], datetime.fromtimestamp(r[2]), timedelta(seconds=r[3])) for r in res)
 
     def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
                     reverse: bool, case: CaseSensitivity) -> set[ChordMetadata]:

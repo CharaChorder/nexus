@@ -158,10 +158,10 @@ class Freqlog:
         """Get metadata for a word"""
         return self.backend.get_word_metadata(word, case)
 
-    def get_chord_metadata(self, chord: str) -> WordMetadata:
+    def get_chord_metadata(self, chord: str) -> ChordMetadata | None:
         """
         Get metadata for a chord
-        :raises KeyError: if chord is not found
+        :returns: ChordMetadata if chord is found, None otherwise
         """
         return self.backend.get_chord_metadata(chord)
 

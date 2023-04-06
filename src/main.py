@@ -114,41 +114,49 @@ if __name__ == "__main__":
     # Parse commands
     if args.command == "stoplog":  # stop freqlogging
         # Kill freqlogging process
-        raise NotImplementedError  # TODO: implement
+        print("This feature hasn't been implemented. To stop freqlogging gracefully, simply kill the process (Ctrl-c)")
+        sys.exit(0)
+        # TODO: implement
 
-    freqlog = Freqlog.Freqlog(args.freq_log_path)
-    if args.command == "startlog":  # start freqlogging
-        signal.signal(signal.SIGINT, lambda *_: freqlog.stop_logging())
-        freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
-                              Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
-                                  args.add_modifier_key))
-    elif args.command == "checkword":  # check if word is banned
-        print(freqlog.check_banned(args.word, args.case))
-    elif args.command == "banword":  # ban word
-        freqlog.ban_word(args.word, args.case)
-    elif args.command == "unbanword":  # unban word
-        freqlog.unban_word(args.word, args.case)
-    # TODO: pretty print
-    # TODO: implement sort/num/reverse for specific words and chords
-    elif args.command == "words":  # get words
-        if len(args.word) == 0:
-            print(freqlog.list_words(args.num, args.reverse, args.case, args.sort_by))
-        else:
-            for word in args.word:
-                res = freqlog.get_word_metadata(word, args.case)
-                if res is None:
-                    print(f"Word '{word}' not found")
-                else:
-                    print(res)
-    elif args.command == "chords":  # get chords
-        if len(args.chord) == 0:
-            print(freqlog.list_chords(args.num, args.reverse, args.case, args.sort_by))
-        else:
-            for chord in args.chord:
-                res = freqlog.get_chord_metadata(chord)
-                if res is None:
-                    print(f"Chord '{chord}' not found")
-                else:
-                    print(res)
-    elif args.command == "banlist":  # get banned words
-        print(freqlog.list_banned_words(args.num, args.reverse, args.sort_by))
+    # Some features from this point on may not have been implemented
+    try:
+        freqlog = Freqlog.Freqlog(args.freq_log_path)
+        if args.command == "startlog":  # start freqlogging
+            signal.signal(signal.SIGINT, lambda *_: freqlog.stop_logging())
+            freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
+                                  Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
+                                      args.add_modifier_key))
+        elif args.command == "checkword":  # check if word is banned
+            print(freqlog.check_banned(args.word, args.case))
+        elif args.command == "banword":  # ban word
+            freqlog.ban_word(args.word, args.case)
+        elif args.command == "unbanword":  # unban word
+            freqlog.unban_word(args.word, args.case)
+        # TODO: pretty print
+        # TODO: implement sort/num/reverse for specific words and chords
+        elif args.command == "words":  # get words
+            if len(args.word) == 0:
+                for word in freqlog.list_words(args.num, WordMetadataAttr(args.sort_by), args.reverse, args.case):
+                    print(word)
+            else:
+                for word in args.word:
+                    res = freqlog.get_word_metadata(word, args.case)
+                    if res is None:
+                        print(f"Word '{word}' not found")
+                    else:
+                        print(res)
+        elif args.command == "chords":  # get chords
+            if len(args.chord) == 0:
+                print(freqlog.list_chords(args.num, ChordMetadataAttr(args.sort_by), args.reverse, args.case))
+            else:
+                for chord in args.chord:
+                    res = freqlog.get_chord_metadata(chord)
+                    if res is None:
+                        print(f"Chord '{chord}' not found")
+                    else:
+                        print(res)
+        elif args.command == "banlist":  # get banned words
+            print(freqlog.list_banned_words(args.num, BanlistAttr(args.sort_by), args.reverse))
+    except NotImplementedError:
+        print(f"Error: The '{args.command}' command has not been implemented yet")
+        sys.exit(1)
