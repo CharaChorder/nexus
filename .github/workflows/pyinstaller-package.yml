@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  package:
+  release:
 
     runs-on: ubuntu-latest
 
@@ -23,12 +23,21 @@ jobs:
       with:
         name: nexus
         path: dist/nexus
+    - run: mv dist/nexus nexus
     - name: Package for Windows
       uses: JackMcKew/pyinstaller-action-windows@main
       with:
         path: src
         spec: win32.spec
+    - run: mv src/dist/windows nexus.exe
     - uses: actions/upload-artifact@v3
       with:
         name: nexus.exe
         path: src/dist/windows
+    - uses: pyTooling/Actions/releaser@r0
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        files: |
+          nexus
+          nexus.exe
+          README.md
