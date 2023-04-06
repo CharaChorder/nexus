@@ -29,7 +29,7 @@ jobs:
       with:
         path: src
         spec: win32.spec
-    - run: mv src/dist/windows nexus.exe
+    - run: mv src/dist/windows/nexus.exe nexus.exe
     - uses: actions/upload-artifact@v3
       with:
         name: nexus.exe
