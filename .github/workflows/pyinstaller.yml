@@ -57,3 +57,4 @@ jobs:
             nexus.exe
             nexus-macos
             README.md
+            LICENSE
