@@ -35,6 +35,7 @@ jobs:
             ./dist/nexus
             ./dist/nexus-macos
             ./dist/nexus.exe
+          if-no-files-found: error
         if: always()
 
   release:
@@ -54,4 +55,5 @@ jobs:
           files: |
             nexus
             nexus.exe
+            nexus-macos
             README.md

@@ -23,7 +23,7 @@ os.system(f"pip install -r src/requirements.txt")
 
 # Build executable
 if sys.platform.startswith("win"):
-    os.system(f"pyinstaller src/win.spec")
+    os.system(f"pyinstaller src/win32.spec")
 elif sys.platform.startswith("darwin"):
     os.system(f"pyinstaller src/darwin.spec")
     os.rename("dist/nexus", "dist/nexus-macos")
