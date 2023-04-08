@@ -55,6 +55,7 @@ class Freqlog:
         self.mouse_listener = mouse.Listener(on_click=self._on_click)
         self.mouse_listener.start()
         self.is_logging = True
+        logging.info("Started freqlogging")
 
         word: str = ""  # word to be logged, reset on non-chord keys
         word_start_time: datetime | None = None
@@ -147,12 +148,16 @@ class Freqlog:
                 if word and (datetime.now() - word_end_time).total_seconds() > new_word_threshold:
                     _log_and_reset_word()
                 elif not word and not self.is_logging:
+                    # Cleanup and exit if queue is empty and logging is stopped
+                    self.backend.close()
+                    logging.info("Stopped freqlogging")
                     break
 
     def stop_logging(self) -> None:
         self.listener.stop()
         self.mouse_listener.stop()
         self.is_logging = False
+        logging.info("Stopping freqlog")
 
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata:
         """Get metadata for a word"""

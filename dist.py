@@ -30,21 +30,18 @@ os.system(f"pip install -r src/requirements.txt")
 
 # Modify spec file to load hidden imports for PyInstaller (in case of headless build server)
 spec = None
+spec_path = "src/nexus.spec"
 if os_name == "notwin":
-    with open("src/nexus.spec", "r") as f:
+    with open(spec_path, "r") as f:
         spec = f.read()
     modified_spec = spec.replace("hiddenimports=[],", "hiddenimports=['pynput.keyboard._xorg', 'pynput.mouse._xorg'],")
-    with open("src/nexus.spec", "w") as f:
+    spec_path = "src/_xorg.spec"
+    with open(spec_path, "w") as f:
         f.write(modified_spec)
 
 # Build executable
-os.system(f"pyinstaller src/nexus.spec")
+os.system(f"pyinstaller {spec_path}")
 
 # Rename darwin executable
 if os_name == "darwin":
     os.rename("dist/nexus", "dist/nexus-macos")
-
-# Replace spec file with original if it was modified
-if os_name == "notwin" and spec:
-    with open("src/nexus.spec", "w") as f:
-        f.write(spec)

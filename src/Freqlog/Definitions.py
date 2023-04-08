@@ -26,7 +26,7 @@ class CaseSensitivity(Enum):
     """Enum for case sensitivity"""
     INSENSITIVE = 1
     SENSITIVE = 2
-    SENSITIVE_FIRST_CHAR = 3
+    FIRST_CHAR = 3
 
 
 class WordMetadata:

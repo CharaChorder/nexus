@@ -6,7 +6,7 @@ import sys
 from pynput import keyboard
 
 import Freqlog
-from Freqlog.Definitions import BanlistAttr, ChordMetadataAttr, Defaults, WordMetadataAttr
+from Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadataAttr, Defaults, WordMetadataAttr
 
 if __name__ == "__main__":
     # Error and exit on Python version < 3.11
@@ -21,10 +21,10 @@ if __name__ == "__main__":
     log_arg.add_argument("-l", "--log-level", default="INFO", help=f"One of {log_levels}",
                          metavar="level", choices=log_levels)
     path_arg = argparse.ArgumentParser(add_help=False)
-    path_arg.add_argument("--freq-log-path", default=f"{Defaults.DEFAULT_DB_PATH}", help="Backend to use")
+    path_arg.add_argument("--freq-log-path", default=Defaults.DEFAULT_DB_PATH, help="Backend to use")
     case_arg = argparse.ArgumentParser(add_help=False)
-    case_arg.add_argument("-c", "--case", default="firstchar", help="Case sensitivity",
-                          choices=["sensitive", "insensitive", "firstchar"])
+    case_arg.add_argument("-c", "--case", default="FIRST_CHAR", help="Case sensitivity",
+                          choices={case for case in CaseSensitivity})
     num_arg = argparse.ArgumentParser(add_help=False)
     num_arg.add_argument("-n", "--num", default=10, help="Number of words to return")
     reverse_arg = argparse.ArgumentParser(add_help=False)
@@ -36,11 +36,11 @@ if __name__ == "__main__":
 
     # Start freqlogging
     parser_start = subparsers.add_parser("startlog", help="Start logging", parents=[log_arg, path_arg])
-    parser_start.add_argument("--new-word-threshold", default=f"{Defaults.DEFAULT_NEW_WORD_THRESHOLD}", type=float,
+    parser_start.add_argument("--new-word-threshold", default=Defaults.DEFAULT_NEW_WORD_THRESHOLD, type=float,
                               help="Time in seconds after which character input is considered a new word")
-    parser_start.add_argument("--chord-char-threshold", default=f"{Defaults.DEFAULT_CHORD_CHAR_THRESHOLD}", type=int,
+    parser_start.add_argument("--chord-char-threshold", default=Defaults.DEFAULT_CHORD_CHAR_THRESHOLD, type=int,
                               help="Time in milliseconds between characters in a chord to be considered a chord")
-    parser_start.add_argument("--allowed-keys-in-chord", default=f"{Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD}",
+    parser_start.add_argument("--allowed-keys-in-chord", default=Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD,
                               help="Allowed keys in chord output")
     parser_start.add_argument("--add-modifier-key", action="append", default=[],
                               help="Add a modifier key to the default set",
@@ -94,14 +94,14 @@ if __name__ == "__main__":
         logging.basicConfig(level=args.log_level, format="%(asctime)s - %(message)s")
 
     # Print help if no command is given
-    if args.command is None:
+    if not args.command:
         parser.print_help()
         sys.exit(0)
 
     # Validate arguments
     if args.command == "startlog":
-        try:  # ensure that path is writable
-            with open(args.freq_log_path, "w") as f:
+        try:  # ensure that path is writable (WARNING: Must use 'a' instead of 'w' mode to avoid erasing file!!!)
+            with open(args.freq_log_path, "a") as f:
                 pass
         except OSError as e:
             print(f"Error: {e}")
@@ -141,8 +141,13 @@ if __name__ == "__main__":
         # TODO: implement sort/num/reverse for specific words and chords
         elif args.command == "words":  # get words
             if len(args.word) == 0:
-                for word in freqlog.list_words(args.num, WordMetadataAttr[args.sort_by], args.reverse, args.case):
-                    print(word)
+                res = freqlog.list_words(args.num, WordMetadataAttr[args.sort_by], args.reverse,
+                                         CaseSensitivity[args.case])
+                if len(res) == 0:
+                    print("No words in freqlog. Start typing!")
+                else:
+                    for word in res:
+                        print(word)
             else:
                 for word in args.word:
                     res = freqlog.get_word_metadata(word, args.case)
@@ -152,7 +157,13 @@ if __name__ == "__main__":
                         print(res)
         elif args.command == "chords":  # get chords
             if len(args.chord) == 0:
-                print(freqlog.list_chords(args.num, ChordMetadataAttr[args.sort_by], args.reverse, args.case))
+                res = freqlog.list_chords(args.num, ChordMetadataAttr[args.sort_by], args.reverse,
+                                          CaseSensitivity[args.case])
+                if len(res) == 0:
+                    print("No chords in freqlog. Start chording!")
+                else:
+                    for chord in res:
+                        print(chord)
             else:
                 for chord in args.chord:
                     res = freqlog.get_chord_metadata(chord)
@@ -161,7 +172,12 @@ if __name__ == "__main__":
                     else:
                         print(res)
         elif args.command == "banlist":  # get banned words
-            print(freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by], args.reverse))
+            res = freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by], args.reverse)
+            if len(res) == 0:
+                print("No banned words")
+            else:
+                for word in res:
+                    print(word)
     except NotImplementedError:
         print(f"Error: The '{args.command}' command has not been implemented yet")
         sys.exit(1)

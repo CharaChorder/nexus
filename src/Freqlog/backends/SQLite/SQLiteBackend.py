@@ -134,5 +134,7 @@ class SQLiteBackend(Backend):
         """
         raise NotImplementedError  # TODO: implement
 
-    def cleanup(self):
+    def close(self):
+        """Close the database connection"""
+        self.cursor.close()
         self.conn.close()

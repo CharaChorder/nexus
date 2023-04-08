@@ -78,5 +78,5 @@ class Backend(ABC):
         :param reverse: Reverse sort order
         """
 
-    def cleanup(self):
+    def close(self):
         """Close the backend"""
