@@ -26,21 +26,15 @@ else:
     os.system("source venv/bin/activate")
 
 # Install requirements
-os.system(f"pip install -r src/requirements.txt")
+os.system(f"pip install -r requirements.txt")
 
 # Modify spec file to load hidden imports for PyInstaller (in case of headless build server)
-spec = None
-spec_path = "src/nexus.spec"
+hidden_imports = []
 if os_name == "notwin":
-    with open(spec_path, "r") as f:
-        spec = f.read()
-    modified_spec = spec.replace("hiddenimports=[],", "hiddenimports=['pynput.keyboard._xorg', 'pynput.mouse._xorg'],")
-    spec_path = "src/_xorg.spec"
-    with open(spec_path, "w") as f:
-        f.write(modified_spec)
+    hiddenimports = ['pynput.keyboard._xorg', 'pynput.mouse._xorg']
 
 # Build executable
-os.system(f"pyinstaller {spec_path}")
+os.system(f"pyinstaller -Fn nexus nexus/__main__.py --hidden-import {','.join(hidden_imports)}")
 
 # Rename darwin executable
 if os_name == "darwin":

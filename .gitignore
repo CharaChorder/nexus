@@ -5,4 +5,4 @@ nexus_freqlog_db.sqlite3
 build/
 dist/
 venv/
-src/_xorg.spec
+nexus.egg-info/

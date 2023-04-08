@@ -7,6 +7,7 @@ from pynput import keyboard
 
 import Freqlog
 from Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadataAttr, Defaults, WordMetadataAttr
+from nexus import __doc__, __version__
 
 if __name__ == "__main__":
     # Error and exit on Python version < 3.11
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     reverse_arg.add_argument("-r", "--reverse", action="store_true", help="Reverse order of words")
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description="Freqlog chentered words", parents=[log_arg])
+    parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg])
     subparsers = parser.add_subparsers(dest="command", title="Commands")
 
     # Start freqlogging
@@ -84,7 +85,7 @@ if __name__ == "__main__":
 
     # Stop freqlogging
     parser_stop = subparsers.add_parser("stoplog", help="Stop logging", parents=[log_arg])
-    # parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args()
 
     # Set up console logging
