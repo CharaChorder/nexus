@@ -55,14 +55,14 @@ class SQLiteBackend(Backend):
 
     def log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """Log a word entry, creating it if it doesn't exist"""
-        try:
-            metadata = self.get_word_metadata(word, CaseSensitivity.SENSITIVE)
+        metadata = self.get_word_metadata(word, CaseSensitivity.SENSITIVE)
+        if metadata:
             freq, last_used, avg_speed = metadata.frequency, metadata.last_used, metadata.average_speed
             freq += 1
             avg_speed = (avg_speed * (freq - 1) + (end_time - start_time)) / freq
             self._execute("UPDATE freqlog SET frequency=?, lastused=?, avgspeed=? WHERE word=?",
                           (freq, end_time.timestamp(), avg_speed.total_seconds(), word))
-        except KeyError:
+        else:
             self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?)",
                           (word, 1, end_time.timestamp(), (end_time - start_time).total_seconds()))
 
@@ -96,7 +96,7 @@ class SQLiteBackend(Backend):
         :param case: Case sensitivity
         :raises ValueError: if sort_by is invalid
         """
-        sql_sort_by: str = ""  # WARNING: Will be loaded into SQL query, do not use user input
+        sql_sort_by: str  # WARNING: Will be loaded into SQL query, do not use user input
         match sort_by:
             case WordMetadataAttr.WORD:
                 sql_sort_by = "word"

@@ -9,6 +9,11 @@ import Freqlog
 from Freqlog.Definitions import BanlistAttr, ChordMetadataAttr, Defaults, WordMetadataAttr
 
 if __name__ == "__main__":
+    # Error and exit on Python version < 3.11
+    if sys.version_info < (3, 11):
+        print("Python 3.11 or higher is required")
+        sys.exit(1)
+
     log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "NONE"]
 
     # Common arguments
@@ -52,7 +57,7 @@ if __name__ == "__main__":
                               choices={attr.name for attr in WordMetadataAttr})
 
     # Get chords
-    parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged",
+    parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
                                           parents=[log_arg, path_arg, num_arg, reverse_arg])
     parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
     parser_chords.add_argument("-s", "--sort-by", default="FREQUENCY", help="Sort by (default: FREQUENCY)",
