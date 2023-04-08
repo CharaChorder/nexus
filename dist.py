@@ -28,14 +28,17 @@ else:
 # Install requirements
 os.system(f"pip install -r requirements.txt")
 
-# Modify spec file to load hidden imports for PyInstaller (in case of headless build server)
-hidden_imports = []
+# Pyinstaller command
+cmd = "pyinstaller -Fn nexus nexus/__main__.py"
 if os_name == "notwin":
-    hiddenimports = ['pynput.keyboard._xorg', 'pynput.mouse._xorg']
+    cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
 
 # Build executable
-os.system(f"pyinstaller -Fn nexus nexus/__main__.py --hidden-import {','.join(hidden_imports)}")
+os.system(cmd)
 
 # Rename darwin executable
 if os_name == "darwin":
     os.rename("dist/nexus", "dist/nexus-macos")
+
+# Copy README and LICENSE to dist
+os.system("cp README.md LICENSE dist")

@@ -27,8 +27,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Package for ${{ matrix.os }}
         run: python dist.py
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3
         with:
           name: nexus-build
           path: |
@@ -49,6 +48,8 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: nexus-build
+          path: dist
+      - run: cd dist && ls -lah
       - uses: pyTooling/Actions/releaser@r0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
