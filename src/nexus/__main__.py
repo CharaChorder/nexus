@@ -5,11 +5,11 @@ import sys
 
 from pynput import keyboard
 
-import Freqlog
-from Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadataAttr, Defaults, WordMetadataAttr
-from nexus import __doc__, __version__
+from nexus import __doc__, __version__, Freqlog
+from nexus.Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadataAttr, Defaults, WordMetadataAttr
 
-if __name__ == "__main__":
+
+def main():
     # Error and exit on Python version < 3.11
     if sys.version_info < (3, 11):
         print("Python 3.11 or higher is required")
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     parser_unban.add_argument("word", help="Word(s) to unban", nargs="+")
 
     # Stop freqlogging
-    parser_stop = subparsers.add_parser("stoplog", help="Stop logging", parents=[log_arg])
+    subparsers.add_parser("stoplog", help="Stop logging", parents=[log_arg])
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args()
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     # Validate arguments
     if args.command == "startlog":
         try:  # ensure that path is writable (WARNING: Must use 'a' instead of 'w' mode to avoid erasing file!!!)
-            with open(args.freq_log_path, "a") as f:
+            with open(args.freq_log_path, "a"):
                 pass
         except OSError as e:
             print(f"Error: {e}")
@@ -182,3 +182,7 @@ if __name__ == "__main__":
     except NotImplementedError:
         print(f"Error: The '{args.command}' command has not been implemented yet")
         sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

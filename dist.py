@@ -29,7 +29,7 @@ else:
 os.system(f"pip install -r requirements.txt")
 
 # Pyinstaller command
-cmd = "pyinstaller -Fn nexus nexus/__main__.py"
+cmd = "pyinstaller -Fn nexus src/nexus/__main__.py"
 if os_name == "notwin":
     cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
 

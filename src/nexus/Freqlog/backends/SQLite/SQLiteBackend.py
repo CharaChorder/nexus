@@ -1,8 +1,8 @@
 import sqlite3
 from datetime import datetime, timedelta
 
-from Freqlog.backends.Backend import Backend
-from Freqlog.Definitions import Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, WordMetadata, \
+from nexus.Freqlog.backends.Backend import Backend
+from nexus.Freqlog.Definitions import Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, WordMetadata, \
     WordMetadataAttr
 
 
