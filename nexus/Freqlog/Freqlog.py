@@ -9,7 +9,6 @@ from .Definitions import ActionType, Banlist, BanlistAttr, CaseSensitivity, Chor
     Defaults, WordMetadata, WordMetadataAttr
 
 
-# TODO: Add more (info) logging
 class Freqlog:
 
     def _on_press(self, key: kbd.Key | kbd.KeyCode) -> None:
@@ -26,12 +25,12 @@ class Freqlog:
 
     def _log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """Log word to store"""
-        logging.debug(f"Word: {word} - {start_time} - {end_time}")
+        logging.info(f"Word: {word} - {start_time} - {end_time}")
         self.backend.log_word(word, start_time, end_time)
 
     def _log_chord(self, chord: str, start_time: datetime, end_time: datetime) -> None:
         """Log chord to store"""
-        logging.debug(f"Chord: {chord} - {start_time} - {end_time}")
+        logging.info(f"Chord: {chord} - {start_time} - {end_time}")
         self.backend.log_chord(chord, start_time, end_time)
 
     def __init__(self, db_path: str = Defaults.DEFAULT_DB_PATH):
@@ -50,12 +49,17 @@ class Freqlog:
             allowed_keys_in_chord = set(allowed_keys_in_chord)
         if modifier_keys is None:
             modifier_keys = Defaults.DEFAULT_MODIFIER_KEYS
+        logging.info(f"Starting freqlogging")
+        logging.debug(f"new_word_threshold={new_word_threshold}, "
+                      f"chord_char_threshold={chord_char_threshold}, "
+                      f"allowed_keys_in_chord={allowed_keys_in_chord}, "
+                      f"modifier_keys={modifier_keys}")
         self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release)
         self.listener.start()
         self.mouse_listener = mouse.Listener(on_click=self._on_click)
         self.mouse_listener.start()
         self.is_logging = True
-        logging.info("Started freqlogging")
+        logging.warning("Started freqlogging")
 
         word: str = ""  # word to be logged, reset on non-chord keys
         word_start_time: datetime | None = None
@@ -150,17 +154,19 @@ class Freqlog:
                 elif not word and not self.is_logging:
                     # Cleanup and exit if queue is empty and logging is stopped
                     self.backend.close()
-                    logging.info("Stopped freqlogging")
+                    logging.warning("Stopped freqlogging")
                     break
 
     def stop_logging(self) -> None:
+        logging.warning("Stopping freqlog")
         self.listener.stop()
         self.mouse_listener.stop()
         self.is_logging = False
-        logging.info("Stopping freqlog")
+        logging.info("Stopped listeners")
 
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata:
         """Get metadata for a word"""
+        logging.info(f"Getting metadata for {word}, case {case}")
         return self.backend.get_word_metadata(word, case)
 
     def get_chord_metadata(self, chord: str) -> ChordMetadata | None:
@@ -168,6 +174,7 @@ class Freqlog:
         Get metadata for a chord
         :returns: ChordMetadata if chord is found, None otherwise
         """
+        logging.info(f"Getting metadata for {chord}")
         return self.backend.get_chord_metadata(chord)
 
     def check_banned(self, word: str, case: CaseSensitivity) -> bool:
@@ -175,15 +182,20 @@ class Freqlog:
         Check if a word is banned
         :returns: True if word is banned, False otherwise
         """
+        logging.info(f"Checking if {word} is banned, case {case}")
         return self.backend.check_banned(word, case)
 
     def ban_word(self, word: str, case: CaseSensitivity) -> None:
         """Ban a word from being logged"""
+        logging.info(f"Banning {word}, case {case}")
         self.backend.ban_word(word, case)
+        logging.warning(f"Banned {word}, case {case}")
 
     def unban_word(self, word: str, case: CaseSensitivity) -> None:
         """Unban a word"""
+        logging.info(f"Unbanning {word}, case {case}")
         self.backend.unban_word(word, case)
+        logging.warning(f"Unbanned {word}, case {case}")
 
     def list_words(self, limit: int, sort_by: WordMetadataAttr,
                    reverse: bool, case: CaseSensitivity) -> list[WordMetadata]:
@@ -194,6 +206,7 @@ class Freqlog:
         :param reverse: Reverse sort order
         :param case: Case sensitivity
         """
+        logging.info(f"Listing words, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case}")
         return self.backend.list_words(limit, sort_by, reverse, case)
 
     def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
@@ -205,6 +218,7 @@ class Freqlog:
         :param reverse: Reverse sort order
         :param case: Case sensitivity
         """
+        logging.info(f"Listing chords, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case}")
         return self.backend.list_chords(limit, sort_by, reverse, case)
 
     def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) -> list[Banlist]:
@@ -214,4 +228,5 @@ class Freqlog:
         :param sort_by: Attribute to sort by: word
         :param reverse: Reverse sort order
         """
+        logging.info(f"Listing banned words, limit {limit}, sort_by {sort_by}, reverse {reverse}")
         return self.backend.list_banned_words(limit, sort_by, reverse)

@@ -37,7 +37,7 @@ class Backend(ABC):
         :returns: True if word is banned, False otherwise
         """
 
-    # TODO: Ban chords
+    # TODO: Support banning chords
 
     @abstractmethod
     def ban_word(self, word: str, case: CaseSensitivity) -> None:
