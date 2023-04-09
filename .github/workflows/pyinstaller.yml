@@ -20,7 +20,7 @@ jobs:
         python-version: [ 3.11 ]
 
     steps:
-      - uses: &checkout_action actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
@@ -28,9 +28,9 @@ jobs:
       - name: Package for ${{ matrix.os }}
         run: python dist.py
       - name: Add generated binary to artifact
-        uses: &upload_artifact_action actions/upload-artifact@v3
-        with: &upload_artifact_args
-          name: &artifact_name nexus-build
+        uses: actions/upload-artifact@v3
+        with:
+          name: nexus-build
           path: |
             ./dist/nexus
             ./dist/nexus-macos
@@ -41,14 +41,15 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: *checkout_action
+      - uses: actions/checkout@v3
       - name: Add README.md and LICENSE to artifact
-        uses: *upload_artifact_action
+        uses: actions/upload-artifact@v3
         with:
-          <<: *upload_artifact_args
+          name: nexus-build
           path: |
             LICENSE
             README.md
+          if-no-files-found: error
 
   release:
     needs: [ package, docs ]
@@ -59,7 +60,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: *artifact_name
+          name: nexus-build
       - uses: pyTooling/Actions/releaser@r0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
