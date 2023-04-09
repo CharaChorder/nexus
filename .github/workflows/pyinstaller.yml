@@ -37,19 +37,27 @@ jobs:
           if-no-files-found: error
         if: always()
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/upload-artifact@v3
+        with:
+          name: nexus-build
+          path: |
+            LICENSE
+            README.md
+          if-no-files-found: error
+
   release:
-    needs: package
+    needs: [ package, docs ]
     runs-on: ubuntu-latest
     if: |
       github.repository_owner == 'CharaChorder' &&
       github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
           name: nexus-build
-          path: dist
-      - run: cd dist && ls -lah
       - uses: pyTooling/Actions/releaser@r0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
