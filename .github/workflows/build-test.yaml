@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-test:
 
     runs-on: ubuntu-latest
 
@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 build
+          pip install flake8 build twine
           pip install -r requirements.txt
       - name: Lint with flake8
         run: flake8 --count --show-source --statistics --max-line-length=120 --per-file-ignores=src/nexus/Freqlog/backends/__init__.py:F401 --exclude=venv
