@@ -1,0 +1,36 @@
+name: Build and test with flake8, pytest and twine
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 build
+          pip install -r requirements.txt
+      - name: Lint with flake8
+        run: flake8 --count --show-source --statistics --max-line-length=120 --per-file-ignores=src/nexus/Freqlog/backends/__init__.py:F401 --exclude=venv
+      - run: pytest
+      - name: Build package
+        run: python -m build
+      - name: Check and install package
+        run: |
+          twine check dist/*
+          pip install .

@@ -49,7 +49,7 @@ class Freqlog:
             allowed_keys_in_chord = set(allowed_keys_in_chord)
         if modifier_keys is None:
             modifier_keys = Defaults.DEFAULT_MODIFIER_KEYS
-        logging.info(f"Starting freqlogging")
+        logging.info("Starting freqlogging")
         logging.debug(f"new_word_threshold={new_word_threshold}, "
                       f"chord_char_threshold={chord_char_threshold}, "
                       f"allowed_keys_in_chord={allowed_keys_in_chord}, "

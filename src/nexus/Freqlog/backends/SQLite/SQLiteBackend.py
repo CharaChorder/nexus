@@ -2,8 +2,8 @@ import sqlite3
 from datetime import datetime, timedelta
 
 from nexus.Freqlog.backends.Backend import Backend
-from nexus.Freqlog.Definitions import Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, WordMetadata, \
-    WordMetadataAttr
+from nexus.Freqlog.Definitions import Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
+    WordMetadata, WordMetadataAttr
 
 
 class SQLiteBackend(Backend):
@@ -57,11 +57,11 @@ class SQLiteBackend(Backend):
         """Log a word entry, creating it if it doesn't exist"""
         metadata = self.get_word_metadata(word, CaseSensitivity.SENSITIVE)
         if metadata:
-            freq, last_used, avg_speed = metadata.frequency, metadata.last_used, metadata.average_speed
+            freq, last_used, avg_speed = metadata.frequency, max(metadata.last_used, end_time), metadata.average_speed
             freq += 1
             avg_speed = (avg_speed * (freq - 1) + (end_time - start_time)) / freq
             self._execute("UPDATE freqlog SET frequency=?, lastused=?, avgspeed=? WHERE word=?",
-                          (freq, end_time.timestamp(), avg_speed.total_seconds(), word))
+                          (freq, last_used.timestamp(), avg_speed.total_seconds(), word))
         else:
             self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?)",
                           (word, 1, end_time.timestamp(), (end_time - start_time).total_seconds()))
