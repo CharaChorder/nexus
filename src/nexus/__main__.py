@@ -6,7 +6,7 @@ import sys
 from pynput import keyboard
 
 from nexus import __doc__, __version__, Freqlog
-from nexus.Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadataAttr, Defaults, WordMetadataAttr
+from nexus.Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadataAttr, Defaults, Order, WordMetadataAttr
 
 
 def main():
@@ -28,8 +28,6 @@ def main():
                           choices={case for case in CaseSensitivity})
     num_arg = argparse.ArgumentParser(add_help=False)
     num_arg.add_argument("-n", "--num", default=10, help="Number of words to return")
-    reverse_arg = argparse.ArgumentParser(add_help=False)
-    reverse_arg.add_argument("-r", "--reverse", action="store_true", help="Reverse order of words")
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg])
@@ -52,23 +50,29 @@ def main():
 
     # Get words
     parser_words = subparsers.add_parser("words", help="Get list of freqlogged words",
-                                         parents=[log_arg, path_arg, case_arg, num_arg, reverse_arg])
+                                         parents=[log_arg, path_arg, case_arg, num_arg])
     parser_words.add_argument("word", help="Word(s) to get data of", nargs="*")
     parser_words.add_argument("-s", "--sort-by", default="FREQUENCY", help="Sort by (default: FREQUENCY)",
                               choices={attr.name for attr in WordMetadataAttr})
+    parser_words.add_argument("-o", "--order", default=Order.DESCENDING, help="Order (default: DESCENDING)",
+                              choices={order.name for order in Order})
 
     # Get chords
     parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
-                                          parents=[log_arg, path_arg, num_arg, reverse_arg])
+                                          parents=[log_arg, path_arg, num_arg])
     parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
     parser_chords.add_argument("-s", "--sort-by", default="FREQUENCY", help="Sort by (default: FREQUENCY)",
                                choices={attr.name for attr in ChordMetadataAttr})
+    parser_chords.add_argument("-o", "--order", default=Order.ASCENDING, help="Order (default: DESCENDING)",
+                               choices={order.name for order in Order})
 
     # Get banned words
     parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",
-                                          parents=[log_arg, path_arg, num_arg, reverse_arg])
+                                          parents=[log_arg, path_arg, num_arg])
     parser_banned.add_argument("-s", "--sort-by", default="DATE_ADDED", help="Sort by (default: DATE_ADDED)",
                                choices={attr.name for attr in BanlistAttr})
+    parser_banned.add_argument("-o", "--order", default=Order.DESCENDING, help="Order (default: DESCENDING)",
+                               choices={order.name for order in Order})
 
     # Check ban
     parser_check = subparsers.add_parser("checkword", help="Check if a word is banned",
@@ -142,7 +146,7 @@ def main():
         # TODO: implement sort/num/reverse for specific words and chords
         elif args.command == "words":  # get words
             if len(args.word) == 0:
-                res = freqlog.list_words(args.num, WordMetadataAttr[args.sort_by], args.reverse,
+                res = freqlog.list_words(args.num, WordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
                                          CaseSensitivity[args.case])
                 if len(res) == 0:
                     print("No words in freqlog. Start typing!")
@@ -158,7 +162,7 @@ def main():
                         print(res)
         elif args.command == "chords":  # get chords
             if len(args.chord) == 0:
-                res = freqlog.list_chords(args.num, ChordMetadataAttr[args.sort_by], args.reverse,
+                res = freqlog.list_chords(args.num, ChordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
                                           CaseSensitivity[args.case])
                 if len(res) == 0:
                     print("No chords in freqlog. Start chording!")
@@ -173,7 +177,7 @@ def main():
                     else:
                         print(res)
         elif args.command == "banlist":  # get banned words
-            res = freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by], args.reverse)
+            res = freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by], args.order == Order.DESCENDING)
             if len(res) == 0:
                 print("No banned words")
             else:

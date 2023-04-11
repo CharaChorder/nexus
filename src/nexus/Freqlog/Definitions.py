@@ -29,6 +29,12 @@ class CaseSensitivity(Enum):
     FIRST_CHAR = 3
 
 
+class Order(Enum):
+    """Enum for order"""
+    ASCENDING = True
+    DESCENDING = False
+
+
 class WordMetadata:
     """Metadata for a word"""
 
