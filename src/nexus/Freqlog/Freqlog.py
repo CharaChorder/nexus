@@ -27,7 +27,8 @@ class Freqlog:
 
     def _on_release(self, key: kbd.Key | kbd.KeyCode) -> None:
         """"Store RELEASE, key and current time in queue"""
-        self.q.put((ActionType.RELEASE, key, datetime.now()))
+        if key in self.modifier_keys:
+            self.q.put((ActionType.RELEASE, key, datetime.now()))
 
     def _on_click(self, _x, _y, button: mouse.Button, _pressed) -> None:
         """Store PRESS, key and current time in queue"""
@@ -48,7 +49,9 @@ class Freqlog:
         self.q: Queue = Queue()
         self.listener: kbd.Listener | None = None
         self.mouse_listener: mouse.Listener | None = None
+        self.modifier_keys: list = []
         self.is_logging: bool = False
+        self.killed: bool = False
 
     def start_logging(self, new_word_threshold: int = Defaults.DEFAULT_NEW_WORD_THRESHOLD,
                       chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD,
@@ -57,13 +60,12 @@ class Freqlog:
             allowed_keys_in_chord = Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD
         elif isinstance(allowed_keys_in_chord, str):
             allowed_keys_in_chord = set(allowed_keys_in_chord)
-        if modifier_keys is None:
-            modifier_keys = Defaults.DEFAULT_MODIFIER_KEYS
+        self.modifier_keys = modifier_keys if modifier_keys else Defaults.DEFAULT_MODIFIER_KEYS
         logging.info("Starting freqlogging")
         logging.debug(f"new_word_threshold={new_word_threshold}, "
                       f"chord_char_threshold={chord_char_threshold}, "
                       f"allowed_keys_in_chord={allowed_keys_in_chord}, "
-                      f"modifier_keys={modifier_keys}")
+                      f"modifier_keys={self.modifier_keys}")
         self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release)
         self.listener.start()
         self.mouse_listener = mouse.Listener(on_click=self._on_click)
@@ -116,17 +118,14 @@ class Freqlog:
                 key: kbd.Key | kbd.KeyCode | mouse.Button
                 time_pressed: datetime
                 action, key, time_pressed = self.q.get(block=False)
+                logging.debug(f"{action}: {key} - {time_pressed}")
+                logging.debug(f"word: {word}, active_modifier_keys: {active_modifier_keys}")
 
                 # Update modifier keys
-                if action == ActionType.PRESS and key in modifier_keys:
+                if action == ActionType.PRESS and key in self.modifier_keys:
                     active_modifier_keys.add(key)
-                elif action == ActionType.RELEASE and key in modifier_keys:
+                elif action == ActionType.RELEASE:
                     active_modifier_keys.remove(key)
-
-                # Ignore non-modifier release events
-                if action == ActionType.RELEASE:
-                    self.q.task_done()
-                    continue
 
                 # On backspace, remove last char from word if word is not empty
                 if key == kbd.Key.backspace and word:
@@ -168,6 +167,8 @@ class Freqlog:
                     break
 
     def stop_logging(self) -> None:
+        if self.killed:  # Forcibly kill if already killed once
+            exit(1)
         logging.warning("Stopping freqlog")
         self.listener.stop()
         self.mouse_listener.stop()
