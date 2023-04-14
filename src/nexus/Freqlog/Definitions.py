@@ -43,6 +43,24 @@ class WordMetadata:
         self.last_used = last_used
         self.average_speed = average_speed
 
+    def __or__(self, other):
+        """Merge two WordMetadata objects"""
+        if other is not None and not isinstance(other, WordMetadata):
+            raise TypeError(f"Unsupported operand type(s) for |: '{type(self).__name__}' and '{type(other).__name__}'")
+        if self is None:
+            return other
+        if other is None:
+            return self
+        if self.word != other.word:
+            raise ValueError(f"Cannot merge WordMetadata objects with different words: {self.word} and {other.word}")
+        return WordMetadata(
+            self.word,
+            self.frequency + other.frequency,
+            max(self.last_used, other.last_used),
+            (self.average_speed * self.frequency + other.average_speed * other.frequency) / (
+                        self.frequency + other.frequency)
+        )
+
     def __str__(self) -> str:
         return f"Word: {self.word} | Frequency: {self.frequency} | Last used: {self.last_used} | " \
                f"Average speed: {self.average_speed}"

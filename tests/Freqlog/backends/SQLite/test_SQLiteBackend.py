@@ -28,8 +28,9 @@ def close_to(a, b):
     ("one", CaseSensitivity.SENSITIVE, 1, time, timedelta(seconds=1)),
     ("two", CaseSensitivity.SENSITIVE, 2, time + timedelta(minutes=2), timedelta(seconds=2.5)),
     ("three", CaseSensitivity.SENSITIVE, 1, time + timedelta(minutes=3), timedelta(seconds=1)),
-    # ("three", CaseSensitivity.INSENSITIVE, 3, time + timedelta(minutes=5), timedelta(seconds=3)),
-])  # TODO: Uncomment after implementing case sensitivity
+    ("three", CaseSensitivity.FIRST_CHAR, 2, time + timedelta(minutes=4), timedelta(seconds=1.5)),
+    ("three", CaseSensitivity.INSENSITIVE, 3, time + timedelta(minutes=5), timedelta(seconds=3)),
+])
 def test_get_word_metadata(loaded_backend, word, case, freq, last_used, avg_speed):
     backend = loaded_backend
     data = backend.get_word_metadata(word, case)
@@ -39,14 +40,13 @@ def test_get_word_metadata(loaded_backend, word, case, freq, last_used, avg_spee
     assert close_to(data.average_speed, avg_speed)
 
 
-@pytest.mark.xfail
 def test_list_words(loaded_backend):
     backend = loaded_backend
     data = backend.list_words(2, WordMetadataAttr.FREQUENCY, True, CaseSensitivity.INSENSITIVE)
     assert data[0].word == "three"
     assert data[0].frequency == 3
     assert close_to(data[0].last_used, time + timedelta(minutes=5))
-    assert close_to(data[0].average_speed, timedelta(seconds=1))
+    assert close_to(data[0].average_speed, timedelta(seconds=3))
     assert data[1].word == "two"
     assert data[1].frequency == 2
     assert close_to(data[1].last_used, time + timedelta(minutes=2))
