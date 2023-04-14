@@ -6,7 +6,7 @@ try:
     from pynput.keyboard import Key
 except ImportError as e:
     if "PYTEST-HEADLESS" in os.environ:
-        Key = None  # TODO: we can't run tests involving pynput.keyboard.Key on CI
+        from tests.mocks.kbd import Key
     else:
         raise e
 

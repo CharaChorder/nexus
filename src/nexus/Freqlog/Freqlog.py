@@ -9,8 +9,7 @@ except ImportError as e:
     if "PYTEST-HEADLESS" in os.environ:
         logging.warning("Skipping pynput import due to headless environment")
         logging.error(f"Logging will not work: {e}")
-        kbd = None
-        mouse = None
+        from tests.mocks import kbd, mouse
     else:
         raise e
 
