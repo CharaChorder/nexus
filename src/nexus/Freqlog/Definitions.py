@@ -1,14 +1,7 @@
-import os
 from datetime import datetime, timedelta
 from enum import Enum
 
-try:
-    from pynput.keyboard import Key
-except ImportError as e:
-    if "PYTEST-HEADLESS" in os.environ:
-        from tests.mocks.kbd import Key
-    else:
-        raise e
+from pynput.keyboard import Key
 
 
 class Defaults:

@@ -1,17 +1,8 @@
 import logging
-import os
 from datetime import datetime, timedelta
 from queue import Empty as EmptyException, Queue
 
-try:
-    from pynput import keyboard as kbd, mouse
-except ImportError as e:
-    if "PYTEST-HEADLESS" in os.environ:
-        logging.warning("Skipping pynput import due to headless environment")
-        logging.error(f"Logging will not work: {e}")
-        from tests.mocks import kbd, mouse
-    else:
-        raise e
+from pynput import keyboard as kbd, mouse
 
 from .backends import Backend, SQLiteBackend
 from .Definitions import ActionType, Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \

@@ -25,12 +25,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 build twine
           pip install -r requirements.txt
+          sudo apt-get install xvfb
       - name: Lint with flake8
-        run: flake8 --count --show-source --statistics --max-line-length=120 --per-file-ignores=src/nexus/Freqlog/backends/__init__.py:F401 --exclude=venv
+        run: |
+          flake8 --count --show-source --statistics --max-line-length=120 \
+            --per-file-ignores=src/nexus/Freqlog/backends/__init__.py:F401 --exclude=venv
       - name: Build package
         run: python -m build
       - name: Check and install package
         run: |
           twine check dist/*
           pip install .
-      - run: pytest
+      - name: Test with pytest over Xvfb
+        run: xvfb-run -a pytest
