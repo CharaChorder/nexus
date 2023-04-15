@@ -6,7 +6,9 @@ import sys
 from pynput import keyboard
 
 from nexus import __doc__, __version__, Freqlog
-from nexus.Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadataAttr, Defaults, Order, WordMetadataAttr
+from nexus.Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, Defaults, Order, \
+    WordMetadata, \
+    WordMetadataAttr
 
 
 def main():
@@ -30,7 +32,9 @@ def main():
     num_arg.add_argument("-n", "--num", default=10, help="Number of words to return")
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg])
+    parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg],
+                                     epilog="Made with love by CharaChorder, source code available at "
+                                            "https://github.com/CharaChorder/nexus")
     subparsers = parser.add_subparsers(dest="command", title="Commands")
 
     # Start freqlogging
@@ -58,37 +62,37 @@ def main():
                               choices={order.name for order in Order})
 
     # Get chords
-    parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
-                                          parents=[log_arg, path_arg, num_arg])
-    parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
-    parser_chords.add_argument("-s", "--sort-by", default="FREQUENCY", help="Sort by (default: FREQUENCY)",
-                               choices={attr.name for attr in ChordMetadataAttr})
-    parser_chords.add_argument("-o", "--order", default=Order.ASCENDING, help="Order (default: DESCENDING)",
-                               choices={order.name for order in Order})
+    # parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
+    #                                       parents=[log_arg, path_arg, num_arg])
+    # parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
+    # parser_chords.add_argument("-s", "--sort-by", default="FREQUENCY", help="Sort by (default: FREQUENCY)",
+    #                            choices={attr.name for attr in ChordMetadataAttr})
+    # parser_chords.add_argument("-o", "--order", default=Order.ASCENDING, help="Order (default: DESCENDING)",
+    #                            choices={order.name for order in Order})
 
     # Get banned words
-    parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",
-                                          parents=[log_arg, path_arg, num_arg])
-    parser_banned.add_argument("-s", "--sort-by", default="DATE_ADDED", help="Sort by (default: DATE_ADDED)",
-                               choices={attr.name for attr in BanlistAttr})
-    parser_banned.add_argument("-o", "--order", default=Order.DESCENDING, help="Order (default: DESCENDING)",
-                               choices={order.name for order in Order})
+    # parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",
+    #                                       parents=[log_arg, path_arg, num_arg])
+    # parser_banned.add_argument("-s", "--sort-by", default="DATE_ADDED", help="Sort by (default: DATE_ADDED)",
+    #                            choices={attr.name for attr in BanlistAttr})
+    # parser_banned.add_argument("-o", "--order", default=Order.DESCENDING, help="Order (default: DESCENDING)",
+    #                            choices={order.name for order in Order})
 
     # Check ban
-    parser_check = subparsers.add_parser("checkword", help="Check if a word is banned",
-                                         parents=[log_arg, path_arg, case_arg])
-    parser_check.add_argument("word", help="Word(s) to check", nargs="+")
+    # parser_check = subparsers.add_parser("checkword", help="Check if a word is banned",
+    #                                      parents=[log_arg, path_arg, case_arg])
+    # parser_check.add_argument("word", help="Word(s) to check", nargs="+")
 
     # Ban
-    parser_ban = subparsers.add_parser("banword", help="Ban a word", parents=[log_arg, path_arg, case_arg])
-    parser_ban.add_argument("word", help="Word(s) to ban", nargs="+")
+    # parser_ban = subparsers.add_parser("banword", help="Ban a word", parents=[log_arg, path_arg, case_arg])
+    # parser_ban.add_argument("word", help="Word(s) to ban", nargs="+")
 
     # Unban
-    parser_unban = subparsers.add_parser("unbanword", help="Unban a word", parents=[log_arg, path_arg, case_arg])
-    parser_unban.add_argument("word", help="Word(s) to unban", nargs="+")
+    # parser_unban = subparsers.add_parser("unbanword", help="Unban a word", parents=[log_arg, path_arg, case_arg])
+    # parser_unban.add_argument("word", help="Word(s) to unban", nargs="+")
 
     # Stop freqlogging
-    subparsers.add_parser("stoplog", help="Stop logging", parents=[log_arg])
+    # subparsers.add_parser("stoplog", help="Stop logging", parents=[log_arg])
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args()
 
@@ -128,6 +132,8 @@ def main():
         sys.exit(0)
         # TODO: implement
 
+    exit_code = 0
+
     # Some features from this point on may not have been implemented
     try:
         freqlog = Freqlog.Freqlog(args.freq_log_path)
@@ -143,9 +149,8 @@ def main():
         elif args.command == "unbanword":  # unban word
             freqlog.unban_word(args.word, args.case)
         # TODO: pretty print
-        # TODO: implement sort/num/reverse for specific words and chords
         elif args.command == "words":  # get words
-            if len(args.word) == 0:
+            if len(args.word) == 0:  # all words
                 res = freqlog.list_words(args.num, WordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
                                          CaseSensitivity[args.case])
                 if len(res) == 0:
@@ -153,15 +158,20 @@ def main():
                 else:
                     for word in res:
                         print(word)
-            else:
+            else:  # specific words
+                words: list[WordMetadata] = []
                 for word in args.word:
                     res = freqlog.get_word_metadata(word, args.case)
                     if res is None:
                         print(f"Word '{word}' not found")
                     else:
-                        print(res)
+                        words.append(res)
+                if len(words) > 0:
+                    for word in sorted(words, key=lambda x: getattr(x, args.sort_by),
+                                       reverse=(args.order == Order.DESCENDING)):
+                        print(word)
         elif args.command == "chords":  # get chords
-            if len(args.chord) == 0:
+            if len(args.chord) == 0:  # all chords
                 res = freqlog.list_chords(args.num, ChordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
                                           CaseSensitivity[args.case])
                 if len(res) == 0:
@@ -169,19 +179,25 @@ def main():
                 else:
                     for chord in res:
                         print(chord)
-            else:
+            else:  # specific chords
+                chords: list[ChordMetadata] = []
                 for chord in args.chord:
                     res = freqlog.get_chord_metadata(chord)
                     if res is None:
                         print(f"Chord '{chord}' not found")
                     else:
-                        print(res)
+                        chords.append(res)
+                if len(chords) > 0:
+                    for chord in sorted(chords, key=lambda x: getattr(x, args.sort_by),
+                                        reverse=(args.order == Order.DESCENDING)):
+                        print(chord)
         elif args.command == "banlist":  # get banned words
             res = freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by], args.order == Order.DESCENDING)
             if len(res) == 0:
                 print("No banned words")
             else:
-                for word in res:
+                for word in sorted(res, key=lambda x: getattr(x, args.sort_by),
+                                   reverse=(args.order == Order.DESCENDING)):
                     print(word)
     except NotImplementedError:
         print(f"Error: The '{args.command}' command has not been implemented yet")

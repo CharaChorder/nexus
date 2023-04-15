@@ -42,7 +42,7 @@ def test_get_word_metadata(loaded_backend, word, case, freq, last_used, avg_spee
 
 def test_list_words(loaded_backend):
     backend = loaded_backend
-    data = backend.list_words(2, WordMetadataAttr.FREQUENCY, True, CaseSensitivity.INSENSITIVE)
+    data = backend.list_words(2, WordMetadataAttr.frequency, True, CaseSensitivity.INSENSITIVE)
     assert data[0].word == "three"
     assert data[0].frequency == 3
     assert close_to(data[0].last_used, time + timedelta(minutes=5))

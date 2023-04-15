@@ -6,7 +6,7 @@ from nexus.Freqlog.Definitions import Banlist, BanlistAttr, CaseSensitivity, Cho
     WordMetadata, WordMetadataAttr
 
 # WARNING: Will be loaded into SQL query, do not use user input
-FREQLOG_COMMON_SQL = "frequency, lastused, avgspeed FROM freqlog"
+SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM freqlog"
 
 
 class SQLiteBackend(Backend):
@@ -15,9 +15,14 @@ class SQLiteBackend(Backend):
         self.db_path = db_path
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
-        self._execute("CREATE TABLE IF NOT EXISTS freqlog"
-                      "(word TEXT PRIMARY KEY, lowercase TEXT, frequency INTEGER, lastused timestamp, avgspeed REAL)")
-        self._execute("CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY)")
+        self._execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
+                      "lastused timestamp NOT NULL, avgspeed REAL NOT NULL)")
+        self._execute("CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL)")
+        self._execute("CREATE INDEX IF NOT EXISTS freqlog_word ON freqlog(word)")
+        self._execute("CREATE INDEX IF NOT EXISTS freqlog_lower ON freqlog(word COLLATE NOCASE)")
+        self._execute("CREATE INDEX IF NOT EXISTS freqlog_frequency ON freqlog(frequency)")
+        self._execute("CREATE UNIQUE INDEX IF NOT EXISTS freqlog_lastused ON freqlog(lastused)")
+        self._execute("CREATE INDEX IF NOT EXISTS freqlog_avgspeed ON freqlog(avgspeed)")
 
     def _execute(self, query: str, params=None) -> None:
         if params:
@@ -48,27 +53,28 @@ class SQLiteBackend(Backend):
         match case:
             case CaseSensitivity.INSENSITIVE:
                 word = word.lower()
-                res = self._fetchall(f"SELECT word, {FREQLOG_COMMON_SQL} WHERE lowercase=?", (word,))
-                freq = 0
-                last_used = datetime.min
-                total_time = timedelta()
+                res = self._fetchall(f"{SQL_SELECT_STAR_FROM_FREQLOG} WHERE word = ? COLLATE NOCASE", (word,))
+                word_metadata = None
                 for row in res:
-                    freq += row[1]
-                    last_used = max(last_used, datetime.fromtimestamp(row[2]))
-                    total_time += timedelta(seconds=row[3]) * row[1]
-                return WordMetadata(word, freq, last_used, total_time / freq) if res else None
+                    if word_metadata is None:
+                        word_metadata = WordMetadata(word, row[1], datetime.fromtimestamp(row[2]),
+                                                     timedelta(seconds=row[3]))
+                    else:
+                        word_metadata |= WordMetadata(word, row[1], datetime.fromtimestamp(row[2]),
+                                                      timedelta(seconds=row[3]))
+                return word_metadata
             case CaseSensitivity.FIRST_CHAR:
                 word_u = word[0].upper() + word[1:]
                 word_l = word[0].lower() + word[1:]
-                res_u = self._fetchone(f"SELECT word, {FREQLOG_COMMON_SQL} WHERE word=?", (word_u,))
-                res_l = self._fetchone(f"SELECT word, {FREQLOG_COMMON_SQL} WHERE word=?", (word_l,))
+                res_u = self._fetchone(f"{SQL_SELECT_STAR_FROM_FREQLOG} WHERE word=?", (word_u,))
+                res_l = self._fetchone(f"{SQL_SELECT_STAR_FROM_FREQLOG} WHERE word=?", (word_l,))
                 word_meta_u = WordMetadata(word, res_u[1], datetime.fromtimestamp(res_u[2]),
                                            timedelta(seconds=res_u[3]))
                 word_meta_l = WordMetadata(word, res_l[1], datetime.fromtimestamp(res_l[2]),
                                            timedelta(seconds=res_l[3]))
                 return word_meta_u | word_meta_l
             case CaseSensitivity.SENSITIVE:
-                res = self._fetchone(f"SELECT word, {FREQLOG_COMMON_SQL} WHERE word=?", (word,))
+                res = self._fetchone(f"{SQL_SELECT_STAR_FROM_FREQLOG} WHERE word=?", (word,))
                 return WordMetadata(word, res[1], datetime.fromtimestamp(res[2]),
                                     timedelta(seconds=res[3])) if res else None
 
@@ -83,14 +89,13 @@ class SQLiteBackend(Backend):
         """Log a word entry, creating it if it doesn't exist"""
         metadata = self.get_word_metadata(word, CaseSensitivity.SENSITIVE)
         if metadata:
-            freq, last_used, avg_speed = metadata.frequency, max(metadata.last_used, end_time), metadata.average_speed
-            freq += 1
-            avg_speed = (avg_speed * (freq - 1) + (end_time - start_time)) / freq
+            metadata |= WordMetadata(word, 1, end_time, end_time - start_time)
             self._execute("UPDATE freqlog SET frequency=?, lastused=?, avgspeed=? WHERE word=?",
-                          (freq, last_used.timestamp(), avg_speed.total_seconds(), word))
+                          (metadata.frequency, metadata.last_used.timestamp(), metadata.average_speed.total_seconds(),
+                           word))
         else:
-            self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?, ?)",
-                          (word, word.lower(), 1, end_time.timestamp(), (end_time - start_time).total_seconds()))
+            self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?)",
+                          (word, 1, end_time.timestamp(), (end_time - start_time).total_seconds()))
 
     def log_chord(self, word: str, start_time: datetime, end_time: datetime) -> None:
         raise NotImplementedError  # TODO: implement
@@ -125,27 +130,26 @@ class SQLiteBackend(Backend):
         if case == CaseSensitivity.SENSITIVE:
             sql_sort_by: str  # WARNING: Will be loaded into SQL query, do not use user input
             match sort_by:
-                case WordMetadataAttr.WORD:
+                case WordMetadataAttr.word:
                     sql_sort_by = "word"
-                case WordMetadataAttr.FREQUENCY:
+                case WordMetadataAttr.frequency:
                     sql_sort_by = "frequency"
-                case WordMetadataAttr.LAST_USED:
+                case WordMetadataAttr.last_used:
                     sql_sort_by = "lastused"
-                case WordMetadataAttr.AVERAGE_SPEED:
+                case WordMetadataAttr.average_speed:
                     sql_sort_by = "avgspeed"
                 case _:
                     raise ValueError(f"Invalid sort_by value: {sort_by}")
             if reverse:
                 sql_sort_by += " DESC"
-            res = self._fetchall(
-                f"SELECT word, lowercase, {FREQLOG_COMMON_SQL} ORDER BY {sql_sort_by} LIMIT ?", (limit,))
-            return [WordMetadata(row[0], row[2], datetime.fromtimestamp(row[3]), timedelta(seconds=row[4]))
+            res = self._fetchall(f"{SQL_SELECT_STAR_FROM_FREQLOG} ORDER BY {sql_sort_by} LIMIT ?", (limit,))
+            return [WordMetadata(row[0], row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
                     for row in res]
-        res = self._fetchall(f"SELECT word, lowercase, {FREQLOG_COMMON_SQL}")
+        res = self._fetchall(SQL_SELECT_STAR_FROM_FREQLOG)
         d: dict[WordMetadata] = {}
         for row in res:
-            word = row[1][0] + row[0][1:] if case == CaseSensitivity.FIRST_CHAR else row[1]
-            word_metadata = WordMetadata(word, row[2], datetime.fromtimestamp(row[3]), timedelta(seconds=row[4]))
+            word = row[0][0].lower() + row[0][1:] if case == CaseSensitivity.FIRST_CHAR else row[0].lower()
+            word_metadata = WordMetadata(word, row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
             try:
                 d[word] |= word_metadata
             except KeyError:

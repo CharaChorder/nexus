@@ -46,9 +46,7 @@ class WordMetadata:
     def __or__(self, other):
         """Merge two WordMetadata objects"""
         if other is not None and not isinstance(other, WordMetadata):
-            raise TypeError(f"Unsupported operand type(s) for |: '{type(self).__name__}' and '{type(other).__name__}'")
-        if self is None:
-            return other
+            raise TypeError(f"unsupported operand type(s) for |: '{type(self).__name__}' and '{type(other).__name__}'")
         if other is None:
             return self
         if self.word != other.word:
@@ -68,10 +66,10 @@ class WordMetadata:
 
 class WordMetadataAttr(Enum):
     """Enum for word metadata attributes"""
-    WORD = "word"
-    FREQUENCY = "frequency"
-    LAST_USED = "lastused"
-    AVERAGE_SPEED = "avgspeed"
+    word = "word"
+    frequency = "frequency"
+    last_used = "lastused"
+    average_speed = "avgspeed"
 
 
 class ChordMetadata:
@@ -88,9 +86,9 @@ class ChordMetadata:
 
 class ChordMetadataAttr(Enum):
     """Enum for chord metadata attributes"""
-    CHORD = "chord"
-    FREQUENCY = "frequency"
-    LAST_USED = "lastused"
+    chord = "chord"
+    frequency = "frequency"
+    last_used = "lastused"
 
 
 class Banlist:
@@ -106,5 +104,5 @@ class Banlist:
 
 class BanlistAttr(Enum):
     """Enum for banlist attributes"""
-    WORD = "word"
-    DATE_ADDED = "dateadded"
+    word = "word"
+    date_added = "dateadded"
