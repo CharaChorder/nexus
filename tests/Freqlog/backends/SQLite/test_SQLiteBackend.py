@@ -51,7 +51,3 @@ def test_list_words(loaded_backend):
     assert data[1].frequency == 2
     assert close_to(data[1].last_used, time + timedelta(minutes=2))
     assert close_to(data[1].average_speed, timedelta(seconds=2.5))
-    assert data[2].word == "one"
-    assert data[2].frequency == 1
-    assert close_to(data[2].last_used, time)
-    assert close_to(data[2].average_speed, timedelta(seconds=1))

@@ -1,11 +1,12 @@
 import sqlite3
 from datetime import datetime, timedelta
 
+from nexus import __version__
 from nexus.Freqlog.backends.Backend import Backend
 from nexus.Freqlog.Definitions import Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
     WordMetadata, WordMetadataAttr
 
-# WARNING: Will be loaded into SQL query, do not use user input
+# WARNING: Loaded into SQL query, do not use unsanitized user input
 SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM freqlog"
 
 
@@ -15,14 +16,27 @@ class SQLiteBackend(Backend):
         self.db_path = db_path
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
+
+        # Versioning
+        # old_version = self._fetchone("PRAGMA user_version")
+        # Encode major, minor and patch version into a single 4-byte integer
+        sql_version: int = int(__version__.split(".")[0]) << 16 | int(__version__.split(".")[1]) << 8 | int(
+            __version__.split(".")[2])
+        self._execute(f"PRAGMA user_version = {sql_version}")
+
+        # Freqloq table
         self._execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
-                      "lastused timestamp NOT NULL, avgspeed REAL NOT NULL)")
-        self._execute("CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL)")
-        self._execute("CREATE INDEX IF NOT EXISTS freqlog_word ON freqlog(word)")
+                      "lastused timestamp NOT NULL, avgspeed REAL NOT NULL) WITHOUT ROWID")
         self._execute("CREATE INDEX IF NOT EXISTS freqlog_lower ON freqlog(word COLLATE NOCASE)")
         self._execute("CREATE INDEX IF NOT EXISTS freqlog_frequency ON freqlog(frequency)")
         self._execute("CREATE UNIQUE INDEX IF NOT EXISTS freqlog_lastused ON freqlog(lastused)")
         self._execute("CREATE INDEX IF NOT EXISTS freqlog_avgspeed ON freqlog(avgspeed)")
+
+        # Banlist table
+        self._execute(
+            "CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) WITHOUT ROWID")
+        self._execute("CREATE INDEX IF NOT EXISTS banlist_lower ON banlist(word COLLATE NOCASE)")
+        self._execute("CREATE UNIQUE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
 
     def _execute(self, query: str, params=None) -> None:
         if params:
@@ -105,17 +119,52 @@ class SQLiteBackend(Backend):
         Check if a word is banned
         :returns: True if word is banned, False otherwise
         """
-        raise NotImplementedError  # TODO: implement
+        match case:
+            case CaseSensitivity.INSENSITIVE:
+                word = word.lower()
+                res = self._fetchone("SELECT word FROM banlist WHERE word = ? COLLATE NOCASE", (word,))
+                return res is not None
+            case CaseSensitivity.FIRST_CHAR:
+                word_u = word[0].upper() + word[1:]
+                word_l = word[0].lower() + word[1:]
+                res_u = self._fetchone("SELECT word FROM banlist WHERE word=?", (word_u,))
+                res_l = self._fetchone("SELECT word FROM banlist WHERE word=?", (word_l,))
+                return res_u is not None or res_l is not None
+            case CaseSensitivity.SENSITIVE:
+                res = self._fetchone("SELECT word FROM banlist WHERE word=?", (word,))
+                return res is not None
 
     def ban_word(self, word: str, case: CaseSensitivity) -> None:
         """Delete a word entry and add it to the ban list"""
-        self._execute("DELETE FROM freqlog WHERE word=?", (word,))
-        self._execute("INSERT INTO banlist VALUES (?)", (word,))
-        # TODO: implement case sensitivity
+        match case:
+            case CaseSensitivity.INSENSITIVE:
+                word = word.lower()
+                self._execute("DELETE FROM freqlog WHERE word = ? COLLATE NOCASE", (word,))
+                self._execute("INSERT INTO banlist VALUES (?)", (word,))
+            case CaseSensitivity.FIRST_CHAR:
+                word_u = word[0].upper() + word[1:]
+                word_l = word[0].lower() + word[1:]
+                self._execute("DELETE FROM freqlog WHERE word=?", (word_u,))
+                self._execute("DELETE FROM freqlog WHERE word=?", (word_l,))
+                self._execute("INSERT INTO banlist VALUES (?)", (word_u,))
+                self._execute("INSERT INTO banlist VALUES (?)", (word_l,))
+            case CaseSensitivity.SENSITIVE:
+                self._execute("DELETE FROM freqlog WHERE word=?", (word,))
+                self._execute("INSERT INTO banlist VALUES (?)", (word,))
 
     def unban_word(self, word: str, case: CaseSensitivity) -> None:
         """Remove a word from the ban list"""
-        raise NotImplementedError  # TODO: implement
+        match case:
+            case CaseSensitivity.INSENSITIVE:
+                word = word.lower()
+                self._execute("DELETE FROM banlist WHERE word = ? COLLATE NOCASE", (word,))
+            case CaseSensitivity.FIRST_CHAR:
+                word_u = word[0].upper() + word[1:]
+                word_l = word[0].lower() + word[1:]
+                self._execute("DELETE FROM banlist WHERE word=?", (word_u,))
+                self._execute("DELETE FROM banlist WHERE word=?", (word_l,))
+            case CaseSensitivity.SENSITIVE:
+                self._execute("DELETE FROM banlist WHERE word=?", (word,))
 
     def list_words(self, limit: int, sort_by: WordMetadataAttr,
                    reverse: bool, case: CaseSensitivity) -> list[WordMetadata]:
@@ -128,21 +177,12 @@ class SQLiteBackend(Backend):
         :raises ValueError: if sort_by is invalid
         """
         if case == CaseSensitivity.SENSITIVE:
-            sql_sort_by: str  # WARNING: Will be loaded into SQL query, do not use user input
-            match sort_by:
-                case WordMetadataAttr.word:
-                    sql_sort_by = "word"
-                case WordMetadataAttr.frequency:
-                    sql_sort_by = "frequency"
-                case WordMetadataAttr.last_used:
-                    sql_sort_by = "lastused"
-                case WordMetadataAttr.average_speed:
-                    sql_sort_by = "avgspeed"
-                case _:
-                    raise ValueError(f"Invalid sort_by value: {sort_by}")
+            sql_sort_limit: str = sort_by.value  # WARNING: Loaded into SQL query, do not use unsanitized user input
             if reverse:
-                sql_sort_by += " DESC"
-            res = self._fetchall(f"{SQL_SELECT_STAR_FROM_FREQLOG} ORDER BY {sql_sort_by} LIMIT ?", (limit,))
+                sql_sort_limit += " DESC"
+            if limit > 0:
+                sql_sort_limit += f" LIMIT {limit}"
+            res = self._fetchall(f"{SQL_SELECT_STAR_FROM_FREQLOG} ORDER BY {sql_sort_limit}")
             return [WordMetadata(row[0], row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
                     for row in res]
         res = self._fetchall(SQL_SELECT_STAR_FROM_FREQLOG)
@@ -154,8 +194,8 @@ class SQLiteBackend(Backend):
                 d[word] |= word_metadata
             except KeyError:
                 d[word] = word_metadata
-        ret = list(d.values())
-        return sorted(ret, key=lambda x: getattr(x, sort_by.value), reverse=reverse)
+        ret = sorted(list(d.values()), key=lambda x: getattr(x, sort_by.name), reverse=reverse)
+        return ret[:limit] if limit > 0 else ret
 
     def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
                     reverse: bool, case: CaseSensitivity) -> list[ChordMetadata]:

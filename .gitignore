@@ -7,3 +7,4 @@ dist/
 venv/
 nexus.egg-info/
 *.spec
+.coverage
