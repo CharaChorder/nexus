@@ -36,6 +36,7 @@ else:
 print("Installing requirements...")
 os.system("python -m pip install --upgrade pip")
 os.system("python -m pip install -r requirements.txt")
+os.system("python -m pip install -r test-requirements.txt")
 
 # Pyinstaller command
 cmd = "pyinstaller -Fn nexus src/nexus/__main__.py"

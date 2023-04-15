@@ -1,5 +1,3 @@
 pynput~=1.7.6
 pyinstaller~=5.10.1
 setuptools~=67.6.1
-
-pytest~=7.3.1
