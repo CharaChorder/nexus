@@ -58,3 +58,7 @@ else:
     os.system("cp README.md LICENSE dist")
 
 print("Done! Built executable is in dist/")
+
+# Setup git hooks
+print("Setting up git hooks...")
+os.system("pre-commit install")

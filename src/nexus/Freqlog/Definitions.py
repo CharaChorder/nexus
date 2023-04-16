@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, Self
 
 from pynput.keyboard import Key
 
@@ -43,7 +44,7 @@ class WordMetadata:
         self.last_used = last_used
         self.average_speed = average_speed
 
-    def __or__(self, other):
+    def __or__(self, other: Any) -> Self:
         """Merge two WordMetadata objects"""
         if other is not None and not isinstance(other, WordMetadata):
             raise TypeError(f"unsupported operand type(s) for |: '{type(self).__name__}' and '{type(other).__name__}'")
@@ -91,7 +92,7 @@ class ChordMetadataAttr(Enum):
     last_used = "lastused"
 
 
-class Banlist:
+class BanlistEntry:
     """Banlist entry"""
 
     def __init__(self, word: str, date_added: datetime) -> None:

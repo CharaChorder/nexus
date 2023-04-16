@@ -5,7 +5,7 @@ from queue import Empty as EmptyException, Queue
 from pynput import keyboard as kbd, mouse
 
 from .backends import Backend, SQLiteBackend
-from .Definitions import ActionType, Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
+from .Definitions import ActionType, BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
     Defaults, WordMetadata, WordMetadataAttr
 
 
@@ -115,7 +115,7 @@ class Freqlog:
                 if action == ActionType.PRESS and key in self.modifier_keys:
                     active_modifier_keys.add(key)
                 elif action == ActionType.RELEASE:
-                    active_modifier_keys.remove(key)
+                    active_modifier_keys.discard(key)
 
                 # On backspace, remove last char from word if word is not empty
                 if key == kbd.Key.backspace and word:
@@ -186,10 +186,10 @@ class Freqlog:
         logging.info(f"Checking if {word} is banned, case {case}")
         return self.backend.check_banned(word, case)
 
-    def ban_word(self, word: str, case: CaseSensitivity) -> None:
+    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> None:
         """Ban a word from being logged"""
-        logging.info(f"Banning {word}, case {case}")
-        self.backend.ban_word(word, case)
+        logging.info(f"Banning {word}, case {case} - {time}")
+        self.backend.ban_word(word, case, time)
         logging.warning(f"Banned {word}, case {case}")
 
     def unban_word(self, word: str, case: CaseSensitivity) -> None:
@@ -222,12 +222,14 @@ class Freqlog:
         logging.info(f"Listing chords, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case}")
         return self.backend.list_chords(limit, sort_by, reverse, case)
 
-    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) -> list[Banlist]:
+    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) \
+            -> tuple[list[BanlistEntry], list[BanlistEntry]]:
         """
         List banned words
         :param limit: Maximum number of banned words to return
         :param sort_by: Attribute to sort by: word
         :param reverse: Reverse sort order
+        :returns: Tuple of (banned words with case, banned words without case)
         """
         logging.info(f"Listing banned words, limit {limit}, sort_by {sort_by}, reverse {reverse}")
         return self.backend.list_banned_words(limit, sort_by, reverse)

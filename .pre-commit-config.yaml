@@ -1,0 +1,62 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: forbid-submodules
+      - id: mixed-line-ending
+      - id: name-tests-test
+        args:
+          - --pytest-test-first
+      - id: trailing-whitespace
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: python-check-blanket-noqa
+      - id: python-check-blanket-type-ignore
+      - id: python-check-mock-methods
+      - id: python-no-eval
+      - id: python-no-log-warn
+      - id: python-use-type-annotations
+      - id: text-unicode-replacement-char
+  - repo: local
+    hooks:
+      - id: flakes
+        name: flake8
+        entry: flake8
+        language: python
+        types: [python]
+        pass_filenames: false
+        args:
+          - --count
+          - --show-source
+          - --statistics
+          - --max-line-length=120
+          - --per-file-ignores=src/nexus/Freqlog/backends/__init__.py:F401
+          - --exclude=venv
+        additional_dependencies: [flake8]
+      - id: pytest
+        name: pytest
+        entry: pytest
+        language: python
+        types: [python]
+        pass_filenames: false
+        stages:
+          - push
+        args:
+          - --cov=nexus
+          - --cov-report=html
+        additional_dependencies: [., pytest, pytest-cov]

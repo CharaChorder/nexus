@@ -236,13 +236,17 @@ def main():
                                             reverse=(args.order == Order.DESCENDING)):
                             print(chord)
             case "banlist":  # get banned words
-                res = freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by], args.order == Order.DESCENDING)
-                if len(res) == 0:
+                res, res1 = freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by],
+                                                      args.order == Order.DESCENDING)
+                if len(res) == 0 and len(res1) == 0:
                     print("No banned words")
                 else:
-                    for word in sorted(res, key=lambda x: getattr(x, args.sort_by),
-                                       reverse=(args.order == Order.DESCENDING)):
-                        print(word)
+                    for entry in res1:
+                        entry.word += "*"
+                    print("Banned words (* denotes case-insensitive entries):")
+                    for entry in sorted(res + res1, key=lambda x: getattr(x, args.sort_by),
+                                        reverse=(args.order == Order.DESCENDING)):
+                        print(entry)
     except NotImplementedError:
         print(f"Error: The '{args.command}' command has not been implemented yet")
         exit_code = 100

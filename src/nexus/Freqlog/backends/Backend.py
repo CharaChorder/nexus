@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from nexus.Freqlog.Definitions import Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
+from nexus.Freqlog.Definitions import BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
     WordMetadata, WordMetadataAttr
 
 
@@ -40,7 +40,7 @@ class Backend(ABC):
     # TODO: Support banning chords
 
     @abstractmethod
-    def ban_word(self, word: str, case: CaseSensitivity) -> None:
+    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> None:
         """Delete a word entry and add it to the ban list"""
 
     @abstractmethod
@@ -70,13 +70,15 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) -> list[Banlist]:
+    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) \
+            -> tuple[list[BanlistEntry], list[BanlistEntry]]:
         """
         List banned words
         :param limit: Maximum number of banned words to return
         :param sort_by: Attribute to sort by: word
         :param reverse: Reverse sort order
+        :returns: Tuple of (banned words with case, banned words without case)
         """
 
-    def close(self):
+    def close(self) -> None:
         """Close the backend"""

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from nexus import __version__
 from nexus.Freqlog.backends.Backend import Backend
-from nexus.Freqlog.Definitions import Banlist, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
+from nexus.Freqlog.Definitions import BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
     WordMetadata, WordMetadataAttr
 
 # WARNING: Loaded into SQL query, do not use unsanitized user input
@@ -35,8 +35,9 @@ class SQLiteBackend(Backend):
         # Banlist table
         self._execute(
             "CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) WITHOUT ROWID")
-        self._execute("CREATE INDEX IF NOT EXISTS banlist_lower ON banlist(word COLLATE NOCASE)")
-        self._execute("CREATE UNIQUE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
+        self._execute("CREATE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
+        self._execute("CREATE TABLE IF NOT EXISTS banlist_lower (word TEXT PRIMARY KEY COLLATE NOCASE,"
+                      "dateadded timestamp NOT NULL) WITHOUT ROWID")
 
     def _execute(self, query: str, params=None) -> None:
         if params:
@@ -83,9 +84,11 @@ class SQLiteBackend(Backend):
                 res_u = self._fetchone(f"{SQL_SELECT_STAR_FROM_FREQLOG} WHERE word=?", (word_u,))
                 res_l = self._fetchone(f"{SQL_SELECT_STAR_FROM_FREQLOG} WHERE word=?", (word_l,))
                 word_meta_u = WordMetadata(word, res_u[1], datetime.fromtimestamp(res_u[2]),
-                                           timedelta(seconds=res_u[3]))
+                                           timedelta(seconds=res_u[3])) if res_u else None
                 word_meta_l = WordMetadata(word, res_l[1], datetime.fromtimestamp(res_l[2]),
-                                           timedelta(seconds=res_l[3]))
+                                           timedelta(seconds=res_l[3])) if res_l else None
+                if not word_meta_u:
+                    return word_meta_l
                 return word_meta_u | word_meta_l
             case CaseSensitivity.SENSITIVE:
                 res = self._fetchone(f"{SQL_SELECT_STAR_FROM_FREQLOG} WHERE word=?", (word,))
@@ -134,23 +137,24 @@ class SQLiteBackend(Backend):
                 res = self._fetchone("SELECT word FROM banlist WHERE word=?", (word,))
                 return res is not None
 
-    def ban_word(self, word: str, case: CaseSensitivity) -> None:
+    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> None:
         """Delete a word entry and add it to the ban list"""
         match case:
             case CaseSensitivity.INSENSITIVE:
                 word = word.lower()
                 self._execute("DELETE FROM freqlog WHERE word = ? COLLATE NOCASE", (word,))
-                self._execute("INSERT INTO banlist VALUES (?)", (word,))
+                self._execute("INSERT INTO banlist VALUES (?, ?)", (word, time.timestamp()))
+                self._execute("INSERT INTO banlist_lower VALUES (?, ?)", (word, time.timestamp()))
             case CaseSensitivity.FIRST_CHAR:
                 word_u = word[0].upper() + word[1:]
                 word_l = word[0].lower() + word[1:]
                 self._execute("DELETE FROM freqlog WHERE word=?", (word_u,))
                 self._execute("DELETE FROM freqlog WHERE word=?", (word_l,))
-                self._execute("INSERT INTO banlist VALUES (?)", (word_u,))
-                self._execute("INSERT INTO banlist VALUES (?)", (word_l,))
+                self._execute("INSERT INTO banlist VALUES (?, ?)", (word_u, time.timestamp()))
+                self._execute("INSERT INTO banlist VALUES (?, ?)", (word_l, time.timestamp()))
             case CaseSensitivity.SENSITIVE:
                 self._execute("DELETE FROM freqlog WHERE word=?", (word,))
-                self._execute("INSERT INTO banlist VALUES (?)", (word,))
+                self._execute("INSERT INTO banlist VALUES (?, ?)", (word, time.timestamp()))
 
     def unban_word(self, word: str, case: CaseSensitivity) -> None:
         """Remove a word from the ban list"""
@@ -158,6 +162,7 @@ class SQLiteBackend(Backend):
             case CaseSensitivity.INSENSITIVE:
                 word = word.lower()
                 self._execute("DELETE FROM banlist WHERE word = ? COLLATE NOCASE", (word,))
+                self._execute("DELETE FROM banlist_lower WHERE word = ? COLLATE NOCASE", (word,))
             case CaseSensitivity.FIRST_CHAR:
                 word_u = word[0].upper() + word[1:]
                 word_l = word[0].lower() + word[1:]
@@ -208,16 +213,27 @@ class SQLiteBackend(Backend):
         """
         raise NotImplementedError  # TODO: implement
 
-    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) -> list[Banlist]:
+    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) \
+            -> tuple[list[BanlistEntry], list[BanlistEntry]]:
         """
         List banned words
         :param limit: Maximum number of banned words to return
         :param sort_by: Attribute to sort by: word
         :param reverse: Reverse sort order
+        :returns: Tuple of (banned words with case, banned words without case)
         """
-        raise NotImplementedError  # TODO: implement
+        if reverse:
+            sql_sort_limit = f"{sort_by.value} DESC"
+        else:
+            sql_sort_limit = sort_by.value
+        if limit > 0:
+            sql_sort_limit += f" LIMIT {limit}"
+        res = self._fetchall(f"SELECT * FROM banlist ORDER BY {sql_sort_limit}")
+        res_lower = self._fetchall(f"SELECT * FROM banlist_lower ORDER BY {sql_sort_limit}")
+        return [BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res], \
+            [BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res_lower]
 
-    def close(self):
+    def close(self) -> None:
         """Close the database connection"""
         self.cursor.close()
         self.conn.close()
