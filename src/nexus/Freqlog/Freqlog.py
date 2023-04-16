@@ -186,8 +186,9 @@ class Freqlog:
         logging.info(f"Checking if {word} is banned, case {case}")
         return self.backend.check_banned(word, case)
 
-    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> None:
+    def ban_word(self, word: str, case: CaseSensitivity) -> None:
         """Ban a word from being logged"""
+        time = datetime.now()
         logging.info(f"Banning {word}, case {case} - {time}")
         self.backend.ban_word(word, case, time)
         logging.warning(f"Banned {word}, case {case}")
