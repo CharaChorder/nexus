@@ -8,3 +8,4 @@ venv/
 nexus.egg-info/
 *.spec
 .coverage
+**/__pycache__/

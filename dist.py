@@ -26,26 +26,25 @@ else:
     print("Found existing virtual environment")
 
 # Activate virtual environment
-print("Activating virtual environment...")
+print("Activating virtual environment and installing requirements...")
+activate_cmd = "source venv/bin/activate"
 if os_name == "win":
-    os.system("venv\\Scripts\\activate.bat")
-else:
-    os.system("source venv/bin/activate")
+    activate_cmd = "venv\\Scripts\\activate.bat"
 
 # Install requirements
-print("Installing requirements...")
-os.system("python -m pip install --upgrade pip")
-os.system("python -m pip install -r requirements.txt")
-os.system("python -m pip install -r test-requirements.txt")
+os.system(f"{activate_cmd};"
+          "python -m pip install --upgrade pip;"
+          "python -m pip install -r requirements.txt;"
+          "python -m pip install -r test-requirements.txt")
 
 # Pyinstaller command
-cmd = "pyinstaller -Fn nexus src/nexus/__main__.py"
+build_cmd = "pyinstaller -Fn nexus src/nexus/__main__.py"
 if os_name == "notwin":
-    cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
+    build_cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
 
 # Build executable
 print("Building executable...")
-os.system(cmd)
+os.system(f"{activate_cmd}; {build_cmd}")
 
 # Rename darwin executable
 if os_name == "darwin":
@@ -61,4 +60,4 @@ print("Done! Built executable is in dist/")
 
 # Setup git hooks
 print("Setting up git hooks...")
-os.system("pre-commit install")
+os.system(f"{activate_cmd}; pre-commit install")
