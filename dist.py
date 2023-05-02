@@ -29,7 +29,7 @@ else:
 print("Activating virtual environment and installing requirements...")
 activate_cmd = "source venv/bin/activate"
 if os_name == "win":
-    activate_cmd = "venv\\Scripts\\activate.bat"
+    activate_cmd = "venv\\Scripts\\Activate.ps1"
 
 # Install requirements
 os.system(f"{activate_cmd};"

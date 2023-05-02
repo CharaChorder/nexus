@@ -40,12 +40,18 @@ class Backend(ABC):
     # TODO: Support banning chords
 
     @abstractmethod
-    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> None:
-        """Delete a word entry and add it to the ban list"""
+    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> bool:
+        """
+        Delete a word entry and add it to the ban list
+        :returns: True if word was banned, False if it was already banned
+        """
 
     @abstractmethod
-    def unban_word(self, word: str, case: CaseSensitivity) -> None:
-        """Remove a word from the ban list"""
+    def unban_word(self, word: str, case: CaseSensitivity) -> bool:
+        """
+        Remove a word from the ban list
+        :returns: True if word was unbanned, False if it was already not banned
+        """
 
     @abstractmethod
     def list_words(self, limit: int, sort_by: WordMetadataAttr,

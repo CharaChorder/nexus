@@ -109,7 +109,7 @@ class Freqlog:
                 time_pressed: datetime
                 action, key, time_pressed = self.q.get(block=False)
                 logging.debug(f"{action}: {key} - {time_pressed}")
-                logging.debug(f"word: {word}, active_modifier_keys: {active_modifier_keys}")
+                logging.debug(f"word: '{word}', active_modifier_keys: {active_modifier_keys}")
 
                 # Update modifier keys
                 if action == ActionType.PRESS and key in self.modifier_keys:
@@ -167,7 +167,7 @@ class Freqlog:
 
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata:
         """Get metadata for a word"""
-        logging.info(f"Getting metadata for {word}, case {case}")
+        logging.info(f"Getting metadata for '{word}', case {case.name}")
         return self.backend.get_word_metadata(word, case)
 
     def get_chord_metadata(self, chord: str) -> ChordMetadata | None:
@@ -175,7 +175,7 @@ class Freqlog:
         Get metadata for a chord
         :returns: ChordMetadata if chord is found, None otherwise
         """
-        logging.info(f"Getting metadata for {chord}")
+        logging.info(f"Getting metadata for '{chord}'")
         return self.backend.get_chord_metadata(chord)
 
     def check_banned(self, word: str, case: CaseSensitivity) -> bool:
@@ -183,21 +183,35 @@ class Freqlog:
         Check if a word is banned
         :returns: True if word is banned, False otherwise
         """
-        logging.info(f"Checking if {word} is banned, case {case}")
+        logging.info(f"Checking if '{word}' is banned, case {case.name}")
         return self.backend.check_banned(word, case)
 
-    def ban_word(self, word: str, case: CaseSensitivity) -> None:
-        """Ban a word from being logged"""
+    def ban_word(self, word: str, case: CaseSensitivity) -> bool:
+        """
+        Delete a word entry and add it to the ban list
+        :returns: True if word was banned, False if it was already banned
+        """
         time = datetime.now()
-        logging.info(f"Banning {word}, case {case} - {time}")
-        self.backend.ban_word(word, case, time)
-        logging.warning(f"Banned {word}, case {case}")
+        logging.info(f"Banning '{word}', case {case.name} - {time}")
+        res = self.backend.ban_word(word, case, time)
+        if res:
+            logging.warning(f"Banned '{word}', case {case.name}")
+        else:
+            logging.warning(f"'{word}', case {case.name} already banned")
+        return res
 
-    def unban_word(self, word: str, case: CaseSensitivity) -> None:
-        """Unban a word"""
-        logging.info(f"Unbanning {word}, case {case}")
-        self.backend.unban_word(word, case)
-        logging.warning(f"Unbanned {word}, case {case}")
+    def unban_word(self, word: str, case: CaseSensitivity) -> bool:
+        """
+        Remove a word from the ban list
+        :returns: True if word was unbanned, False if it was already not banned
+        """
+        logging.info(f"Unbanning '{word}', case {case.name}")
+        res = self.backend.unban_word(word, case)
+        if res:
+            logging.warning(f"Unbanned '{word}', case {case.name}")
+        else:
+            logging.warning(f"'{word}', case {case.name} isn't banned")
+        return res
 
     def list_words(self, limit: int, sort_by: WordMetadataAttr,
                    reverse: bool, case: CaseSensitivity) -> list[WordMetadata]:
@@ -208,7 +222,7 @@ class Freqlog:
         :param reverse: Reverse sort order
         :param case: Case sensitivity
         """
-        logging.info(f"Listing words, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case}")
+        logging.info(f"Listing words, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}")
         return self.backend.list_words(limit, sort_by, reverse, case)
 
     def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
@@ -220,7 +234,7 @@ class Freqlog:
         :param reverse: Reverse sort order
         :param case: Case sensitivity
         """
-        logging.info(f"Listing chords, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case}")
+        logging.info(f"Listing chords, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}")
         return self.backend.list_chords(limit, sort_by, reverse, case)
 
     def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) \

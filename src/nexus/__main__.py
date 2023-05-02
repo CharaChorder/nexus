@@ -15,12 +15,13 @@ def main():
     """
     nexus CLI
     Exit codes:
-        0: Success (including graceful keyboard interrupt) / word is not banned
-        1: Forceful keyboard interrupt / word is banned
+        0: Success (including graceful keyboard interrupt during startlog) / word is not banned
+        1: Forceful keyboard interrupt during startlog / checkword result contains a banned word
         2: Invalid command or argument
         3: Invalid value for argument
         4: Could not access or write to database
         5: Requested word or chord not found
+        6: Tried to ban already banned word or unban already unbanned word
         11: Python version < 3.11
         100: Feature not yet implemented
     """
@@ -41,7 +42,7 @@ def main():
     case_arg.add_argument("-c", "--case", default=CaseSensitivity.FIRST_CHAR.name, help="Case sensitivity",
                           choices={case for case in CaseSensitivity})
     num_arg = argparse.ArgumentParser(add_help=False)
-    num_arg.add_argument("-n", "--num", default=10, help="Number of words to return (0 for all)")
+    num_arg.add_argument("-n", "--num", default=10, help="Number of words to return (0 for all)", type=int)
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg],
@@ -87,7 +88,7 @@ def main():
     # Get banned words
     parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",
                                           parents=[log_arg, path_arg, num_arg])
-    parser_banned.add_argument("-s", "--sort-by", default=WordMetadataAttr.frequency.name,
+    parser_banned.add_argument("-s", "--sort-by", default=BanlistAttr.date_added.name,
                                help="Sort by (default: DATE_ADDED)",
                                choices={attr.name for attr in BanlistAttr})
     parser_banned.add_argument("-o", "--order", default=Order.DESCENDING, help="Order (default: DESCENDING)",
@@ -122,7 +123,7 @@ def main():
     # Print help if no command is given
     if not args.command:
         parser.print_help()
-        sys.exit(exit_code)
+        sys.exit()
 
     # Validate arguments before creating Freqlog object
     match args.command:
@@ -154,16 +155,17 @@ def main():
             if args.num < 0:
                 print("Error: Number of words must be >= 0")
                 exit_code = 3
-    if exit_code != 0:
-        sys.exit(exit_code)
 
     # Parse commands
     if args.command == "stoplog":  # stop freqlogging
         # Kill freqlogging process
         print("This feature hasn't been implemented. To stop freqlogging gracefully, simply kill the process (Ctrl-c)")
         exit_code = 100
-        sys.exit(exit_code)
         # TODO: implement
+
+    # Exit before creating Freqlog object if checks failed
+    if exit_code != 0:
+        sys.exit(exit_code)
 
     # Some features from this point on may not have been implemented
     try:
@@ -175,17 +177,20 @@ def main():
                                       Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
                                           args.add_modifier_key))
             case "checkword":  # check if word is banned
-                if freqlog.check_banned(args.word, args.case):
-                    print("Word is banned")
-                    exit_code = 1
-                else:
-                    print("Word is not banned")
-                    exit_code = 0
-                sys.exit(exit_code)
+                for word in args.word:
+                    if freqlog.check_banned(word, CaseSensitivity[args.case]):
+                        print(f"'{word}' is banned")
+                        exit_code = 1
+                    else:
+                        print(f"'{word}' is not banned")
             case "banword":  # ban word
-                freqlog.ban_word(args.word, args.case)
+                for word in args.word:
+                    if freqlog.ban_word(word, CaseSensitivity[args.case]):
+                        exit_code = 6
             case "unbanword":  # unban word
-                freqlog.unban_word(args.word, args.case)
+                for word in args.word:
+                    if freqlog.unban_word(word, CaseSensitivity[args.case]):
+                        exit_code = 6
             # TODO: pretty print
             case "words":  # get words
                 if len(args.word) == 0:  # all words
@@ -201,7 +206,7 @@ def main():
                         print("Warning: -n/--num argument ignored when specific words are given")
                     words: list[WordMetadata] = []
                     for word in args.word:
-                        res = freqlog.get_word_metadata(word, args.case)
+                        res = freqlog.get_word_metadata(word, CaseSensitivity[args.case])
                         if res is None:
                             print(f"Word '{word}' not found")
                             exit_code = 5

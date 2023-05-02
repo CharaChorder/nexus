@@ -137,8 +137,13 @@ class SQLiteBackend(Backend):
                 res = self._fetchone("SELECT word FROM banlist WHERE word=?", (word,))
                 return res is not None
 
-    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> None:
-        """Delete a word entry and add it to the ban list"""
+    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> bool:
+        """
+        Delete a word entry and add it to the ban list
+        :returns: True if word was banned, False if it was already banned
+        """
+        if self.check_banned(word, case):
+            return False  # already banned
         match case:
             case CaseSensitivity.INSENSITIVE:
                 word = word.lower()
@@ -155,9 +160,15 @@ class SQLiteBackend(Backend):
             case CaseSensitivity.SENSITIVE:
                 self._execute("DELETE FROM freqlog WHERE word=?", (word,))
                 self._execute("INSERT INTO banlist VALUES (?, ?)", (word, time.timestamp()))
+        return True
 
-    def unban_word(self, word: str, case: CaseSensitivity) -> None:
-        """Remove a word from the ban list"""
+    def unban_word(self, word: str, case: CaseSensitivity) -> bool:
+        """
+        Remove a word from the ban list
+        :returns: True if word was unbanned, False if it was already not banned
+        """
+        if not self.check_banned(word, case):
+            return False  # not banned
         match case:
             case CaseSensitivity.INSENSITIVE:
                 word = word.lower()
@@ -170,6 +181,7 @@ class SQLiteBackend(Backend):
                 self._execute("DELETE FROM banlist WHERE word=?", (word_l,))
             case CaseSensitivity.SENSITIVE:
                 self._execute("DELETE FROM banlist WHERE word=?", (word,))
+        return True
 
     def list_words(self, limit: int, sort_by: WordMetadataAttr,
                    reverse: bool, case: CaseSensitivity) -> list[WordMetadata]:
