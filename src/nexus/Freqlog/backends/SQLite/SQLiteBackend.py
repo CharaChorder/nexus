@@ -148,18 +148,18 @@ class SQLiteBackend(Backend):
             case CaseSensitivity.INSENSITIVE:
                 word = word.lower()
                 self._execute("DELETE FROM freqlog WHERE word = ? COLLATE NOCASE", (word,))
-                self._execute("INSERT INTO banlist VALUES (?, ?)", (word, time.timestamp()))
-                self._execute("INSERT INTO banlist_lower VALUES (?, ?)", (word, time.timestamp()))
+                self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (word, time.timestamp()))
+                self._execute("INSERT OR IGNORE INTO banlist_lower VALUES (?, ?)", (word, time.timestamp()))
             case CaseSensitivity.FIRST_CHAR:
                 word_u = word[0].upper() + word[1:]
                 word_l = word[0].lower() + word[1:]
                 self._execute("DELETE FROM freqlog WHERE word=?", (word_u,))
                 self._execute("DELETE FROM freqlog WHERE word=?", (word_l,))
-                self._execute("INSERT INTO banlist VALUES (?, ?)", (word_u, time.timestamp()))
-                self._execute("INSERT INTO banlist VALUES (?, ?)", (word_l, time.timestamp()))
+                self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (word_u, time.timestamp()))
+                self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (word_l, time.timestamp()))
             case CaseSensitivity.SENSITIVE:
                 self._execute("DELETE FROM freqlog WHERE word=?", (word,))
-                self._execute("INSERT INTO banlist VALUES (?, ?)", (word, time.timestamp()))
+                self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (word, time.timestamp()))
         return True
 
     def unban_word(self, word: str, case: CaseSensitivity) -> bool:

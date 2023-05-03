@@ -40,7 +40,7 @@ def main():
     path_arg.add_argument("--freq-log-path", default=Defaults.DEFAULT_DB_PATH, help="Backend to use")
     case_arg = argparse.ArgumentParser(add_help=False)
     case_arg.add_argument("-c", "--case", default=CaseSensitivity.FIRST_CHAR.name, help="Case sensitivity",
-                          choices={case for case in CaseSensitivity})
+                          choices={case.name for case in CaseSensitivity})
     num_arg = argparse.ArgumentParser(add_help=False)
     num_arg.add_argument("-n", "--num", default=10, help="Number of words to return (0 for all)", type=int)
 
@@ -185,11 +185,11 @@ def main():
                         print(f"'{word}' is not banned")
             case "banword":  # ban word
                 for word in args.word:
-                    if freqlog.ban_word(word, CaseSensitivity[args.case]):
+                    if not freqlog.ban_word(word, CaseSensitivity[args.case]):
                         exit_code = 6
             case "unbanword":  # unban word
                 for word in args.word:
-                    if freqlog.unban_word(word, CaseSensitivity[args.case]):
+                    if not freqlog.unban_word(word, CaseSensitivity[args.case]):
                         exit_code = 6
             # TODO: pretty print
             case "words":  # get words
