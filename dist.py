@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Install pyenv and configure the latest version globally before running this script.
+
 import os
 import sys
 
@@ -10,10 +12,12 @@ if sys.version_info < (3, 11):
 
 # Get OS
 os_name = "notwin"
-python_name = "python"
+venv_path = "venv/bin/"
+python_name = venv_path + "python"
 if sys.platform.startswith("win"):
     os_name = "win"
-    python_name = "py"
+    venv_path = "venv\\Scripts\\"
+    python_name = venv_path + "python.exe"
 elif sys.platform.startswith("darwin"):
     os_name = "darwin"
 print(f"OS detected as {os_name}")
@@ -21,21 +25,13 @@ print(f"OS detected as {os_name}")
 # Create virtual environment if it doesn't exist
 if not os.path.isdir("venv"):
     print("Existing virtual environment not found, creating new one...")
-    os.system(f"{python_name} -m venv venv")
+    os.system("python -m venv venv")
 else:
     print("Found existing virtual environment")
 
-# Activate virtual environment
-print("Activating virtual environment and installing requirements...")
-activate_cmd = "source venv/bin/activate"
-if os_name == "win":
-    activate_cmd = "venv\\Scripts\\Activate.ps1"
-
 # Install requirements
-os.system(f"{activate_cmd};"
-          "python -m pip install --upgrade pip;"
-          "python -m pip install -r requirements.txt;"
-          "python -m pip install -r test-requirements.txt")
+print("Installing requirements...")
+os.system(f"{python_name} -m pip install --upgrade pip -r requirements.txt -r test-requirements.txt")
 
 # Pyinstaller command
 build_cmd = "pyinstaller -Fn nexus src/nexus/__main__.py"
@@ -44,7 +40,7 @@ if os_name == "notwin":
 
 # Build executable
 print("Building executable...")
-os.system(f"{activate_cmd}; {build_cmd}")
+os.system(f"{venv_path}{build_cmd}")
 
 # Rename darwin executable
 if os_name == "darwin":
@@ -60,4 +56,4 @@ print("Done! Built executable is in dist/")
 
 # Setup git hooks
 print("Setting up git hooks...")
-os.system(f"{activate_cmd}; pre-commit install")
+os.system(f"{venv_path}pre-commit install")
