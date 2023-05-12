@@ -16,7 +16,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ 'ubuntu-20.04', 'windows-latest', 'macos-11' ]
+#        os: [ 'ubuntu-20.04', 'windows-latest', 'macos-11' ]
+        OS: [[self-hosted, Linux], [self-hosted, Windows]]
         python-version: [ 3.11 ]
 
     steps:
@@ -39,7 +40,8 @@ jobs:
         if: always()
 
   docs:
-    runs-on: ubuntu-latest
+#    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v3
       - name: Add README.md and LICENSE to artifact
@@ -52,7 +54,8 @@ jobs:
           if-no-files-found: error
 
   build-test:
-    runs-on: ubuntu-latest
+#    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux]
     strategy:
       matrix:
         python-version: [ 3.11 ]
@@ -84,7 +87,8 @@ jobs:
 
   release:
     needs: [ package, docs, build-test ]
-    runs-on: ubuntu-latest
+#    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux]
     if: |
       github.repository_owner == 'CharaChorder' &&
       github.event_name != 'pull_request'
