@@ -48,7 +48,8 @@ if os_name == "darwin":
 
 # Copy README and LICENSE to dist
 if os_name == "win":
-    os.system("copy README.md LICENSE dist")
+    os.system("copy README.md dist")
+    os.system("copy LICENSE dist")
 else:
     os.system("cp README.md LICENSE dist")
 
