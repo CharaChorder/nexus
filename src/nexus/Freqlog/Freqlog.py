@@ -167,9 +167,9 @@ class Freqlog:
         logging.warning("Started freqlogging")
         self._process_queue()
 
-    def stop_logging(self) -> None:
-        if self.killed:  # Forcibly kill if already killed once
-            exit(1)
+    def stop_logging(self) -> None:  # TODO: find out why this runs twice on one Ctrl-C
+        if self.killed:  # TODO: Forcibly kill if already killed once
+            exit(1)  # This doesn't work rn
         logging.warning("Stopping freqlog")
         self.listener.stop()
         self.mouse_listener.stop()
