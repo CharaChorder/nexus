@@ -107,7 +107,7 @@ class Freqlog:
                 action: ActionType
                 key: kbd.Key | kbd.KeyCode | mouse.Button
                 time_pressed: datetime
-                action, key, time_pressed = self.q.get(block=False)
+                action, key, time_pressed = self.q.get(block=True)
                 logging.debug(f"{action}: {key} - {time_pressed}")
                 logging.debug(f"word: '{word}', active_modifier_keys: {active_modifier_keys}")
 
