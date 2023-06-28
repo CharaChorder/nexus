@@ -78,7 +78,9 @@ class Freqlog:
                 action: ActionType
                 key: kbd.Key | kbd.KeyCode | mouse.Button
                 time_pressed: datetime
-                action, key, time_pressed = self.q.get(block=True)  # makes the while-True non-blocking
+
+                # Blocking here makes the while-True non-blocking
+                action, key, time_pressed = self.q.get(block=True, timeout=self.new_word_threshold)
                 logging.debug(f"{action}: {key} - {time_pressed}")
                 logging.debug(f"word: '{word}', active_modifier_keys: {active_modifier_keys}")
 
@@ -119,9 +121,9 @@ class Freqlog:
                     self.q.task_done()
             except EmptyException:  # queue is empty
                 # If word is older than NEW_WORD_THRESHOLD seconds, log and reset word
-                if word and (datetime.now() - word_end_time).total_seconds() > self.new_word_threshold:
+                if word:
                     _log_and_reset_word()
-                elif not word and not self.is_logging:
+                if not self.is_logging:
                     # Cleanup and exit if queue is empty and logging is stopped
                     self.backend.close()
                     logging.warning("Stopped freqlogging")
@@ -153,9 +155,9 @@ class Freqlog:
             self.chord_char_threshold = chord_char_threshold
 
         logging.info("Starting freqlogging")
-        logging.debug(f"new_word_threshold={new_word_threshold}, "
-                      f"chord_char_threshold={chord_char_threshold}, "
-                      f"allowed_keys_in_chord={allowed_keys_in_chord}, "
+        logging.debug(f"new_word_threshold={self.new_word_threshold}, "
+                      f"chord_char_threshold={self.chord_char_threshold}, "
+                      f"allowed_keys_in_chord={self.allowed_keys_in_chord}, "
                       f"modifier_keys={self.modifier_keys}")
         self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release, name="Keyboard Listener")
         self.listener.start()

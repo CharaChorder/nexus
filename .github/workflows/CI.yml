@@ -87,8 +87,8 @@ jobs:
 
   release:
     needs: [ package, docs, build-test ]
-#    runs-on: ubuntu-latest
-    runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
+#    runs-on: [self-hosted, Linux]
     if: |
       github.repository_owner == 'CharaChorder' &&
       github.event_name != 'pull_request'
