@@ -34,41 +34,12 @@ class Freqlog:
         logging.info(f"Chord: {chord} - {start_time} - {end_time}")
         self.backend.log_chord(chord, start_time, end_time)
 
-    def __init__(self, db_path: str = Defaults.DEFAULT_DB_PATH):
-        self.backend: Backend = SQLiteBackend(db_path)
-        self.q: Queue = Queue()
-        self.listener: kbd.Listener | None = None
-        self.mouse_listener: mouse.Listener | None = None
-        self.modifier_keys: list = []
-        self.is_logging: bool = False
-        self.killed: bool = False
-
-    def start_logging(self, new_word_threshold: int = Defaults.DEFAULT_NEW_WORD_THRESHOLD,
-                      chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD,
-                      allowed_keys_in_chord: set | str | None = None, modifier_keys: set | None = None) -> None:
-        if allowed_keys_in_chord is None:
-            allowed_keys_in_chord = Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD
-        elif isinstance(allowed_keys_in_chord, str):
-            allowed_keys_in_chord = set(allowed_keys_in_chord)
-        self.modifier_keys = modifier_keys if modifier_keys else Defaults.DEFAULT_MODIFIER_KEYS
-        logging.info("Starting freqlogging")
-        logging.debug(f"new_word_threshold={new_word_threshold}, "
-                      f"chord_char_threshold={chord_char_threshold}, "
-                      f"allowed_keys_in_chord={allowed_keys_in_chord}, "
-                      f"modifier_keys={self.modifier_keys}")
-        self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release)
-        self.listener.start()
-        self.mouse_listener = mouse.Listener(on_click=self._on_click)
-        self.mouse_listener.start()
-        self.is_logging = True
-        logging.warning("Started freqlogging")
-
+    def _process_queue(self):
         word: str = ""  # word to be logged, reset on non-chord keys
         word_start_time: datetime | None = None
         word_end_time: datetime | None = None
         chars_since_last_bs: int = 0
         avg_char_time_after_last_bs: timedelta | None = None
-
         active_modifier_keys: set = set()
 
         def _log_and_reset_word(min_length: int = 1) -> None:
@@ -90,7 +61,7 @@ class Freqlog:
             # Only log words that have more than min_length characters and are not chords
             if len(word) > min_length:
                 if avg_char_time_after_last_bs and avg_char_time_after_last_bs > timedelta(
-                        milliseconds=chord_char_threshold):
+                        milliseconds=self.chord_char_threshold):
                     self._log_word(word, word_start_time, word_end_time)
                 else:
                     # TODO: Switch over when chord logging implemented
@@ -107,7 +78,7 @@ class Freqlog:
                 action: ActionType
                 key: kbd.Key | kbd.KeyCode | mouse.Button
                 time_pressed: datetime
-                action, key, time_pressed = self.q.get(block=True)
+                action, key, time_pressed = self.q.get(block=True)  # makes the while-True non-blocking
                 logging.debug(f"{action}: {key} - {time_pressed}")
                 logging.debug(f"word: '{word}', active_modifier_keys: {active_modifier_keys}")
 
@@ -126,7 +97,7 @@ class Freqlog:
                     continue
 
                 # On non-chord key, log and reset word if it exists
-                if not (isinstance(key, kbd.KeyCode) and key.char in allowed_keys_in_chord):
+                if not (isinstance(key, kbd.KeyCode) and key.char in self.allowed_keys_in_chord):
                     if word:
                         _log_and_reset_word()
                     self.q.task_done()
@@ -148,13 +119,51 @@ class Freqlog:
                     self.q.task_done()
             except EmptyException:  # queue is empty
                 # If word is older than NEW_WORD_THRESHOLD seconds, log and reset word
-                if word and (datetime.now() - word_end_time).total_seconds() > new_word_threshold:
+                if word and (datetime.now() - word_end_time).total_seconds() > self.new_word_threshold:
                     _log_and_reset_word()
                 elif not word and not self.is_logging:
                     # Cleanup and exit if queue is empty and logging is stopped
                     self.backend.close()
                     logging.warning("Stopped freqlogging")
                     break
+
+    def __init__(self, db_path: str = Defaults.DEFAULT_DB_PATH):
+        self.backend: Backend = SQLiteBackend(db_path)
+        self.q: Queue = Queue()
+        self.listener: kbd.Listener | None = None
+        self.mouse_listener: mouse.Listener | None = None
+        self.new_word_threshold: float = Defaults.DEFAULT_NEW_WORD_THRESHOLD
+        self.chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD
+        self.allowed_keys_in_chord: set = Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD
+        self.modifier_keys: set = Defaults.DEFAULT_MODIFIER_KEYS
+        self.is_logging: bool = False
+        self.killed: bool = False
+
+    def start_logging(self, new_word_threshold: float | None, chord_char_threshold: int | None,
+                      allowed_keys_in_chord: set | str | None = None, modifier_keys: set = None) -> None:
+        if isinstance(allowed_keys_in_chord, set):
+            self.allowed_keys_in_chord = allowed_keys_in_chord
+        elif isinstance(allowed_keys_in_chord, str):
+            self.allowed_keys_in_chord = set(allowed_keys_in_chord)
+        if modifier_keys is not None:
+            self.modifier_keys = modifier_keys
+        if new_word_threshold is not None:
+            self.new_word_threshold = new_word_threshold
+        if chord_char_threshold is not None:
+            self.chord_char_threshold = chord_char_threshold
+
+        logging.info("Starting freqlogging")
+        logging.debug(f"new_word_threshold={new_word_threshold}, "
+                      f"chord_char_threshold={chord_char_threshold}, "
+                      f"allowed_keys_in_chord={allowed_keys_in_chord}, "
+                      f"modifier_keys={self.modifier_keys}")
+        self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release, name="Keyboard Listener")
+        self.listener.start()
+        self.mouse_listener = mouse.Listener(on_click=self._on_click, name="Mouse Listener")
+        self.mouse_listener.start()
+        self.is_logging = True
+        logging.warning("Started freqlogging")
+        self._process_queue()
 
     def stop_logging(self) -> None:
         if self.killed:  # Forcibly kill if already killed once
