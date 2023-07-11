@@ -9,4 +9,4 @@ nexus.egg-info/
 *.spec
 .coverage
 **/__pycache__/
-src/nexus/ui/*
+src/nexus/ui/*.py
