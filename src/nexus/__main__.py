@@ -9,6 +9,7 @@ from nexus import __doc__, __version__, Freqlog
 from nexus.Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, Defaults, Order, \
     WordMetadata, \
     WordMetadataAttr
+from nexus.GUI import GUI
 
 
 def main():
@@ -120,10 +121,9 @@ def main():
 
     exit_code = 0
 
-    # Print help if no command is given
+    # Show GUI if no command is given
     if not args.command:
-        parser.print_help()
-        sys.exit()
+        sys.exit(GUI(args).exec())
 
     # Validate arguments before creating Freqlog object
     match args.command:
