@@ -141,7 +141,7 @@ class Freqlog:
         self.is_logging: bool = False
         self.killed: bool = False
 
-    def start_logging(self, new_word_threshold: float | None, chord_char_threshold: int | None,
+    def start_logging(self, new_word_threshold: float | None = None, chord_char_threshold: int | None = None,
                       allowed_keys_in_chord: set | str | None = None, modifier_keys: set = None) -> None:
         if isinstance(allowed_keys_in_chord, set):
             self.allowed_keys_in_chord = allowed_keys_in_chord
@@ -171,8 +171,10 @@ class Freqlog:
         if self.killed:  # TODO: Forcibly kill if already killed once
             exit(1)  # This doesn't work rn
         logging.warning("Stopping freqlog")
-        self.listener.stop()
-        self.mouse_listener.stop()
+        if self.listener:
+            self.listener.stop()
+        if self.mouse_listener:
+            self.mouse_listener.stop()
         self.is_logging = False
         logging.info("Stopped listeners")
 
@@ -224,8 +226,8 @@ class Freqlog:
             logging.warning(f"'{word}', case {case.name} isn't banned")
         return res
 
-    def list_words(self, limit: int, sort_by: WordMetadataAttr,
-                   reverse: bool, case: CaseSensitivity) -> list[WordMetadata]:
+    def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.word,
+                   reverse: bool = False, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> list[WordMetadata]:
         """
         List words in the store
         :param limit: Maximum number of words to return

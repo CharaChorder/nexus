@@ -39,13 +39,13 @@ def main():
     path_arg = argparse.ArgumentParser(add_help=False)
     path_arg.add_argument("--freq-log-path", default=Defaults.DEFAULT_DB_PATH, help="Backend to use")
     case_arg = argparse.ArgumentParser(add_help=False)
-    case_arg.add_argument("-c", "--case", default=CaseSensitivity.FIRST_CHAR.name, help="Case sensitivity",
+    case_arg.add_argument("-c", "--case", default=CaseSensitivity.INSENSITIVE.name, help="Case sensitivity",
                           choices={case.name for case in CaseSensitivity})
     num_arg = argparse.ArgumentParser(add_help=False)
     num_arg.add_argument("-n", "--num", default=10, help="Number of words to return (0 for all)", type=int)
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg],
+    parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg, path_arg],
                                      epilog="Made with love by CharaChorder, source code available at "
                                             "https://github.com/CharaChorder/nexus")
     subparsers = parser.add_subparsers(dest="command", title="Commands")

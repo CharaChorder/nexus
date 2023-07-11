@@ -11,7 +11,7 @@ class Defaults:
                                          {chr(i) for i in range(48, 58)} | {"'", "-", "_", "/", "\\", "~"}
     DEFAULT_MODIFIER_KEYS: set = {Key.ctrl, Key.ctrl_l, Key.ctrl_r, Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr, Key.cmd,
                                   Key.cmd_l, Key.cmd_r}
-    DEFAULT_NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
+    DEFAULT_NEW_WORD_THRESHOLD: float = 3  # seconds after which character input is considered a new word
     DEFAULT_CHORD_CHAR_THRESHOLD: int = 30  # milliseconds between characters in a chord to be considered a chord
     DEFAULT_DB_PATH: str = "nexus_freqlog_db.sqlite3"
 

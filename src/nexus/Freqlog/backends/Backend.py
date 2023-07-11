@@ -54,8 +54,8 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def list_words(self, limit: int, sort_by: WordMetadataAttr,
-                   reverse: bool, case: CaseSensitivity) -> list[WordMetadata]:
+    def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.word,
+                   reverse: bool = False, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> list[WordMetadata]:
         """
         List words in the store
         :param limit: Maximum number of words to return
