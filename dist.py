@@ -35,14 +35,12 @@ os.system(f"{python_name} -m pip install --upgrade pip -r requirements.txt -r te
 
 # Convert ui files to python
 print("Converting ui files to python...")
-os.system("pyside6-uic ui/main.ui -o src/nexus/ui/MainWindow.py")
+os.system(f"{venv_path}pyside6-uic ui/main.ui -o src/nexus/ui/MainWindow.py")
 
 # Pyinstaller command
 build_cmd = "pyinstaller -Fn nexus src/nexus/__main__.py"
 if os_name == "notwin":
-    build_cmd += " --add-data src/nexus/ui:ui --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
-elif os_name == "win":
-    build_cmd += " --add-data src/nexus/ui;ui"
+    build_cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
 
 # Build executable
 print("Building executable...")
