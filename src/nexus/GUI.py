@@ -1,17 +1,24 @@
 import argparse
 from threading import Thread
 
-from PySide6.QtUiTools import QUiLoader
-from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow
 
 from nexus.Freqlog import Freqlog
+from nexus.ui.MainWindow import Ui_MainWindow
+
+
+class MainWindow(QMainWindow, Ui_MainWindow):
+    """Required because Qt is a PITA."""
+    def __init__(self, *args, **kwargs):
+        super(MainWindow, self).__init__(*args, **kwargs)
+        self.setupUi(self)
 
 
 class GUI(object):
+
     def __init__(self, args: argparse.Namespace):
-        loader = QUiLoader()
         self.app = QApplication([])
-        self.window = loader.load("../../ui/main.ui")
+        self.window = MainWindow()
 
         # Components
         self.start_stop_button: QPushButton = self.window.findChild(QPushButton, "startStop")  # type: ignore[assign]
