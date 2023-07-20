@@ -1,4 +1,6 @@
 import logging
+import queue
+import time
 from datetime import datetime, timedelta
 from queue import Empty as EmptyException, Queue
 
@@ -42,6 +44,20 @@ class Freqlog:
         avg_char_time_after_last_bs: timedelta | None = None
         active_modifier_keys: set = set()
 
+        def get_timed_interruptable(q, timeout):
+            # Based on https://stackoverflow.com/a/37016663/9206488
+            stoploop = time.monotonic() + timeout - 0.5
+            while self.is_logging and time.monotonic() < stoploop:
+                try:
+                    return q.get(block=True, timeout=0.5)  # Allow check for Ctrl-C every second
+                except queue.Empty:
+                    pass
+            if not self.is_logging:
+                raise EmptyException
+
+            # Final wait for last fraction of a second
+            return q.get(block=True, timeout=max(0, stoploop + 0.5 - time.monotonic()))
+
         def _log_and_reset_word(min_length: int = 1) -> None:
             """Log word to file and reset word metadata"""
             nonlocal word, word_start_time, word_end_time, chars_since_last_bs, avg_char_time_after_last_bs
@@ -73,14 +89,14 @@ class Freqlog:
             chars_since_last_bs = 0
             avg_char_time_after_last_bs = None
 
-        while True:
+        while self.is_logging:
             try:
                 action: ActionType
                 key: kbd.Key | kbd.KeyCode | mouse.Button
                 time_pressed: datetime
 
                 # Blocking here makes the while-True non-blocking
-                action, key, time_pressed = self.q.get(block=True, timeout=self.new_word_threshold)
+                action, key, time_pressed = get_timed_interruptable(self.q, self.new_word_threshold)
                 logging.debug(f"{action}: {key} - {time_pressed}")
                 logging.debug(f"word: '{word}', active_modifier_keys: {active_modifier_keys}")
 
