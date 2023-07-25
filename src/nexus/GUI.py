@@ -1,16 +1,27 @@
 import argparse
 from threading import Thread
 
-from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow
+from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
+    QDialog
 
 from nexus.Freqlog import Freqlog
+from nexus.ui.BanlistDialog import Ui_BanlistDialog
 from nexus.ui.MainWindow import Ui_MainWindow
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     """Required because Qt is a PITA."""
+
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+
+
+class BanlistDialog(QDialog, Ui_BanlistDialog):
+    """Required because Qt is a PITA."""
+
+    def __init__(self, *args, **kwargs):
+        super(BanlistDialog, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
 
@@ -101,7 +112,21 @@ class GUI(object):
         self.statusbar.showMessage(f"Loaded {len(words)} freqlogged words")
 
     def show_banlist(self):
-        pass
+        banlist_case, banlist_caseless = self.freqlog.list_banned_words()
+        dialog = BanlistDialog()
+        dialog.banlistTable.setRowCount(len(banlist_case) + len(banlist_caseless))
+        for i, word in enumerate(banlist_case):
+            dialog.banlistTable.setItem(i, 0, QTableWidgetItem(word.word))
+            dialog.banlistTable.setItem(i, 1,
+                                        QTableWidgetItem(str(word.date_added.isoformat(sep=" ", timespec="seconds"))))
+            dialog.banlistTable.setItem(i, 2, QTableWidgetItem("Sensitive"))
+        for i, word in enumerate(banlist_caseless):
+            dialog.banlistTable.setItem(i + len(banlist_case), 0, QTableWidgetItem(word.word))
+            dialog.banlistTable.setItem(i + len(banlist_case), 1,
+                                        QTableWidgetItem(str(word.date_added.isoformat(sep=" ", timespec="seconds"))))
+            dialog.banlistTable.setItem(i + len(banlist_case), 2, QTableWidgetItem("Insensitive"))
+        dialog.banlistTable.resizeColumnsToContents()
+        dialog.exec()
 
     def exec(self):
         self.window.show()

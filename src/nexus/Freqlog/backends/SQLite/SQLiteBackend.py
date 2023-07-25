@@ -226,7 +226,7 @@ class SQLiteBackend(Backend):
         raise NotImplementedError  # TODO: implement
 
     def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) \
-            -> tuple[list[BanlistEntry], list[BanlistEntry]]:
+            -> tuple[set[BanlistEntry], set[BanlistEntry]]:
         """
         List banned words
         :param limit: Maximum number of banned words to return
@@ -242,8 +242,8 @@ class SQLiteBackend(Backend):
             sql_sort_limit += f" LIMIT {limit}"
         res = self._fetchall(f"SELECT * FROM banlist ORDER BY {sql_sort_limit}")
         res_lower = self._fetchall(f"SELECT * FROM banlist_lower ORDER BY {sql_sort_limit}")
-        return [BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res], \
-            [BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res_lower]
+        return {BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res}, \
+            {BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res_lower}
 
     def close(self) -> None:
         """Close the database connection"""

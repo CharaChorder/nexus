@@ -266,8 +266,8 @@ class Freqlog:
         logging.info(f"Listing chords, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}")
         return self.backend.list_chords(limit, sort_by, reverse, case)
 
-    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) \
-            -> tuple[list[BanlistEntry], list[BanlistEntry]]:
+    def list_banned_words(self, limit: int = -1, sort_by: BanlistAttr = BanlistAttr.word, reverse: bool = False) \
+            -> tuple[set[BanlistEntry], set[BanlistEntry]]:
         """
         List banned words
         :param limit: Maximum number of banned words to return

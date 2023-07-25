@@ -241,15 +241,15 @@ def main():
                                             reverse=(args.order == Order.DESCENDING)):
                             print(chord)
             case "banlist":  # get banned words
-                res, res1 = freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by],
-                                                      args.order == Order.DESCENDING)
-                if len(res) == 0 and len(res1) == 0:
+                banlist_case, banlist_caseless = freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by],
+                                                                           args.order == Order.DESCENDING)
+                if len(banlist_case) == 0 and len(banlist_caseless) == 0:
                     print("No banned words")
                 else:
-                    for entry in res1:
+                    for entry in banlist_caseless:
                         entry.word += "*"
                     print("Banned words (* denotes case-insensitive entries):")
-                    for entry in sorted(res + res1, key=lambda x: getattr(x, args.sort_by),
+                    for entry in sorted(banlist_case | banlist_caseless, key=lambda x: getattr(x, args.sort_by),
                                         reverse=(args.order == Order.DESCENDING)):
                         print(entry)
     except NotImplementedError:

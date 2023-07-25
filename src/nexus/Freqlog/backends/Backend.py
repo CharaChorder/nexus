@@ -77,7 +77,7 @@ class Backend(ABC):
 
     @abstractmethod
     def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) \
-            -> tuple[list[BanlistEntry], list[BanlistEntry]]:
+            -> tuple[set[BanlistEntry], set[BanlistEntry]]:
         """
         List banned words
         :param limit: Maximum number of banned words to return
