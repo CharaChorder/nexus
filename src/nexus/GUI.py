@@ -45,6 +45,7 @@ class GUI(object):
         self.banlist_button.clicked.connect(self.show_banlist)
 
         self.freqlog: Freqlog | None = None
+        self.temp_freqlog: Freqlog | None = None
         self.logging_thread: Thread | None = None
         self.args = args
 
@@ -99,8 +100,8 @@ class GUI(object):
             self.window.repaint()
 
     def refresh(self):
-        self.freqlog = Freqlog(self.args.freq_log_path)
-        words = self.freqlog.list_words()
+        self.temp_freqlog = Freqlog(self.args.freq_log_path)
+        words = self.temp_freqlog.list_words()
         self.chentry_table.setRowCount(len(words))
         for i, word in enumerate(words):
             self.chentry_table.setItem(i, 0, QTableWidgetItem(word.word))
@@ -112,7 +113,8 @@ class GUI(object):
         self.statusbar.showMessage(f"Loaded {len(words)} freqlogged words")
 
     def show_banlist(self):
-        banlist_case, banlist_caseless = self.freqlog.list_banned_words()
+        self.temp_freqlog = Freqlog(self.args.freq_log_path)
+        banlist_case, banlist_caseless = self.temp_freqlog.list_banned_words()
         dialog = BanlistDialog()
         dialog.banlistTable.setRowCount(len(banlist_case) + len(banlist_caseless))
         for i, word in enumerate(banlist_case):
