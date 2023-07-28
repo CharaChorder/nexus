@@ -113,4 +113,4 @@ def test_ban_unban_word(loaded_backend, word, case, original, remaining):
 
     # Post-unban
     assert backend.check_banned(word, case) is False
-    assert backend.list_banned_words(0, BanlistAttr.word, False) == ([], [])
+    assert backend.list_banned_words(0, BanlistAttr.word, False) == (set(), set())
