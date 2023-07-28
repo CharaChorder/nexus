@@ -92,7 +92,7 @@ def test_ban_unban_word(loaded_backend, word, case, original, remaining):
     # Pre-ban
     assert backend.check_banned(word, case) is False
     assert len(backend.list_words(0, WordMetadataAttr.frequency, True, case)) == original
-    assert backend.list_banned_words(0, BanlistAttr.word, True) == ([], [])
+    assert backend.list_banned_words(0, BanlistAttr.word, True) == (set(), set())
 
     backend.ban_word(word, case, TIME)
 
@@ -100,6 +100,7 @@ def test_ban_unban_word(loaded_backend, word, case, original, remaining):
     assert backend.check_banned(word, case) is True
     assert backend.get_word_metadata(word, case) is None
     res, res1 = backend.list_banned_words(0, BanlistAttr.word, True)
+    res, res1 = list(res), list(res1)
     assert len(res) == 2 if case == CaseSensitivity.FIRST_CHAR else 1
     assert res[0].word == word
     assert close_to(res[0].date_added, TIME)

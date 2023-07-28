@@ -43,7 +43,10 @@
      <item>
       <widget class="QRadioButton" name="insensitive">
        <property name="text">
-        <string>First Char</string>
+        <string>Insensitive</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -57,7 +60,7 @@
      <item>
       <widget class="QRadioButton" name="firstChar">
        <property name="text">
-        <string>Insensitive</string>
+        <string>First char</string>
        </property>
       </widget>
      </item>

@@ -6,11 +6,15 @@ from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidge
 
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
+from nexus.ui.BanwordDialog import Ui_BanwordDialog
+from nexus.ui.ConfirmDialog import Ui_ConfirmDialog
 from nexus.ui.MainWindow import Ui_MainWindow
+
+from nexus.Freqlog.Definitions import CaseSensitivity
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
-    """Required because Qt is a PITA."""
+    """Set up the main window. Required because Qt is a PITA."""
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
@@ -18,26 +22,44 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
 class BanlistDialog(QDialog, Ui_BanlistDialog):
-    """Required because Qt is a PITA."""
+    """Set up the banlist dialog. Required because Qt is a PITA."""
 
     def __init__(self, *args, **kwargs):
         super(BanlistDialog, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
 
+class BanwordDialog(QDialog, Ui_BanwordDialog):
+    """Set up the banword dialog. Required because Qt is a PITA."""
+
+    def __init__(self, *args, **kwargs):
+        super(BanwordDialog, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+
+
+class ConfirmDialog(QDialog, Ui_ConfirmDialog):
+    """Set up the confirm dialog. Required because Qt is a PITA."""
+
+    def __init__(self, *args, **kwargs):
+        super(ConfirmDialog, self).__init__(*args, **kwargs)
+        self.setupUi(self)
+
+
 class GUI(object):
+    """Nexus GUI"""
 
     def __init__(self, args: argparse.Namespace):
+        """Initialize GUI"""
         self.app = QApplication([])
         self.window = MainWindow()
 
         # Components
-        self.start_stop_button: QPushButton = self.window.findChild(QPushButton, "startStop")  # type: ignore[assign]
-        self.refresh_button: QPushButton = self.window.findChild(QPushButton, "refresh")  # type: ignore[assign]
-        self.banlist_button: QPushButton = self.window.findChild(QPushButton, "banlist")  # type: ignore[assign]
-        self.chentry_table: QTableWidget = self.window.findChild(QTableWidget, "chentryTable")  # type: ignore[assign]
-        self.chord_table: QTableWidget = self.window.findChild(QTableWidget, "chordTable")  # type: ignore[assign]
-        self.statusbar: QStatusBar = self.window.findChild(QStatusBar, "statusbar")  # type: ignore[assign]
+        self.start_stop_button: QPushButton = self.window.startStop
+        self.refresh_button: QPushButton = self.window.refresh
+        self.banlist_button: QPushButton = self.window.banlist
+        self.chentry_table: QTableWidget = self.window.chentryTable
+        self.chord_table: QTableWidget = self.window.chordTable
+        self.statusbar: QStatusBar = self.window.statusbar
 
         # Signals
         self.start_stop_button.clicked.connect(self.start_stop)
@@ -50,13 +72,15 @@ class GUI(object):
         self.args = args
 
     def start_logging(self):
-        self.freqlog = Freqlog(self.args.freq_log_path)
+        if not self.freqlog:
+            self.freqlog = Freqlog(self.args.freq_log_path)
         self.freqlog.start_logging()
 
     def stop_logging(self):
         self.freqlog.stop_logging()
 
     def start_stop(self):
+        """Controller for start/stop logging button"""
         if self.start_stop_button.text() == "Start logging":
             # Update button to starting
             # TODO: fix signal blocking (not currently working)
@@ -100,7 +124,9 @@ class GUI(object):
             self.window.repaint()
 
     def refresh(self):
-        self.temp_freqlog = Freqlog(self.args.freq_log_path)
+        """Controller for refresh button"""
+        if not self.temp_freqlog:
+            self.temp_freqlog = Freqlog(self.args.freq_log_path)
         words = self.temp_freqlog.list_words()
         self.chentry_table.setRowCount(len(words))
         for i, word in enumerate(words):
@@ -113,24 +139,77 @@ class GUI(object):
         self.statusbar.showMessage(f"Loaded {len(words)} freqlogged words")
 
     def show_banlist(self):
-        self.temp_freqlog = Freqlog(self.args.freq_log_path)
-        banlist_case, banlist_caseless = self.temp_freqlog.list_banned_words()
-        dialog = BanlistDialog()
-        dialog.banlistTable.setRowCount(len(banlist_case) + len(banlist_caseless))
-        for i, word in enumerate(banlist_case):
-            dialog.banlistTable.setItem(i, 0, QTableWidgetItem(word.word))
-            dialog.banlistTable.setItem(i, 1,
-                                        QTableWidgetItem(str(word.date_added.isoformat(sep=" ", timespec="seconds"))))
-            dialog.banlistTable.setItem(i, 2, QTableWidgetItem("Sensitive"))
-        for i, word in enumerate(banlist_caseless):
-            dialog.banlistTable.setItem(i + len(banlist_case), 0, QTableWidgetItem(word.word))
-            dialog.banlistTable.setItem(i + len(banlist_case), 1,
-                                        QTableWidgetItem(str(word.date_added.isoformat(sep=" ", timespec="seconds"))))
-            dialog.banlistTable.setItem(i + len(banlist_case), 2, QTableWidgetItem("Insensitive"))
-        dialog.banlistTable.resizeColumnsToContents()
-        dialog.exec()
+        """Controller for banlist button"""
+        if not self.temp_freqlog:
+            self.temp_freqlog = Freqlog(self.args.freq_log_path)
+        bl_dialog = BanlistDialog()
+
+        def refresh_banlist():
+            """Refresh banlist table"""
+            banlist_case, banlist_caseless = self.temp_freqlog.list_banned_words()
+            bl_dialog.banlistTable.setRowCount(len(banlist_case) + len(banlist_caseless))
+            for i, word in enumerate(banlist_case):
+                bl_dialog.banlistTable.setItem(i, 0, QTableWidgetItem(word.word))
+                bl_dialog.banlistTable.setItem(i, 1,
+                                               QTableWidgetItem(
+                                                   str(word.date_added.isoformat(sep=" ", timespec="seconds"))))
+                bl_dialog.banlistTable.setItem(i, 2, QTableWidgetItem("Sensitive"))
+            for i, word in enumerate(banlist_caseless):
+                bl_dialog.banlistTable.setItem(i + len(banlist_case), 0, QTableWidgetItem(word.word))
+                bl_dialog.banlistTable.setItem(i + len(banlist_case), 1,
+                                               QTableWidgetItem(
+                                                   str(word.date_added.isoformat(sep=" ", timespec="seconds"))))
+                bl_dialog.banlistTable.setItem(i + len(banlist_case), 2, QTableWidgetItem("Insensitive"))
+            bl_dialog.banlistTable.resizeColumnsToContents()
+
+        refresh_banlist()
+
+        def banword():
+            """Controller for banword button"""
+            bw_dialog = BanwordDialog()
+
+            def add_banword():
+                """Controller for add button in banword dialog"""
+                word = bw_dialog.wordInput.text()
+                if bw_dialog.sensitive.isChecked():
+                    self.temp_freqlog.ban_word(word, CaseSensitivity.SENSITIVE)
+                elif bw_dialog.firstChar.isChecked():
+                    self.temp_freqlog.ban_word(word, CaseSensitivity.FIRST_CHAR)
+                else:
+                    self.temp_freqlog.ban_word(word, CaseSensitivity.INSENSITIVE)
+
+            # Connect Ok button to add_banword
+            bw_dialog.buttonBox.accepted.connect(add_banword)
+            bw_dialog.exec()
+            refresh_banlist()
+
+        # TODO: support banning from right click menu
+        def remove_banword():
+            """Controller for remove button in banlist dialog"""
+            # Get currently selected row(s)
+            selected_rows = bl_dialog.banlistTable.selectionModel().selectedRows()
+            if len(selected_rows) == 0:
+                return
+
+            # Get word(s) from selected row(s)
+            selected_words = {}
+            for row in selected_rows:
+                selected_words[
+                    bl_dialog.banlistTable.item(row.row(), 0).text()
+                ] = (CaseSensitivity.SENSITIVE if bl_dialog.banlistTable.item(row.row(), 2).text() == "Sensitive"
+                     else CaseSensitivity.INSENSITIVE)
+            confDialog = ConfirmDialog()
+            confDialog.confirmText.setText(f"Unban {len(selected_words)} word{'s' if len(selected_words) > 1 else ''}?")
+            confDialog.buttonBox.accepted.connect(lambda: self.temp_freqlog.unban_words(selected_words))
+            confDialog.exec()
+            refresh_banlist()
+
+        bl_dialog.addButton.clicked.connect(banword)
+        bl_dialog.removeButton.clicked.connect(remove_banword)
+        bl_dialog.exec()
 
     def exec(self):
+        """Start the GUI"""
         self.window.show()
         self.refresh()
         self.app.exec()

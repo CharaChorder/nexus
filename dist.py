@@ -37,6 +37,8 @@ os.system(f"{python_name} -m pip install --upgrade pip -r requirements.txt -r te
 print("Converting ui files to python...")
 os.system(f"{venv_path}pyside6-uic ui/main.ui -o src/nexus/ui/MainWindow.py")
 os.system(f"{venv_path}pyside6-uic ui/banlist.ui -o src/nexus/ui/BanlistDialog.py")
+os.system(f"{venv_path}pyside6-uic ui/banword.ui -o src/nexus/ui/BanwordDialog.py")
+os.system(f"{venv_path}pyside6-uic ui/confirm.ui -o src/nexus/ui/ConfirmDialog.py")
 
 # Pyinstaller command
 build_cmd = "pyinstaller -Fn nexus src/nexus/__main__.py"
