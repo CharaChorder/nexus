@@ -145,11 +145,13 @@ class Freqlog:
                     logging.warning("Stopped freqlogging")
                     break
 
-    def __init__(self, db_path: str = Defaults.DEFAULT_DB_PATH):
+    def __init__(self, db_path: str = Defaults.DEFAULT_DB_PATH, loggable: bool = True):
         self.backend: Backend = SQLiteBackend(db_path)
         self.q: Queue = Queue()
-        self.listener: kbd.Listener | None = None
-        self.mouse_listener: mouse.Listener | None = None
+        self.listener: kbd.Listener | None = kbd.Listener(on_press=self._on_press, on_release=self._on_release,
+                                                          name="Keyboard Listener") if loggable else None
+        self.mouse_listener: mouse.Listener | None = mouse.Listener(on_click=self._on_click,
+                                                                    name="Mouse Listener") if loggable else None
         self.new_word_threshold: float = Defaults.DEFAULT_NEW_WORD_THRESHOLD
         self.chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD
         self.allowed_keys_in_chord: set = Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD
@@ -175,9 +177,7 @@ class Freqlog:
                       f"chord_char_threshold={self.chord_char_threshold}, "
                       f"allowed_keys_in_chord={self.allowed_keys_in_chord}, "
                       f"modifier_keys={self.modifier_keys}")
-        self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release, name="Keyboard Listener")
         self.listener.start()
-        self.mouse_listener = mouse.Listener(on_click=self._on_click, name="Mouse Listener")
         self.mouse_listener.start()
         self.is_logging = True
         logging.warning("Started freqlogging")

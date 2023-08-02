@@ -169,9 +169,10 @@ def main():
 
     # Some features from this point on may not have been implemented
     try:
-        freqlog = Freqlog.Freqlog(args.freq_log_path)
+        freqlog = Freqlog.Freqlog(args.freq_log_path, loggable=False)
         match args.command:
             case "startlog":  # start freqlogging
+                freqlog = Freqlog.Freqlog(args.freq_log_path, loggable=True)
                 signal.signal(signal.SIGINT, lambda *_: freqlog.stop_logging())
                 freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
                                       Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(

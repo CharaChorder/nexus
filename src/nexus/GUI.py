@@ -66,14 +66,14 @@ class GUI(object):
         self.refresh_button.clicked.connect(self.refresh)
         self.banlist_button.clicked.connect(self.show_banlist)
 
-        self.freqlog: Freqlog | None = None
-        self.temp_freqlog: Freqlog | None = None
+        self.freqlog: Freqlog | None = None  # for logging
+        self.temp_freqlog: Freqlog = Freqlog(args.freq_log_path, loggable=False)  # for other operations
         self.logging_thread: Thread | None = None
         self.args = args
 
     def start_logging(self):
         if not self.freqlog:
-            self.freqlog = Freqlog(self.args.freq_log_path)
+            self.freqlog = Freqlog(self.args.freq_log_path, loggable=True)
         self.freqlog.start_logging()
 
     def stop_logging(self):
@@ -125,8 +125,6 @@ class GUI(object):
 
     def refresh(self):
         """Controller for refresh button"""
-        if not self.temp_freqlog:
-            self.temp_freqlog = Freqlog(self.args.freq_log_path)
         words = self.temp_freqlog.list_words()
         self.chentry_table.setRowCount(len(words))
         for i, word in enumerate(words):
@@ -140,8 +138,6 @@ class GUI(object):
 
     def show_banlist(self):
         """Controller for banlist button"""
-        if not self.temp_freqlog:
-            self.temp_freqlog = Freqlog(self.args.freq_log_path)
         bl_dialog = BanlistDialog()
 
         def refresh_banlist():
