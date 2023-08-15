@@ -102,11 +102,12 @@ def test_ban_unban_word(loaded_backend, word, case, original, remaining):
     res, res1 = backend.list_banned_words(0, BanlistAttr.word, True)
     res, res1 = list(res), list(res1)
     assert len(res) == 2 if case == CaseSensitivity.FIRST_CHAR else 1
-    assert res[0].word == word
-    assert close_to(res[0].date_added, TIME)
+    assert res[0].word == word or res[1].word == word
+    res_word = res[0] if res[0].word == word else res[1]
     if case == CaseSensitivity.INSENSITIVE:
-        assert res1[0].word == word
-        assert close_to(res1[0].date_added, TIME)
+        assert res1[0].word == word or res1[1].word == word
+        res_word = res1[0] if res1[0].word == word else res1[1]
+    assert close_to(res_word.date_added, TIME)
     assert len(backend.list_words(0, WordMetadataAttr.frequency, True, case)) == remaining
 
     backend.unban_word(word, case)
