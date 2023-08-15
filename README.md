@@ -21,6 +21,10 @@ cd dist/ # if following the steps above
 ```
 Use the `-h` to access CLI options.
 
+## Platform-specific quirks
+### Wayland
+You need to have XWayland enabled, and allow X11 apps to read keystrokes in all apps (on KDE this is in `Settings > Applications > Legacy X11 App Support`).
+
 ## Contributing
 
 Please create PRs and issues, we welcome all contributions. See issues tagged with `Help Wanted` for where you can best help.
