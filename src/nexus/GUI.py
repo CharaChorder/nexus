@@ -1,6 +1,7 @@
 import argparse
 from threading import Thread
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
     QDialog
 
@@ -126,14 +127,33 @@ class GUI(object):
     def refresh(self):
         """Controller for refresh button"""
         words = self.temp_freqlog.list_words()
+        self.chentry_table.setSortingEnabled(False)
+        i = 0
+        words_set = set(map(lambda w: w.word, words.copy()))
+        while i < self.chentry_table.rowCount():
+            if self.chentry_table.item(i, 0).text() not in words_set:
+                self.chentry_table.removeRow(i)
+                i -= 1
+            i += 1
+        table_set = set(map(lambda w: self.chentry_table.item(w, 0).text(), range(self.chentry_table.rowCount())))
+        for word in words:
+            if word.word not in table_set:
+                self.chentry_table.insertRow(i)
+                self.chentry_table.setItem(i, 0, QTableWidgetItem(word.word))
+                item = QTableWidgetItem()
+                item.setData(Qt.ItemDataRole.DisplayRole, word.frequency)
+                self.chentry_table.setItem(i, 1, item)
+                item = QTableWidgetItem()
+                item.setData(Qt.ItemDataRole.DisplayRole, word.last_used.isoformat(sep=" ", timespec="seconds"))
+                self.chentry_table.setItem(
+                    i, 2, item)
+                item = QTableWidgetItem()
+                item.setData(Qt.ItemDataRole.DisplayRole, str(word.average_speed)[2:-3])
+                self.chentry_table.setItem(i, 3, item)
+
         self.chentry_table.setRowCount(len(words))
-        for i, word in enumerate(words):
-            self.chentry_table.setItem(i, 0, QTableWidgetItem(word.word))
-            self.chentry_table.setItem(i, 1, QTableWidgetItem(str(word.frequency)))
-            self.chentry_table.setItem(
-                i, 2, QTableWidgetItem(str(word.last_used.isoformat(sep=" ", timespec="seconds"))))
-            self.chentry_table.setItem(i, 3, QTableWidgetItem(str(word.average_speed)[2:-3]))
         self.chentry_table.resizeColumnsToContents()
+        self.chentry_table.setSortingEnabled(True)
         self.statusbar.showMessage(f"Loaded {len(words)} freqlogged words")
 
     def show_banlist(self):
