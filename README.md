@@ -3,15 +3,24 @@
 CharaChorder's all-in-one desktop app, supporting Linux, Windows, and MacOS.
 
 ## Build
-1. Get Python 3.11 (using [pyenv](https://github.com/pyenv/pyenv) recommended)
+1. Get Python >=3.11 (using [pyenv](https://github.com/pyenv/pyenv) recommended)
 2. Clone and build
-```
+```sh
 git clone https://github.com/CharaChorder/nexus
 cd nexus/
+python dist.py -nd
+```
+With the `-n` and `-d` flags, `dist.py` automatically detects your OS, sets up a virtualenv in the root directory of the repo (if not provided one via args), installs requirements, converts UI files to Python, sets up git hooks, and installs the nexus module locally.
+
+To develop, you can now run it from within the virtualenv (activate it first) using the `python -m nexus <args>` command.
+
+## Installation
+```sh
 python dist.py
 ```
+Running `dist.py` without any args detects your OS, sets up a virtualenv, installs reqs, converts UI files, and generates a platform-dependent executable in the `dist/` directory.
+
 Note: the CI-generated binaries (in releases) don't work at the moment (see [#6 CI doesn't work](https://github.com/CharaChorder/nexus/issues/6)).
-`dist.py` sets up a virtualenv in the root directory of the repo, and generates a platform-dependent executable in the `dist/` directory.
 
 ## Usage
 ```
