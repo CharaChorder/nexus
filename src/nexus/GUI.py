@@ -15,8 +15,9 @@ from nexus.ui.MainWindow import Ui_MainWindow
 from nexus.Freqlog.Definitions import CaseSensitivity
 
 import gettext
-_ = None
-ngettext = None
+
+_ = gettext.gettext
+ngettext = gettext.ngettext
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -27,27 +28,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
 
     def retranslateUi(self, MainWindow):
-        if _ is not None:
-            MainWindow.setWindowTitle(_("Nexus"))
-            self.startStop.setText(_("Start logging"))
-            self.refresh.setText(_("Refresh"))
-            self.banlist.setText(_("Banlist"))
-            self.chordedEntry.setTitle(_("Chorded Entry"))
-            ___qtablewidgetitem = self.chordTable.horizontalHeaderItem(0)
-            ___qtablewidgetitem.setText(_("Chord"))
-            ___qtablewidgetitem1 = self.chordTable.horizontalHeaderItem(1)
-            ___qtablewidgetitem1.setText(_("Frequency"))
-            ___qtablewidgetitem2 = self.chordTable.horizontalHeaderItem(2)
-            ___qtablewidgetitem2.setText(_("Last used"))
-            self.characterEntry.setTitle(_("Character Entry"))
-            ___qtablewidgetitem3 = self.chentryTable.horizontalHeaderItem(0)
-            ___qtablewidgetitem3.setText(_("Word"))
-            ___qtablewidgetitem4 = self.chentryTable.horizontalHeaderItem(1)
-            ___qtablewidgetitem4.setText(_("Freq."))
-            ___qtablewidgetitem5 = self.chentryTable.horizontalHeaderItem(2)
-            ___qtablewidgetitem5.setText(_("Last used"))
-            ___qtablewidgetitem6 = self.chentryTable.horizontalHeaderItem(3)
-            ___qtablewidgetitem6.setText(_("Avg speed"))
+        MainWindow.setWindowTitle(_("Nexus"))
+        self.startStop.setText(_("Start logging"))
+        self.refresh.setText(_("Refresh"))
+        self.banlist.setText(_("Banlist"))
+        self.chordedEntry.setTitle(_("Chorded Entry"))
+        ___qtablewidgetitem = self.chordTable.horizontalHeaderItem(0)
+        ___qtablewidgetitem.setText(_("Chord"))
+        ___qtablewidgetitem1 = self.chordTable.horizontalHeaderItem(1)
+        ___qtablewidgetitem1.setText(_("Frequency"))
+        ___qtablewidgetitem2 = self.chordTable.horizontalHeaderItem(2)
+        ___qtablewidgetitem2.setText(_("Last used"))
+        self.characterEntry.setTitle(_("Character Entry"))
+        ___qtablewidgetitem3 = self.chentryTable.horizontalHeaderItem(0)
+        ___qtablewidgetitem3.setText(_("Word"))
+        ___qtablewidgetitem4 = self.chentryTable.horizontalHeaderItem(1)
+        ___qtablewidgetitem4.setText(_("Freq."))
+        ___qtablewidgetitem5 = self.chentryTable.horizontalHeaderItem(2)
+        ___qtablewidgetitem5.setText(_("Last used"))
+        ___qtablewidgetitem6 = self.chentryTable.horizontalHeaderItem(3)
+        ___qtablewidgetitem6.setText(_("Avg speed"))
 
 
 class BanlistDialog(QDialog, Ui_BanlistDialog):
@@ -58,16 +58,15 @@ class BanlistDialog(QDialog, Ui_BanlistDialog):
         self.setupUi(self)
 
     def retranslateUi(self, BanlistDialog):
-        if _ is not None:
-            BanlistDialog.setWindowTitle(_("Banlist"))
-            ___qtablewidgetitem = self.banlistTable.horizontalHeaderItem(0)
-            ___qtablewidgetitem.setText(_("Word"))
-            ___qtablewidgetitem1 = self.banlistTable.horizontalHeaderItem(1)
-            ___qtablewidgetitem1.setText(_("Date added"))
-            ___qtablewidgetitem2 = self.banlistTable.horizontalHeaderItem(2)
-            ___qtablewidgetitem2.setText(_("Case"))
-            self.addButton.setText(_("Add"))
-            self.removeButton.setText(_("Remove"))
+        BanlistDialog.setWindowTitle(_("Banlist"))
+        ___qtablewidgetitem = self.banlistTable.horizontalHeaderItem(0)
+        ___qtablewidgetitem.setText(_("Word"))
+        ___qtablewidgetitem1 = self.banlistTable.horizontalHeaderItem(1)
+        ___qtablewidgetitem1.setText(_("Date added"))
+        ___qtablewidgetitem2 = self.banlistTable.horizontalHeaderItem(2)
+        ___qtablewidgetitem2.setText(_("Case"))
+        self.addButton.setText(_("Add"))
+        self.removeButton.setText(_("Remove"))
 
 
 class BanwordDialog(QDialog, Ui_BanwordDialog):
@@ -78,13 +77,12 @@ class BanwordDialog(QDialog, Ui_BanwordDialog):
         self.setupUi(self)
 
     def retranslateUi(self, BanwordDialog):
-        if _ is not None:
-            BanwordDialog.setWindowTitle(_("Ban word"))
-            self.wordLabel.setText(_("Word to ban:"))
-            self.caseLabel.setText(_("Case:"))
-            self.insensitive.setText(_("Insensitive"))
-            self.sensitive.setText(_("Sensitive"))
-            self.firstChar.setText(_("First char"))
+        BanwordDialog.setWindowTitle(_("Ban word"))
+        self.wordLabel.setText(_("Word to ban:"))
+        self.caseLabel.setText(_("Case:"))
+        self.insensitive.setText(_("Insensitive"))
+        self.sensitive.setText(_("Sensitive"))
+        self.firstChar.setText(_("First char"))
 
 
 class ConfirmDialog(QDialog, Ui_ConfirmDialog):
@@ -95,9 +93,8 @@ class ConfirmDialog(QDialog, Ui_ConfirmDialog):
         self.setupUi(self)
 
     def retranslateUi(self, ConfirmDialog):
-        if _ is not None:
-            ConfirmDialog.setWindowTitle(_("Ban word"))
-            self.confirmText.setText(_("Are you sure?"))
+        ConfirmDialog.setWindowTitle(_("Ban word"))
+        self.confirmText.setText(_("Are you sure?"))
 
 
 class GUI(object):
@@ -168,15 +165,15 @@ class GUI(object):
             # Update button to stop
             while not (self.freqlog and self.freqlog.is_logging):
                 pass
-            self.start_stop_button.setText("Stop logging")
+            self.start_stop_button.setText(_("Stop logging"))
             self.start_stop_button.setStyleSheet("background-color: red")
             self.start_stop_button.setEnabled(True)
             self.start_stop_button.blockSignals(False)
-            self.statusbar.showMessage("Logging started")
+            self.statusbar.showMessage(_("Logging started"))
             self.window.repaint()
         else:
             # Update button to stopping
-            self.start_stop_button.setText("Stopping...")
+            self.start_stop_button.setText(_("Stopping..."))
             self.start_stop_button.setStyleSheet("background-color: yellow")
             self.start_stop_button.blockSignals(True)
             self.start_stop_button.setEnabled(False)
@@ -191,7 +188,7 @@ class GUI(object):
             self.start_stop_button.setStyleSheet("background-color: green")
             self.start_stop_button.setEnabled(True)
             self.start_stop_button.blockSignals(False)
-            self.statusbar.showMessage("Logging stopped")
+            self.statusbar.showMessage(_("Logging stopped"))
             self.window.repaint()
 
     def refresh(self):
@@ -224,7 +221,7 @@ class GUI(object):
         self.chentry_table.setRowCount(len(words))
         self.chentry_table.resizeColumnsToContents()
         self.chentry_table.setSortingEnabled(True)
-        self.statusbar.showMessage(f"Loaded {len(words)} freqlogged words")
+        self.statusbar.showMessage(_("Loaded %d freqlogged words") % len(words))
 
     def show_banlist(self):
         """Controller for banlist button"""
@@ -285,7 +282,10 @@ class GUI(object):
                 ] = (CaseSensitivity.SENSITIVE if bl_dialog.banlistTable.item(row.row(), 2).text() == "Sensitive"
                      else CaseSensitivity.INSENSITIVE)
             confDialog = ConfirmDialog()
-            confDialog.confirmText.setText(f"Unban {len(selected_words)} word{'s' if len(selected_words) > 1 else ''}?")
+            confDialog.confirmText.setText(ngettext("Unban one word?",
+                                                    "Unban %d words?",
+                                                    len(selected_words))
+                                           % (len(selected_words)))
             confDialog.buttonBox.accepted.connect(lambda: self.temp_freqlog.unban_words(selected_words))
             confDialog.exec()
             refresh_banlist()

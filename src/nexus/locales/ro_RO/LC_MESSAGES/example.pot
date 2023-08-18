@@ -100,3 +100,35 @@ msgstr "Frec."
 #: ui/MainWindow.py:167
 msgid "Avg speed"
 msgstr "Viteză medie"
+
+#: GUI.py: 172
+msgid "Logging started"
+msgstr "Înregistrarea a început"
+
+#: GUI.py: 168
+msgid "Stop logging"
+msgstr "Oprește înregistrarea"
+
+#: GUI.py: 176
+msgid "Stopping"
+msgstr "Se oprește..."
+
+#: GUI.py: 187
+msgid "Start logging"
+msgstr "Începe înregistrarea"
+
+#: GUI.py: 191
+msgid "Logging stopped"
+msgstr "Înregistrarea s-a oprit"
+
+#: GUI.py: 224
+msgid "Loaded %d freqlogged words"
+msgstr "S-au încărcat %d cuvinte freqlogged"
+
+#: GUI.py:285
+msgid "Unban one word?"
+msgstr "Anulați interzicerea unui cuvânt?"
+
+#: GUI.py:285
+msgid "Unban %d words?"
+msgstr "Anulați interzicerea a %d cuvinte?"

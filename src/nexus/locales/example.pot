@@ -103,3 +103,35 @@ msgstr ""
 #: ui/MainWindow.py:167
 msgid "Avg speed"
 msgstr ""
+
+#: GUI.py: 172
+msgid "Logging started"
+msgstr ""
+
+#: GUI.py: 168
+msgid "Stop logging"
+msgstr ""
+
+#: GUI.py: 176
+msgid "Stopping"
+msgstr ""
+
+#: GUI.py: 187
+msgid "Start logging"
+msgstr ""
+
+#: GUI.py: 191
+msgid "Logging stopped"
+msgstr ""
+
+#: GUI.py: 224
+msgid "Loaded %d freqlogged words"
+msgstr ""
+
+#: GUI.py:285
+msgid "Unban one word?"
+msgstr ""
+
+#: GUI.py:285
+msgid "Unban %d words?"
+msgstr ""
