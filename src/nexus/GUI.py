@@ -1,7 +1,8 @@
 import argparse
 from threading import Thread
+from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
     QDialog, QFileDialog
 
@@ -46,12 +47,28 @@ class ConfirmDialog(QDialog, Ui_ConfirmDialog):
         self.setupUi(self)
 
 
+class Translator(QTranslator):
+    """Custom translator"""
+
+    def translate(self, context: str, source: str, disambiguation=None, n=-1):
+        final = super().translate(context, source, disambiguation, n)
+        if final:
+            return final
+        return source
+
+
 class GUI(object):
     """Nexus GUI"""
 
     def __init__(self, args: argparse.Namespace):
         """Initialize GUI"""
         self.app = QApplication([])
+
+        self.translator = Translator(self.app)
+
+        if self.translator.load(QLocale.system(), 'i18n', '_', str(Path(__file__).resolve().parent)+'/translations'):
+            self.app.installTranslator(self.translator)
+
         self.window = MainWindow()
 
         # Components
@@ -84,12 +101,12 @@ class GUI(object):
 
     def start_stop(self):
         """Controller for start/stop logging button"""
-        if self.start_stop_button.text() == "Start logging":
+        if self.start_stop_button.text() == self.translator.translate("GUI", "Start logging"):
             # Update button to starting
             # TODO: fix signal blocking (not currently working)
             self.start_stop_button.blockSignals(True)
             self.start_stop_button.setEnabled(False)
-            self.start_stop_button.setText("Starting...")
+            self.start_stop_button.setText(self.translator.translate("GUI", "Starting..."))
             self.start_stop_button.setStyleSheet("background-color: yellow")
             self.window.repaint()
 
@@ -100,11 +117,11 @@ class GUI(object):
             # Update button to stop
             while not (self.freqlog and self.freqlog.is_logging):
                 pass
-            self.start_stop_button.setText("Stop logging")
+            self.start_stop_button.setText(self.translator.translate("GUI", "Stop logging"))
             self.start_stop_button.setStyleSheet("background-color: red")
             self.start_stop_button.setEnabled(True)
             self.start_stop_button.blockSignals(False)
-            self.statusbar.showMessage("Logging started")
+            self.statusbar.showMessage(self.translator.translate("GUI", "Logging started"))
             self.window.repaint()
         else:
             # Update button to stopping
@@ -119,11 +136,11 @@ class GUI(object):
 
             # Update button to start
             self.logging_thread.join()
-            self.start_stop_button.setText("Start logging")
+            self.start_stop_button.setText(self.translator.translate("GUI", "Start logging"))
             self.start_stop_button.setStyleSheet("background-color: green")
             self.start_stop_button.setEnabled(True)
             self.start_stop_button.blockSignals(False)
-            self.statusbar.showMessage("Logging stopped")
+            self.statusbar.showMessage(self.translator.translate("GUI", "Logging stopped"))
             self.window.repaint()
 
     def refresh(self):
@@ -156,7 +173,7 @@ class GUI(object):
         self.chentry_table.setRowCount(len(words))
         self.chentry_table.resizeColumnsToContents()
         self.chentry_table.setSortingEnabled(True)
-        self.statusbar.showMessage(f"Loaded {len(words)} freqlogged words")
+        self.statusbar.showMessage(self.translator.translate("GUI", "Loaded {} freqlogged words").format(len(words)))
 
     def show_banlist(self):
         """Controller for banlist button"""
@@ -217,8 +234,11 @@ class GUI(object):
                 ] = (CaseSensitivity.SENSITIVE if bl_dialog.banlistTable.item(row.row(), 2).text() == "Sensitive"
                      else CaseSensitivity.INSENSITIVE)
             conf_dialog = ConfirmDialog()
-            conf_dialog.confirmText.setText(
-                f"Unban {len(selected_words)} word{'s' if len(selected_words) > 1 else ''}?")
+            if len(selected_words) > 1:
+                confirmText = self.translator.translate("GUI", "Unban {} words")
+            else:
+                confirmText = self.translator.translate("GUI", "Unban one word")
+            conf_dialog.confirmText.setText(confirmText.format(len(selected_words)))
             conf_dialog.buttonBox.accepted.connect(lambda: self.temp_freqlog.unban_words(selected_words))
             conf_dialog.exec()
             refresh_banlist()
@@ -234,7 +254,8 @@ class GUI(object):
             if not filename.endswith(".csv"):
                 filename += ".csv"
             num_exported = self.temp_freqlog.export_words_to_csv(filename)
-            self.statusbar.showMessage(f"Exported {num_exported} words to {filename}")
+            self.statusbar.showMessage(
+                    self.translator.translate("GUI", "Exported {} words to {}".format(num_exported, filename)))
 
     def exec(self):
         """Start the GUI"""

@@ -10,3 +10,4 @@ nexus.egg-info/
 .coverage
 **/__pycache__/
 src/nexus/ui/*.py
+src/nexus/translations/

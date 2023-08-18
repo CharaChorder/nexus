@@ -5,6 +5,8 @@
 import os
 import sys
 import argparse
+import glob
+from pathlib import Path
 
 # Error and exit on Python version < 3.11
 if sys.version_info < (3, 11):
@@ -50,6 +52,20 @@ os.system(f"{venv_path}pyside6-uic ui/main.ui -o src/nexus/ui/MainWindow.py")
 os.system(f"{venv_path}pyside6-uic ui/banlist.ui -o src/nexus/ui/BanlistDialog.py")
 os.system(f"{venv_path}pyside6-uic ui/banword.ui -o src/nexus/ui/BanwordDialog.py")
 os.system(f"{venv_path}pyside6-uic ui/confirm.ui -o src/nexus/ui/ConfirmDialog.py")
+
+print("Generating TS template...")
+os.system(f"{venv_path}pyside6-lupdate " +
+          ' '.join(["ui/main.ui",
+                    "ui/banlist.ui",
+                    "ui/banword.ui",
+                    "ui/confirm.ui",
+                    "src/nexus/GUI.py"]) +
+          " -ts translations/i18n_en.ts")
+
+print("Generating QM files...")
+os.makedirs('src/nexus/translations', exist_ok=True)
+for i in glob.glob('translations/*.ts'):
+    os.system(f"{venv_path}pyside6-lrelease {i} -qm src/nexus/translations/{Path(i).stem}.qm")
 
 if not (args.no_build or args.ui_only):
     # Pyinstaller command
