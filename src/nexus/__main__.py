@@ -70,6 +70,8 @@ def main():
     parser_words = subparsers.add_parser("words", help="Get list of freqlogged words",
                                          parents=[log_arg, path_arg, case_arg, num_arg])
     parser_words.add_argument("word", help="Word(s) to get data of", nargs="*")
+    parser_words.add_argument("-e", "--export", help="Export all freqlogged words as csv to file"
+                                                     "(ignores word args)", required=False)
     parser_words.add_argument("-s", "--sort-by", default=WordMetadataAttr.frequency.name,
                               help=f"Sort by (default: {WordMetadataAttr.frequency.name})",
                               choices={attr.name for attr in WordMetadataAttr})
@@ -80,6 +82,8 @@ def main():
     # parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
     #                                       parents=[log_arg, path_arg, num_arg])
     # parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
+    # parser_chords.add_argument("-e", "--export", help="Export freqlogged chords as csv to file"
+    #                                                   "(ignores chord args)", required=False)
     # parser_chords.add_argument("-s", "--sort-by", default=ChordMetadataAttr.frequency.name,
     #                            help=f"Sort by (default: {ChordMetadataAttr.frequency.name})")
     #                            choices={attr.name for attr in ChordMetadataAttr})
@@ -194,7 +198,9 @@ def main():
                         exit_code = 6
             # TODO: pretty print
             case "words":  # get words
-                if len(args.word) == 0:  # all words
+                if args.export:  # export words
+                    freqlog.export_words_to_csv(args.export)
+                elif len(args.word) == 0:  # all words
                     res = freqlog.list_words(args.num, WordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
                                              CaseSensitivity[args.case])
                     if len(res) == 0:
@@ -218,7 +224,9 @@ def main():
                                            reverse=(args.order == Order.DESCENDING)):
                             print(word)
             case "chords":  # get chords
-                if len(args.chord) == 0:  # all chords
+                if args.export:  # export chords
+                    freqlog.export_chords_to_csv(args.export)
+                elif len(args.chord) == 0:  # all chords
                     res = freqlog.list_chords(args.num, ChordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
                                               CaseSensitivity[args.case])
                     if len(res) == 0:

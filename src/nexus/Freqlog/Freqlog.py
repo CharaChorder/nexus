@@ -271,6 +271,25 @@ class Freqlog:
         logging.info(f"Listing words, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}")
         return self.backend.list_words(limit, sort_by, reverse, case)
 
+    def export_words_to_csv(self, export_path: str, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.word,
+                            reverse: bool = False, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> int:
+        """
+        Export words in the store
+        :param export_path: Path to csv file to export to
+        :param limit: Maximum number of words to return
+        :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed
+        :param reverse: Reverse sort order
+        :param case: Case sensitivity
+        :return: Number of words exported
+        """
+        logging.info(f"Exporting words, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}")
+        words = self.backend.list_words(limit, sort_by, reverse, case)
+        with open(export_path, "w") as f:
+            f.write(",".join(filter(lambda k: not k.startswith("_"), WordMetadataAttr.__dict__.keys())) + "\n")
+            f.write("\n".join(map(lambda w: ",".join(map(str, w.__dict__.values())), words)))
+        logging.info(f"Exported {len(words)} words to {export_path}")
+        return len(words)
+
     def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
                     reverse: bool, case: CaseSensitivity) -> list[ChordMetadata]:
         """
@@ -282,6 +301,25 @@ class Freqlog:
         """
         logging.info(f"Listing chords, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}")
         return self.backend.list_chords(limit, sort_by, reverse, case)
+
+    def export_chords_to_csv(self, export_path: str, limit: int, sort_by: ChordMetadataAttr,
+                             reverse: bool, case: CaseSensitivity) -> int:
+        """
+        Export chords in the store
+        :param export_path: Path to csv file to export to
+        :param limit: Maximum number of chords to return
+        :param sort_by: Attribute to sort by: chord, frequency, last_used, average_speed
+        :param reverse: Reverse sort order
+        :param case: Case sensitivity
+        :return: Number of chords exported
+        """
+        logging.info(f"Exporting chords, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}")
+        chords = self.backend.list_chords(limit, sort_by, reverse, case)
+        with open(export_path, "w") as f:
+            f.write(",".join(ChordMetadataAttr.__dict__.keys()) + "\n")
+            f.write("\n".join(map(lambda c: ",".join(c.__dict__.values()), chords)))
+        logging.info(f"Exported {len(chords)} chords to {export_path}")
+        return len(chords)
 
     def list_banned_words(self, limit: int = -1, sort_by: BanlistAttr = BanlistAttr.word, reverse: bool = False) \
             -> tuple[set[BanlistEntry], set[BanlistEntry]]:

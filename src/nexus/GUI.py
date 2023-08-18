@@ -3,7 +3,7 @@ from threading import Thread
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
-    QDialog
+    QDialog, QFileDialog
 
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
@@ -55,9 +55,10 @@ class GUI(object):
         self.window = MainWindow()
 
         # Components
-        self.start_stop_button: QPushButton = self.window.startStop
-        self.refresh_button: QPushButton = self.window.refresh
-        self.banlist_button: QPushButton = self.window.banlist
+        self.start_stop_button: QPushButton = self.window.startStopButton
+        self.refresh_button: QPushButton = self.window.refreshButton
+        self.banlist_button: QPushButton = self.window.banlistButton
+        self.export_button: QPushButton = self.window.exportButton
         self.chentry_table: QTableWidget = self.window.chentryTable
         self.chord_table: QTableWidget = self.window.chordTable
         self.statusbar: QStatusBar = self.window.statusbar
@@ -66,6 +67,7 @@ class GUI(object):
         self.start_stop_button.clicked.connect(self.start_stop)
         self.refresh_button.clicked.connect(self.refresh)
         self.banlist_button.clicked.connect(self.show_banlist)
+        self.export_button.clicked.connect(self.export)
 
         self.freqlog: Freqlog | None = None  # for logging
         self.temp_freqlog: Freqlog = Freqlog(args.freq_log_path, loggable=False)  # for other operations
@@ -214,15 +216,25 @@ class GUI(object):
                     bl_dialog.banlistTable.item(row.row(), 0).text()
                 ] = (CaseSensitivity.SENSITIVE if bl_dialog.banlistTable.item(row.row(), 2).text() == "Sensitive"
                      else CaseSensitivity.INSENSITIVE)
-            confDialog = ConfirmDialog()
-            confDialog.confirmText.setText(f"Unban {len(selected_words)} word{'s' if len(selected_words) > 1 else ''}?")
-            confDialog.buttonBox.accepted.connect(lambda: self.temp_freqlog.unban_words(selected_words))
-            confDialog.exec()
+            conf_dialog = ConfirmDialog()
+            conf_dialog.confirmText.setText(
+                f"Unban {len(selected_words)} word{'s' if len(selected_words) > 1 else ''}?")
+            conf_dialog.buttonBox.accepted.connect(lambda: self.temp_freqlog.unban_words(selected_words))
+            conf_dialog.exec()
             refresh_banlist()
 
         bl_dialog.addButton.clicked.connect(banword)
         bl_dialog.removeButton.clicked.connect(remove_banword)
         bl_dialog.exec()
+
+    def export(self):
+        """Controller for export button"""
+        filename = QFileDialog.getSaveFileName(self.window, "Export to CSV", "", "CSV (*.csv)")[0]
+        if filename:
+            if not filename.endswith(".csv"):
+                filename += ".csv"
+            num_exported = self.temp_freqlog.export_words_to_csv(filename)
+            self.statusbar.showMessage(f"Exported {num_exported} words to {filename}")
 
     def exec(self):
         """Start the GUI"""
