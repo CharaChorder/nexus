@@ -26,8 +26,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+    def retranslateUi(self, MainWindow):
         if _ is not None:
-            self.setWindowTitle(_("Nexus"))
+            MainWindow.setWindowTitle(_("Nexus"))
             self.startStop.setText(_("Start logging"))
             self.refresh.setText(_("Refresh"))
             self.banlist.setText(_("Banlist"))
@@ -55,8 +56,10 @@ class BanlistDialog(QDialog, Ui_BanlistDialog):
     def __init__(self, *args, **kwargs):
         super(BanlistDialog, self).__init__(*args, **kwargs)
         self.setupUi(self)
+
+    def retranslateUi(self, BanlistDialog):
         if _ is not None:
-            self.setWindowTitle(_("Banlist"))
+            BanlistDialog.setWindowTitle(_("Banlist"))
             ___qtablewidgetitem = self.banlistTable.horizontalHeaderItem(0)
             ___qtablewidgetitem.setText(_("Word"))
             ___qtablewidgetitem1 = self.banlistTable.horizontalHeaderItem(1)
@@ -74,8 +77,9 @@ class BanwordDialog(QDialog, Ui_BanwordDialog):
         super(BanwordDialog, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+    def retranslateUi(self, BanwordDialog):
         if _ is not None:
-            self.setWindowTitle(_("Ban word"))
+            BanwordDialog.setWindowTitle(_("Ban word"))
             self.wordLabel.setText(_("Word to ban:"))
             self.caseLabel.setText(_("Case:"))
             self.insensitive.setText(_("Insensitive"))
@@ -90,8 +94,9 @@ class ConfirmDialog(QDialog, Ui_ConfirmDialog):
         super(ConfirmDialog, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+    def retranslateUi(self, ConfirmDialog):
         if _ is not None:
-            self.setWindowTitle(_("Ban word"))
+            ConfirmDialog.setWindowTitle(_("Ban word"))
             self.confirmText.setText(_("Are you sure?"))
 
 
