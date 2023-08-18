@@ -12,6 +12,8 @@ from nexus.ui.BanwordDialog import Ui_BanwordDialog
 from nexus.ui.ConfirmDialog import Ui_ConfirmDialog
 from nexus.ui.MainWindow import Ui_MainWindow
 
+from nexus.style import stylesheet
+
 from nexus.Freqlog.Definitions import CaseSensitivity
 
 
@@ -64,6 +66,7 @@ class GUI(object):
         """Initialize GUI"""
         self.app = QApplication([])
         self.window = MainWindow()
+        self.app.setStyleSheet(stylesheet)
 
         # Translation
         self.translator = Translator(self.app)
