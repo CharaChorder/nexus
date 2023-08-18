@@ -55,11 +55,7 @@ os.system(f"{venv_path}pyside6-uic ui/confirm.ui -o src/nexus/ui/ConfirmDialog.p
 
 print("Generating TS template...")
 os.system(f"{venv_path}pyside6-lupdate " +
-          ' '.join(["ui/main.ui",
-                    "ui/banlist.ui",
-                    "ui/banword.ui",
-                    "ui/confirm.ui",
-                    "src/nexus/GUI.py"]) +
+          ' '.join(glob.glob('ui/*.ui') + ["src/nexus/GUI.py"]) +
           " -ts translations/i18n_en.ts")
 
 print("Generating QM files...")
