@@ -1,5 +1,6 @@
 import argparse
 from threading import Thread
+from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
@@ -13,6 +14,10 @@ from nexus.ui.MainWindow import Ui_MainWindow
 
 from nexus.Freqlog.Definitions import CaseSensitivity
 
+import gettext
+_ = None
+ngettext = None
+
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     """Set up the main window. Required because Qt is a PITA."""
@@ -21,6 +26,28 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        if _ is not None:
+            self.setWindowTitle(_("Nexus"))
+            self.startStop.setText(_("Start logging"))
+            self.refresh.setText(_("Refresh"))
+            self.banlist.setText(_("Banlist"))
+            self.chordedEntry.setTitle(_("Chorded Entry"))
+            ___qtablewidgetitem = self.chordTable.horizontalHeaderItem(0)
+            ___qtablewidgetitem.setText(_("Chord"))
+            ___qtablewidgetitem1 = self.chordTable.horizontalHeaderItem(1)
+            ___qtablewidgetitem1.setText(_("Frequency"))
+            ___qtablewidgetitem2 = self.chordTable.horizontalHeaderItem(2)
+            ___qtablewidgetitem2.setText(_("Last used"))
+            self.characterEntry.setTitle(_("Character Entry"))
+            ___qtablewidgetitem3 = self.chentryTable.horizontalHeaderItem(0)
+            ___qtablewidgetitem3.setText(_("Word"))
+            ___qtablewidgetitem4 = self.chentryTable.horizontalHeaderItem(1)
+            ___qtablewidgetitem4.setText(_("Freq."))
+            ___qtablewidgetitem5 = self.chentryTable.horizontalHeaderItem(2)
+            ___qtablewidgetitem5.setText(_("Last used"))
+            ___qtablewidgetitem6 = self.chentryTable.horizontalHeaderItem(3)
+            ___qtablewidgetitem6.setText(_("Avg speed"))
+
 
 class BanlistDialog(QDialog, Ui_BanlistDialog):
     """Set up the banlist dialog. Required because Qt is a PITA."""
@@ -28,6 +55,16 @@ class BanlistDialog(QDialog, Ui_BanlistDialog):
     def __init__(self, *args, **kwargs):
         super(BanlistDialog, self).__init__(*args, **kwargs)
         self.setupUi(self)
+        if _ is not None:
+            self.setWindowTitle(_("Banlist"))
+            ___qtablewidgetitem = self.banlistTable.horizontalHeaderItem(0)
+            ___qtablewidgetitem.setText(_("Word"))
+            ___qtablewidgetitem1 = self.banlistTable.horizontalHeaderItem(1)
+            ___qtablewidgetitem1.setText(_("Date added"))
+            ___qtablewidgetitem2 = self.banlistTable.horizontalHeaderItem(2)
+            ___qtablewidgetitem2.setText(_("Case"))
+            self.addButton.setText(_("Add"))
+            self.removeButton.setText(_("Remove"))
 
 
 class BanwordDialog(QDialog, Ui_BanwordDialog):
@@ -37,6 +74,14 @@ class BanwordDialog(QDialog, Ui_BanwordDialog):
         super(BanwordDialog, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        if _ is not None:
+            self.setWindowTitle(_("Ban word"))
+            self.wordLabel.setText(_("Word to ban:"))
+            self.caseLabel.setText(_("Case:"))
+            self.insensitive.setText(_("Insensitive"))
+            self.sensitive.setText(_("Sensitive"))
+            self.firstChar.setText(_("First char"))
+
 
 class ConfirmDialog(QDialog, Ui_ConfirmDialog):
     """Set up the confirm dialog. Required because Qt is a PITA."""
@@ -45,12 +90,32 @@ class ConfirmDialog(QDialog, Ui_ConfirmDialog):
         super(ConfirmDialog, self).__init__(*args, **kwargs)
         self.setupUi(self)
 
+        if _ is not None:
+            self.setWindowTitle(_("Ban word"))
+            self.confirmText.setText(_("Are you sure?"))
+
 
 class GUI(object):
     """Nexus GUI"""
 
     def __init__(self, args: argparse.Namespace):
         """Initialize GUI"""
+        global _
+        global ngettext
+
+        src_dir = Path(__file__).resolve().parent
+        try:
+            translation = gettext.translation('example', localedir=src_dir / 'locales')
+            if translation:
+                translation.install()
+                _ = translation.gettext
+                ngettext = translation.ngettext
+        except FileNotFoundError:
+            pass
+        if not _:
+            _ = gettext.gettext
+            ngettext = gettext.ngettext
+
         self.app = QApplication([])
         self.window = MainWindow()
 

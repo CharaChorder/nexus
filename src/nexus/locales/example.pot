@@ -1,0 +1,105 @@
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-08-18 15:24+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ui/BanlistDialog.py:71 ui/MainWindow.py:151
+msgid "Banlist"
+msgstr ""
+
+#: ui/BanlistDialog.py:73 ui/MainWindow.py:161
+msgid "Word"
+msgstr ""
+
+#: ui/BanlistDialog.py:75
+msgid "Date added"
+msgstr ""
+
+#: ui/BanlistDialog.py:77
+msgid "Case"
+msgstr ""
+
+#: ui/BanlistDialog.py:78
+msgid "Add"
+msgstr ""
+
+#: ui/BanlistDialog.py:79
+msgid "Remove"
+msgstr ""
+
+#: ui/BanwordDialog.py:91 ui/ConfirmDialog.py:49
+msgid "Ban word"
+msgstr ""
+
+#: ui/BanwordDialog.py:92
+msgid "Word to ban:"
+msgstr ""
+
+#: ui/BanwordDialog.py:93
+msgid "Case:"
+msgstr ""
+
+#: ui/BanwordDialog.py:94
+msgid "Insensitive"
+msgstr ""
+
+#: ui/BanwordDialog.py:95
+msgid "Sensitive"
+msgstr ""
+
+#: ui/BanwordDialog.py:96
+msgid "First char"
+msgstr ""
+
+#: ui/ConfirmDialog.py:50
+msgid "Are you sure?"
+msgstr ""
+
+#: ui/MainWindow.py:148
+msgid "Nexus"
+msgstr ""
+
+#: ui/MainWindow.py:149
+msgid "Start logging"
+msgstr ""
+
+#: ui/MainWindow.py:150
+msgid "Refresh"
+msgstr ""
+
+#: ui/MainWindow.py:152
+msgid "Chorded Entry"
+msgstr ""
+
+#: ui/MainWindow.py:154
+msgid "Chord"
+msgstr ""
+
+#: ui/MainWindow.py:156
+msgid "Frequency"
+msgstr ""
+
+#: ui/MainWindow.py:158 ui/MainWindow.py:165
+msgid "Last used"
+msgstr ""
+
+#: ui/MainWindow.py:159
+msgid "Character Entry"
+msgstr ""
+
+#: ui/MainWindow.py:163
+msgid "Freq."
+msgstr ""
+
+#: ui/MainWindow.py:167
+msgid "Avg speed"
+msgstr ""

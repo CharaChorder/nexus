@@ -51,6 +51,10 @@ os.system(f"{venv_path}pyside6-uic ui/banlist.ui -o src/nexus/ui/BanlistDialog.p
 os.system(f"{venv_path}pyside6-uic ui/banword.ui -o src/nexus/ui/BanwordDialog.py")
 os.system(f"{venv_path}pyside6-uic ui/confirm.ui -o src/nexus/ui/ConfirmDialog.py")
 
+# Generate locales
+print("Generating locales")
+os.system("msgfmt -o src/nexus/locales/ro_RO/LC_MESSAGES/example.mo src/nexus/locales/ro_RO/LC_MESSAGES/example.pot")
+
 if not (args.no_build or args.ui_only):
     # Pyinstaller command
     build_cmd = "pyinstaller -Fn nexus src/nexus/__main__.py"
