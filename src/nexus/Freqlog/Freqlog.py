@@ -232,14 +232,17 @@ class Freqlog:
         """
         Delete multiple word entries and add them to the ban list
         :param entries: dict of {word to ban: case sensitivity}
+        :param time_added: Time to add to banlist
         :return: list of bools, True if word was banned, False if it was already banned
         """
         logging.info(f"Banning {len(entries)} words - {time_added}")
         return [self.ban_word(word, case, time_added) for word, case in entries.items()]
 
-    def unban_word(self, word: str, case: CaseSensitivity, time_added: datetime = datetime.now()) -> bool:
+    def unban_word(self, word: str, case: CaseSensitivity) -> bool:
         """
         Remove a banlist entry
+        :param word: Word to unban
+        :param case: Case sensitivity
         :returns: True if word was unbanned, False if it was already not banned
         """
         logging.info(f"Unbanning '{word}', case {case.name}")
@@ -250,14 +253,14 @@ class Freqlog:
             logging.warning(f"'{word}', case {case.name} isn't banned")
         return res
 
-    def unban_words(self, entries: dict[str: CaseSensitivity], time_added: datetime = datetime.now()) -> list[bool]:
+    def unban_words(self, entries: dict[str: CaseSensitivity]) -> list[bool]:
         """
         Remove multiple banlist entries
         :param entries: dict of {word to ban: case sensitivity}
         :return: list of bools, True if word was unbanned, False if it was already unbanned
         """
-        logging.info(f"Banning {len(entries)} words - {time_added}")
-        return [self.unban_word(word, case, time_added) for word, case in entries.items()]
+        logging.info(f"Unbanning {len(entries)} words")
+        return [self.unban_word(word, case) for word, case in entries.items()]
 
     def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.frequency,
                    reverse: bool = True, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> list[WordMetadata]:
@@ -271,7 +274,8 @@ class Freqlog:
         logging.info(f"Listing words, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}")
         return self.backend.list_words(limit, sort_by, reverse, case)
 
-    def export_words_to_csv(self, export_path: str, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.frequency,
+    def export_words_to_csv(self, export_path: str, limit: int = -1,
+                            sort_by: WordMetadataAttr = WordMetadataAttr.frequency,
                             reverse: bool = True, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> int:
         """
         Export words in the store

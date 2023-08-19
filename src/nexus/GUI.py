@@ -63,14 +63,13 @@ class GUI(object):
     def __init__(self, args: argparse.Namespace):
         """Initialize GUI"""
         self.app = QApplication([])
+        self.window = MainWindow()
 
+        # Translation
         self.translator = Translator(self.app)
-
         if self.translator.load(QLocale.system(), 'i18n', '_', str(Path(__file__).resolve().parent)+'/translations'):
             self.app.installTranslator(self.translator)
         self.tr = self.translator.translate
-
-        self.window = MainWindow()
 
         # Components
         self.start_stop_button: QPushButton = self.window.startStopButton

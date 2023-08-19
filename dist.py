@@ -53,11 +53,11 @@ os.system(f"{venv_path}pyside6-uic ui/banlist.ui -o src/nexus/ui/BanlistDialog.p
 os.system(f"{venv_path}pyside6-uic ui/banword.ui -o src/nexus/ui/BanwordDialog.py")
 os.system(f"{venv_path}pyside6-uic ui/confirm.ui -o src/nexus/ui/ConfirmDialog.py")
 
-print("Generating TS template...")
+# Generate translations
+print("Generating TS templates...")
 os.system(f"{venv_path}pyside6-lupdate " +
           ' '.join(glob.glob('ui/*.ui') + ["src/nexus/GUI.py"]) +
           " -ts translations/i18n_en.ts")
-
 print("Generating QM files...")
 os.makedirs('src/nexus/translations', exist_ok=True)
 for i in glob.glob('translations/*.ts'):
