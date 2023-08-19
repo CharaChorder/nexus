@@ -1,5 +1,4 @@
 import argparse
-from threading import Thread
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTranslator, QLocale
@@ -86,19 +85,11 @@ class GUI(object):
         self.banlist_button.clicked.connect(self.show_banlist)
         self.export_button.clicked.connect(self.export)
 
-        self.freqlog: Freqlog | None = None  # for logging
+        self.freqlog: Freqlog = Freqlog(args.freq_log_path, loggable=True)  # for logging
         self.temp_freqlog: Freqlog = Freqlog(args.freq_log_path, loggable=False)  # for other operations
-        self.logging_thread: Thread | None = None
         self.start_stop_button_started = False
+        self.app.aboutToQuit.connect(self.freqlog.kill)
         self.args = args
-
-    def start_logging(self):
-        if not self.freqlog:
-            self.freqlog = Freqlog(self.args.freq_log_path, loggable=True)
-        self.freqlog.start_logging()
-
-    def stop_logging(self):
-        self.freqlog.stop_logging()
 
     def start_stop(self):
         """Controller for start/stop logging button"""
@@ -112,8 +103,7 @@ class GUI(object):
             self.window.repaint()
 
             # Start freqlogging
-            self.logging_thread = Thread(target=self.start_logging)
-            self.logging_thread.start()
+            self.freqlog.start_logging()
 
             # Update button to stop
             while not (self.freqlog and self.freqlog.is_logging):
@@ -134,10 +124,9 @@ class GUI(object):
             self.window.repaint()
 
             # Stop freqlogging
-            Thread(target=self.stop_logging).start()
+            self.freqlog.stop_logging()
 
             # Update button to start
-            self.logging_thread.join()
             self.start_stop_button.setText(self.tr("GUI", "Start logging"))
             self.start_stop_button.setStyleSheet("background-color: green")
             self.start_stop_button.setEnabled(True)

@@ -3,6 +3,7 @@ import queue
 import time
 from datetime import datetime, timedelta
 from queue import Empty as EmptyException, Queue
+from threading import Thread
 
 from pynput import keyboard as kbd, mouse
 
@@ -15,16 +16,18 @@ class Freqlog:
 
     def _on_press(self, key: kbd.Key | kbd.KeyCode) -> None:
         """Store PRESS, key and current time in queue"""
-        self.q.put((ActionType.PRESS, key, datetime.now()))
+        if self.is_logging:
+            self.q.put((ActionType.PRESS, key, datetime.now()))
 
     def _on_release(self, key: kbd.Key | kbd.KeyCode) -> None:
         """"Store RELEASE, key and current time in queue"""
-        if key in self.modifier_keys:
+        if self.is_logging and key in self.modifier_keys:
             self.q.put((ActionType.RELEASE, key, datetime.now()))
 
     def _on_click(self, _x, _y, button: mouse.Button, _pressed) -> None:
         """Store PRESS, key and current time in queue"""
-        self.q.put((ActionType.PRESS, button, datetime.now()))
+        if self.is_logging:
+            self.q.put((ActionType.PRESS, button, datetime.now()))
 
     def _log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """Log word to store"""
@@ -36,7 +39,8 @@ class Freqlog:
         logging.info(f"Chord: {chord} - {start_time} - {end_time}")
         self.backend.log_chord(chord, start_time, end_time)
 
-    def _process_queue(self):
+    def _process_queue(self) -> None:
+        """Process queue of events (log stuff)"""
         word: str = ""  # word to be logged, reset on non-chord keys
         word_start_time: datetime | None = None
         word_end_time: datetime | None = None
@@ -89,7 +93,7 @@ class Freqlog:
             chars_since_last_bs = 0
             avg_char_time_after_last_bs = None
 
-        while self.is_logging:
+        while True:
             try:
                 action: ActionType
                 key: kbd.Key | kbd.KeyCode | mouse.Button
@@ -139,11 +143,14 @@ class Freqlog:
                 # If word is older than NEW_WORD_THRESHOLD seconds, log and reset word
                 if word:
                     _log_and_reset_word()
-                if not self.is_logging:
-                    # Cleanup and exit if queue is empty and logging is stopped
+                if self.killed:
                     self.backend.close()
-                    logging.warning("Stopped freqlogging")
                     break
+
+    def kill(self):
+        """Stop process and cleanup"""
+        self.stop_logging()
+        self.killed = True
 
     def __init__(self, db_path: str = Defaults.DEFAULT_DB_PATH, loggable: bool = True):
         self.backend: Backend = SQLiteBackend(db_path)
@@ -153,12 +160,16 @@ class Freqlog:
         if loggable:
             self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release, name="Keyboard Listener")
             self.mouse_listener = mouse.Listener(on_click=self._on_click, name="Mouse Listener")
+            self.listener.start()
+            self.mouse_listener.start()
         self.new_word_threshold: float = Defaults.DEFAULT_NEW_WORD_THRESHOLD
         self.chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD
         self.allowed_keys_in_chord: set = Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD
         self.modifier_keys: set = Defaults.DEFAULT_MODIFIER_KEYS
         self.is_logging: bool = False
         self.killed: bool = False
+        self.processing_thread = Thread(target=self._process_queue)
+        self.processing_thread.start()
 
     def start_logging(self, new_word_threshold: float | None = None, chord_char_threshold: int | None = None,
                       allowed_keys_in_chord: set | str | None = None, modifier_keys: set = None) -> None:
@@ -178,20 +189,11 @@ class Freqlog:
                       f"chord_char_threshold={self.chord_char_threshold}, "
                       f"allowed_keys_in_chord={self.allowed_keys_in_chord}, "
                       f"modifier_keys={self.modifier_keys}")
-        self.listener.start()
-        self.mouse_listener.start()
         self.is_logging = True
         logging.warning("Started freqlogging")
-        self._process_queue()
 
-    def stop_logging(self) -> None:  # TODO: find out why this runs twice on one Ctrl-C
-        if self.killed:  # TODO: Forcibly kill if already killed once
-            exit(1)  # This doesn't work rn
+    def stop_logging(self) -> None:
         logging.warning("Stopping freqlog")
-        if self.listener:
-            self.listener.stop()
-        if self.mouse_listener:
-            self.mouse_listener.stop()
         self.is_logging = False
         logging.info("Stopped listeners")
 
