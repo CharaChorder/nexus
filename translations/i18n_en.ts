@@ -83,44 +83,58 @@
 <context>
     <name>GUI</name>
     <message>
-        <location filename="../src/nexus/GUI.py" line="107"/>
-        <location filename="../src/nexus/GUI.py" line="139"/>
-        <source>Start logging</source>
+        <location filename="../src/nexus/GUI.py" line="108"/>
+        <location filename="../src/nexus/GUI.py" line="140"/>
+        <source>GUI</source>
+        <comment>Start logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="109"/>
-        <source>Starting...</source>
+        <location filename="../src/nexus/GUI.py" line="110"/>
+        <source>GUI</source>
+        <comment>Starting...</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="120"/>
-        <source>Stop logging</source>
+        <location filename="../src/nexus/GUI.py" line="121"/>
+        <source>GUI</source>
+        <comment>Stop logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="124"/>
-        <source>Logging started</source>
+        <location filename="../src/nexus/GUI.py" line="125"/>
+        <source>GUI</source>
+        <comment>Logging started</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="143"/>
-        <source>Logging stopped</source>
+        <location filename="../src/nexus/GUI.py" line="144"/>
+        <source>GUI</source>
+        <comment>Logging stopped</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="176"/>
-        <source>Loaded {} freqlogged words</source>
+        <location filename="../src/nexus/GUI.py" line="177"/>
+        <source>GUI</source>
+        <comment>Loaded {} freqlogged words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="239"/>
-        <source>Unban {} words</source>
+        <location filename="../src/nexus/GUI.py" line="240"/>
+        <source>GUI</source>
+        <comment>Unban {} words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="241"/>
-        <source>Unban one word</source>
+        <location filename="../src/nexus/GUI.py" line="242"/>
+        <source>GUI</source>
+        <comment>Unban one word</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="259"/>
+        <source>GUI</source>
+        <comment>Exported {} words to {}</comment>
         <translation type="unfinished"></translation>
     </message>
 </context>
