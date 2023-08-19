@@ -177,7 +177,7 @@ def main():
         match args.command:
             case "startlog":  # start freqlogging
                 freqlog = Freqlog.Freqlog(args.freq_log_path, loggable=True)
-                signal.signal(signal.SIGINT, lambda *_: freqlog.stop_logging())
+                signal.signal(signal.SIGINT, lambda: freqlog.stop_logging())
                 freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
                                       Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
                                           args.add_modifier_key))

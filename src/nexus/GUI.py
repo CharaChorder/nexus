@@ -67,7 +67,7 @@ class GUI(object):
 
         # Translation
         self.translator = Translator(self.app)
-        if self.translator.load(QLocale.system(), 'i18n', '_', str(Path(__file__).resolve().parent)+'/translations'):
+        if self.translator.load(QLocale.system(), 'i18n', '_', str(Path(__file__).resolve().parent) + '/translations'):
             self.app.installTranslator(self.translator)
         self.tr = self.translator.translate
 
@@ -104,7 +104,7 @@ class GUI(object):
         """Controller for start/stop logging button"""
         if not self.start_stop_button_started:
             # Update button to starting
-            # TODO: fix signal blocking (not currently working)
+            # TODO: fix signal blocking (to prevent spam-clicking the button restarting logging, not currently working)
             self.start_stop_button.blockSignals(True)
             self.start_stop_button.setEnabled(False)
             self.start_stop_button.setText(self.tr("GUI", "Starting..."))
@@ -238,10 +238,10 @@ class GUI(object):
                      else CaseSensitivity.INSENSITIVE)
             conf_dialog = ConfirmDialog()
             if len(selected_words) > 1:
-                confirmText = self.tr("GUI", "Unban {} words")
+                confirm_text = self.tr("GUI", "Unban {} words")
             else:
-                confirmText = self.tr("GUI", "Unban one word")
-            conf_dialog.confirmText.setText(confirmText.format(len(selected_words)))
+                confirm_text = self.tr("GUI", "Unban one word")
+            conf_dialog.confirmText.setText(confirm_text.format(len(selected_words)))
             conf_dialog.buttonBox.accepted.connect(lambda: self.temp_freqlog.unban_words(selected_words))
             conf_dialog.exec()
             refresh_banlist()
@@ -258,7 +258,7 @@ class GUI(object):
                 filename += ".csv"
             num_exported = self.temp_freqlog.export_words_to_csv(filename)
             self.statusbar.showMessage(
-                    self.tr("GUI", "Exported {} words to {}".format(num_exported, filename)))
+                self.tr("GUI", "Exported {} words to {}".format(num_exported, filename)))
 
     def exec(self):
         """Start the GUI"""
