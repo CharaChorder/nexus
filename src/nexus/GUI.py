@@ -89,6 +89,7 @@ class GUI(object):
         self.freqlog: Freqlog | None = None  # for logging
         self.temp_freqlog: Freqlog = Freqlog(args.freq_log_path, loggable=False)  # for other operations
         self.logging_thread: Thread | None = None
+        self.start_stop_button_started = False
         self.args = args
 
     def start_logging(self):
@@ -101,7 +102,7 @@ class GUI(object):
 
     def start_stop(self):
         """Controller for start/stop logging button"""
-        if self.start_stop_button.text() == self.tr("GUI", "Start logging"):
+        if not self.start_stop_button_started:
             # Update button to starting
             # TODO: fix signal blocking (not currently working)
             self.start_stop_button.blockSignals(True)
@@ -121,6 +122,7 @@ class GUI(object):
             self.start_stop_button.setStyleSheet("background-color: red")
             self.start_stop_button.setEnabled(True)
             self.start_stop_button.blockSignals(False)
+            self.start_stop_button_started = True
             self.statusbar.showMessage(self.tr("GUI", "Logging started"))
             self.window.repaint()
         else:
@@ -140,6 +142,7 @@ class GUI(object):
             self.start_stop_button.setStyleSheet("background-color: green")
             self.start_stop_button.setEnabled(True)
             self.start_stop_button.blockSignals(False)
+            self.start_stop_button_started = False
             self.statusbar.showMessage(self.tr("GUI", "Logging stopped"))
             self.window.repaint()
 
