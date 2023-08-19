@@ -99,6 +99,7 @@ class GUI(object):
 
     def stop_logging(self):
         self.freqlog.stop_logging()
+        self.freqlog = None
 
     def start_stop(self):
         """Controller for start/stop logging button"""
