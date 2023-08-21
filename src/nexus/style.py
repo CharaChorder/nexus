@@ -1,7 +1,7 @@
 class Colors:
-    button_red = '#330000'
-    button_yellow = '#333300'
-    button_green = '#003300'
+    button_red = '#550000'
+    button_yellow = '#777700'
+    button_green = '#005500'
 
 
 stylesheet = '''
