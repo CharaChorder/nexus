@@ -13,15 +13,26 @@ SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM 
 class SQLiteBackend(Backend):
 
     def __init__(self, db_path: str) -> None:
+        """
+        Initialize the SQLite backend
+        :param db_path: Path to the database file
+        :raises ValueError: If the database version is newer than the current version
+        """
         self.db_path = db_path
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
 
         # Versioning
-        # old_version = self._fetchone("PRAGMA user_version")
+        old_version = self._fetchone("PRAGMA user_version")[0]
+
         # Encode major, minor and patch version into a single 4-byte integer
         sql_version: int = int(__version__.split(".")[0]) << 16 | int(__version__.split(".")[1]) << 8 | int(
             __version__.split(".")[2])
+        if old_version < sql_version:
+            self._upgrade_database(sql_version)
+        elif old_version > sql_version:
+            raise ValueError(f"Database version {old_version} is newer than the current version {sql_version}")
+
         self._execute(f"PRAGMA user_version = {sql_version}")
 
         # Freqloq table
@@ -59,6 +70,12 @@ class SQLiteBackend(Backend):
         else:
             self.cursor.execute(query)
         return self.cursor.fetchall()
+
+    def _upgrade_database(self, sql_version: int) -> None:
+        """Upgrade database to current version"""
+        # TODO: populate this function when changing DDL
+        # Remember to warn users to back up their database before upgrading
+        pass
 
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata | None:
         """

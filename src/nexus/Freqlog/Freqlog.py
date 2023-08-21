@@ -146,6 +146,12 @@ class Freqlog:
                     break
 
     def __init__(self, db_path: str = Defaults.DEFAULT_DB_PATH, loggable: bool = True):
+        """
+        Initialize Freqlog
+        :param db_path: Path to database file
+        :param loggable: Whether to create listeners
+        :raises ValueError: If the database version is newer than the current version
+        """
         self.backend: Backend = SQLiteBackend(db_path)
         self.q: Queue = Queue()
         self.listener: kbd.Listener | None = None
