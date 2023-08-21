@@ -183,6 +183,9 @@ class GUI(object):
                 item = QTableWidgetItem()
                 item.setData(Qt.ItemDataRole.DisplayRole, str(word.average_speed)[2:-3])
                 self.chentry_table.setItem(i, 3, item)
+                item = QTableWidgetItem()
+                item.setData(Qt.ItemDataRole.DisplayRole, word.score)
+                self.chentry_table.setItem(i, 4, item)
 
         self.chentry_table.setRowCount(len(words))
         self.chentry_table.resizeColumnsToContents()

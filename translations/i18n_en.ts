@@ -100,31 +100,31 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="190"/>
+        <location filename="../src/nexus/GUI.py" line="193"/>
         <source>GUI</source>
         <comment>Loaded {} freqlogged words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="252"/>
+        <location filename="../src/nexus/GUI.py" line="255"/>
         <source>GUI</source>
         <comment>Unban {} words?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="254"/>
+        <location filename="../src/nexus/GUI.py" line="257"/>
         <source>GUI</source>
         <comment>Unban one word?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="254"/>
+        <location filename="../src/nexus/GUI.py" line="257"/>
         <source>GUI</source>
         <comment>Confirm unban</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="271"/>
+        <location filename="../src/nexus/GUI.py" line="274"/>
         <source>GUI</source>
         <comment>Exported {} words to {}</comment>
         <translation type="unfinished"></translation>
@@ -196,6 +196,11 @@
     <message>
         <location filename="../ui/MainWindow.ui" line="207"/>
         <source>Avg speed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.ui" line="212"/>
+        <source>Score</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

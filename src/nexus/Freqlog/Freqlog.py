@@ -274,7 +274,7 @@ class Freqlog:
         """
         List words in the store
         :param limit: Maximum number of words to return
-        :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed
+        :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed, score
         :param reverse: Reverse sort order
         :param case: Case sensitivity
         """
@@ -288,7 +288,7 @@ class Freqlog:
         Export words in the store
         :param export_path: Path to csv file to export to
         :param limit: Maximum number of words to return
-        :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed
+        :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed, score
         :param reverse: Reverse sort order
         :param case: Case sensitivity
         :return: Number of words exported
