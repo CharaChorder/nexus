@@ -1,3 +1,9 @@
+class Colors:
+    button_red = '#330000'
+    button_yellow = '#333300'
+    button_green = '#003300'
+
+
 stylesheet = '''
 * {
     background-color: #0b0b0b;
@@ -69,4 +75,26 @@ QScrollBar::sub-line:horizontal {
     subcontrol-origin: margin;
 }
 
+QScrollBar:vertical {
+    border: 0px solid #999999;
+    background: transparent;
+    width: 10px;
+    margin: 0px 0px 0px 0px;
+}
+QScrollBar::handle:vertical {
+    min-height: 0px;
+    border: 0px solid red;
+    border-radius: 4px;
+    background-color: #333333;
+}
+QScrollBar::add-line:vertical {
+    height: 0px;
+    subcontrol-position: bottom;
+    subcontrol-origin: margin;
+}
+QScrollBar::sub-line:vertical {
+    height: 0 px;
+    subcontrol-position: top;
+    subcontrol-origin: margin;
+}
 '''
