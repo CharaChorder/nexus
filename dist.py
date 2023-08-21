@@ -22,6 +22,13 @@ parser.add_argument('-u', "--ui-only", action="store_true", help="Only convert u
 parser.add_argument("--venv-path", type=str, help="[Relative] path to virtual environment to use")
 args = parser.parse_args()
 
+
+def run_command(command: str):
+    ret: int = os.system(command)
+    if ret != os.EX_OK:
+        sys.exit(ret)
+
+
 # Get OS
 os_name = "notwin"
 venv_path = f"{args.venv_path if args.venv_path else 'venv'}/bin/"
@@ -38,30 +45,30 @@ if not args.ui_only:
     # Create virtual environment if it doesn't exist
     if not os.path.isdir("venv"):
         print("Existing virtual environment not found, creating new one...")
-        os.system("python -m venv venv")
+        run_command("python3 -m venv venv")
     else:
         print("Found existing virtual environment")
 
     # Install requirements
     print("Installing requirements...")
-    os.system(f"{python_name} -m pip install --upgrade pip -r requirements.txt")
+    run_command(f"{python_name} -m pip install --upgrade pip -r requirements.txt")
 
 # Convert ui files to python
 print("Converting ui files to python...")
-os.system(f"{venv_path}pyside6-uic ui/main.ui -o src/nexus/ui/MainWindow.py")
-os.system(f"{venv_path}pyside6-uic ui/banlist.ui -o src/nexus/ui/BanlistDialog.py")
-os.system(f"{venv_path}pyside6-uic ui/banword.ui -o src/nexus/ui/BanwordDialog.py")
-os.system(f"{venv_path}pyside6-uic ui/confirm.ui -o src/nexus/ui/ConfirmDialog.py")
+run_command(f"{venv_path}pyside6-uic ui/main.ui -o src/nexus/ui/MainWindow.py")
+run_command(f"{venv_path}pyside6-uic ui/banlist.ui -o src/nexus/ui/BanlistDialog.py")
+run_command(f"{venv_path}pyside6-uic ui/banword.ui -o src/nexus/ui/BanwordDialog.py")
+run_command(f"{venv_path}pyside6-uic ui/confirm.ui -o src/nexus/ui/ConfirmDialog.py")
 
 # Generate translations
 print("Generating TS templates...")
-os.system(f"{venv_path}pyside6-lupdate " +
-          ' '.join(glob.glob('ui/*.ui') + ["src/nexus/GUI.py"]) +
-          " -ts translations/i18n_en.ts")
+run_command(f"{venv_path}pyside6-lupdate " +
+            ' '.join(glob.glob('ui/*.ui') + ["src/nexus/GUI.py"]) +
+            " -ts translations/i18n_en.ts")
 print("Generating QM files...")
 os.makedirs('src/nexus/translations', exist_ok=True)
 for i in glob.glob('translations/*.ts'):
-    os.system(f"{venv_path}pyside6-lrelease {i} -qm src/nexus/translations/{Path(i).stem}.qm")
+    run_command(f"{venv_path}pyside6-lrelease {i} -qm src/nexus/translations/{Path(i).stem}.qm")
 
 if not (args.no_build or args.ui_only):
     # Pyinstaller command
@@ -71,7 +78,7 @@ if not (args.no_build or args.ui_only):
 
     # Build executable
     print("Building executable...")
-    os.system(f"{venv_path}{build_cmd}")
+    run_command(f"{venv_path}{build_cmd}")
 
     # Rename darwin executable
     if os_name == "darwin":
@@ -79,22 +86,22 @@ if not (args.no_build or args.ui_only):
 
     # Copy README and LICENSE to dist
     if os_name == "win":
-        os.system("copy README.md dist")
-        os.system("copy LICENSE dist")
+        run_command("copy README.md dist")
+        run_command("copy LICENSE dist")
     else:
-        os.system("cp README.md LICENSE dist")
+        run_command("cp README.md LICENSE dist")
 
 if args.devel:
     # Install dev/test requirements
     print("Installing dev/test requirements...")
-    os.system(f"{python_name} -m pip install --upgrade pip -r test-requirements.txt")
+    run_command(f"{python_name} -m pip install --upgrade pip -r test-requirements.txt")
 
     # Setup git hooks
     print("Setting up git hooks...")
-    os.system(f"{venv_path}pre-commit install")
+    run_command(f"{venv_path}pre-commit install")
 
     # Install module locally
     print("Installing module locally...")
-    os.system(f"{python_name} -m pip install -e .")
+    run_command(f"{python_name} -m pip install -e .")
 
 print(f"Done!{' Built executable is in dist/' if not (args.no_build or args.ui_only) else ''}")
