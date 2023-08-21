@@ -12,6 +12,8 @@ from nexus.ui.BanwordDialog import Ui_BanwordDialog
 from nexus.ui.ConfirmDialog import Ui_ConfirmDialog
 from nexus.ui.MainWindow import Ui_MainWindow
 
+from nexus.style import stylesheet, Colors
+
 from nexus.Freqlog.Definitions import CaseSensitivity
 
 
@@ -21,6 +23,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setupUi(self)
+        self.startStopButton.setStyleSheet("background-color: " + Colors.button_green)
 
 
 class BanlistDialog(QDialog, Ui_BanlistDialog):
@@ -64,6 +67,7 @@ class GUI(object):
         """Initialize GUI"""
         self.app = QApplication([])
         self.window = MainWindow()
+        self.app.setStyleSheet(stylesheet)
 
         # Translation
         self.translator = Translator(self.app)
@@ -109,7 +113,7 @@ class GUI(object):
             self.start_stop_button.blockSignals(True)
             self.start_stop_button.setEnabled(False)
             self.start_stop_button.setText(self.tr("GUI", "Starting..."))
-            self.start_stop_button.setStyleSheet("background-color: yellow")
+            self.start_stop_button.setStyleSheet("background-color: " + Colors.button_yellow)
             self.window.repaint()
 
             # Start freqlogging
@@ -120,7 +124,7 @@ class GUI(object):
             while not (self.freqlog and self.freqlog.is_logging):
                 pass
             self.start_stop_button.setText(self.tr("GUI", "Stop logging"))
-            self.start_stop_button.setStyleSheet("background-color: red")
+            self.start_stop_button.setStyleSheet("background-color: " + Colors.button_red)
             self.start_stop_button.setEnabled(True)
             self.start_stop_button.blockSignals(False)
             self.start_stop_button_started = True
@@ -129,7 +133,7 @@ class GUI(object):
         else:
             # Update button to stopping
             self.start_stop_button.setText("Stopping...")
-            self.start_stop_button.setStyleSheet("background-color: yellow")
+            self.start_stop_button.setStyleSheet("background-color: " + Colors.button_yellow)
             self.start_stop_button.blockSignals(True)
             self.start_stop_button.setEnabled(False)
             self.window.repaint()
@@ -140,7 +144,7 @@ class GUI(object):
             # Update button to start
             self.logging_thread.join()
             self.start_stop_button.setText(self.tr("GUI", "Start logging"))
-            self.start_stop_button.setStyleSheet("background-color: green")
+            self.start_stop_button.setStyleSheet("background-color: " + Colors.button_green)
             self.start_stop_button.setEnabled(True)
             self.start_stop_button.blockSignals(False)
             self.start_stop_button_started = False
