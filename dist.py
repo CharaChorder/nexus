@@ -71,9 +71,9 @@ for i in glob.glob('translations/*.ts'):
     run_command(f"{venv_path}pyside6-lrelease {i} -qm src/nexus/translations/{Path(i).stem}.qm")
 
 if not (args.no_build or args.ui_only):
-    # Pyinstaller command
-    build_cmd = "pyinstaller -Fn nexus src/nexus/__main__.py"
-    if os_name == "notwin":
+    # Pyinstaller command - onefile, windowed, name, entrypoint
+    build_cmd = "pyinstaller -Fwn nexus src/nexus/__main__.py"
+    if os_name == "notwin":  # Add hidden imports for Linux
         build_cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
 
     # Build executable
