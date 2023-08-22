@@ -34,8 +34,9 @@ jobs:
           name: nexus-build
           path: |
             ./dist/nexus
-            ./dist/nexus-macos
+            ./dist/nexus.app
             ./dist/nexus.exe
+            ./dist/nexusw.exe
           if-no-files-found: error
         if: always()
 
@@ -102,6 +103,6 @@ jobs:
           files: |
             nexus
             nexus.exe
-            nexus-macos
+            nexus.app
             README.md
             LICENSE

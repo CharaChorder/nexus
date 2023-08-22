@@ -71,18 +71,23 @@ for i in glob.glob('translations/*.ts'):
     run_command(f"{venv_path}pyside6-lrelease {i} -qm src/nexus/translations/{Path(i).stem}.qm")
 
 if not (args.no_build or args.ui_only):
-    # Pyinstaller command - onefile, windowed, name, entrypoint
-    build_cmd = "pyinstaller -Fwn nexus src/nexus/__main__.py"
+    # Pyinstaller command
+    build_cmd = "pyinstaller --onefile --name nexus src/nexus/__main__.py"
     if os_name == "notwin":  # Add hidden imports for Linux
         build_cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
 
+    if os_name == "win":
+        print("Building windowed executable...")
+        run_command(f"{venv_path}{build_cmd} --windowed")
+        run_command("move dist\\nexus.exe dist\\nexusw.exe")
+
     # Build executable
-    print("Building executable...")
+    print(f"Building {'console' if os_name == 'win' else ''} executable...")
     run_command(f"{venv_path}{build_cmd}")
 
     # Rename darwin executable
     if os_name == "darwin":
-        os.rename("dist/nexus", "dist/nexus-macos")
+        os.rename("dist/nexus", "dist/nexus.app")
 
     # Copy README and LICENSE to dist
     if os_name == "win":
