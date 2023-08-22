@@ -87,7 +87,7 @@ if not (args.no_build or args.ui_only):
 
     # Rename darwin executable
     if os_name == "darwin":
-        os.rename("dist/nexus", "dist/nexus.app")
+        os.rename("dist/nexus", "dist/nexus-macos")
 
     # Copy README and LICENSE to dist
     if os_name == "win":
