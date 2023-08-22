@@ -4,12 +4,11 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
-    QDialog, QFileDialog
+    QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel
 
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
 from nexus.ui.BanwordDialog import Ui_BanwordDialog
-from nexus.ui.ConfirmDialog import Ui_ConfirmDialog
 from nexus.ui.MainWindow import Ui_MainWindow
 
 from nexus.style import stylesheet, Colors
@@ -20,8 +19,8 @@ from nexus.Freqlog.Definitions import CaseSensitivity
 class MainWindow(QMainWindow, Ui_MainWindow):
     """Set up the main window. Required because Qt is a PITA."""
 
-    def __init__(self, *args, **kwargs):
-        super(MainWindow, self).__init__(*args, **kwargs)
+    def __init__(self):
+        super(MainWindow, self).__init__()
         self.setupUi(self)
         self.startStopButton.setStyleSheet("background-color: " + Colors.button_green)
 
@@ -29,25 +28,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 class BanlistDialog(QDialog, Ui_BanlistDialog):
     """Set up the banlist dialog. Required because Qt is a PITA."""
 
-    def __init__(self, *args, **kwargs):
-        super(BanlistDialog, self).__init__(*args, **kwargs)
+    def __init__(self):
+        super(BanlistDialog, self).__init__()
         self.setupUi(self)
 
 
 class BanwordDialog(QDialog, Ui_BanwordDialog):
     """Set up the banword dialog. Required because Qt is a PITA."""
 
-    def __init__(self, *args, **kwargs):
-        super(BanwordDialog, self).__init__(*args, **kwargs)
+    def __init__(self):
+        super(BanwordDialog, self).__init__()
         self.setupUi(self)
 
 
-class ConfirmDialog(QDialog, Ui_ConfirmDialog):
-    """Set up the confirm dialog. Required because Qt is a PITA."""
-
-    def __init__(self, *args, **kwargs):
-        super(ConfirmDialog, self).__init__(*args, **kwargs)
-        self.setupUi(self)
+class ConfirmDialog(QDialog):
+    def __init__(self, title: str, message: str):
+        super().__init__()
+        self.setWindowTitle(title)
+        buttons = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        self.buttonBox = QDialogButtonBox(buttons)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        self.layout = QVBoxLayout()
+        msg_label = QLabel(message)
+        self.layout.addWidget(msg_label)
+        self.layout.addWidget(self.buttonBox)
+        self.setLayout(self.layout)
 
 
 class Translator(QTranslator):
@@ -241,12 +247,11 @@ class GUI(object):
                     bl_dialog.banlistTable.item(row.row(), 0).text()
                 ] = (CaseSensitivity.SENSITIVE if bl_dialog.banlistTable.item(row.row(), 2).text() == "Sensitive"
                      else CaseSensitivity.INSENSITIVE)
-            conf_dialog = ConfirmDialog()
             if len(selected_words) > 1:
-                confirm_text = self.tr("GUI", "Unban {} words")
+                confirm_text = self.tr("GUI", "Unban {} words?")
             else:
-                confirm_text = self.tr("GUI", "Unban one word")
-            conf_dialog.confirmText.setText(confirm_text.format(len(selected_words)))
+                confirm_text = self.tr("GUI", "Unban one word?")
+            conf_dialog = ConfirmDialog(self.tr("GUI", "Confirm unban"), confirm_text.format(len(selected_words)))
             conf_dialog.buttonBox.accepted.connect(lambda: self.temp_freqlog.unban_words(selected_words))
             conf_dialog.exec()
             refresh_banlist()

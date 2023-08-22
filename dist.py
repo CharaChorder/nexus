@@ -55,10 +55,8 @@ if not args.ui_only:
 
 # Convert ui files to python
 print("Converting ui files to python...")
-run_command(f"{venv_path}pyside6-uic ui/main.ui -o src/nexus/ui/MainWindow.py")
-run_command(f"{venv_path}pyside6-uic ui/banlist.ui -o src/nexus/ui/BanlistDialog.py")
-run_command(f"{venv_path}pyside6-uic ui/banword.ui -o src/nexus/ui/BanwordDialog.py")
-run_command(f"{venv_path}pyside6-uic ui/confirm.ui -o src/nexus/ui/ConfirmDialog.py")
+for f in glob.glob('src/nexus/ui/*.py'):
+    run_command(f"{venv_path}pyside6-uic ui/{Path(f).stem}.ui -o {f}")
 
 # Generate translations
 print("Generating TS templates...")
@@ -67,8 +65,8 @@ run_command(f"{venv_path}pyside6-lupdate " +
             " -ts translations/i18n_en.ts")
 print("Generating QM files...")
 os.makedirs('src/nexus/translations', exist_ok=True)
-for i in glob.glob('translations/*.ts'):
-    run_command(f"{venv_path}pyside6-lrelease {i} -qm src/nexus/translations/{Path(i).stem}.qm")
+for f in glob.glob('translations/*.ts'):
+    run_command(f"{venv_path}pyside6-lrelease {f} -qm src/nexus/translations/{Path(f).stem}.qm")
 
 if not (args.no_build or args.ui_only):
     # Pyinstaller command
