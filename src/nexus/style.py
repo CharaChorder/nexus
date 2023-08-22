@@ -97,4 +97,9 @@ QScrollBar::sub-line:vertical {
     subcontrol-position: top;
     subcontrol-origin: margin;
 }
+
+QScrollBar::add-page, QScrollBar::sub-page {
+    background: none;
+}
+
 '''
