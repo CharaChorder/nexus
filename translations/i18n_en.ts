@@ -9,27 +9,27 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="39"/>
+        <location filename="../ui/banlist.ui" line="42"/>
         <source>Word</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="44"/>
+        <location filename="../ui/banlist.ui" line="47"/>
         <source>Date added</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="49"/>
+        <location filename="../ui/banlist.ui" line="52"/>
         <source>Case</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="62"/>
+        <location filename="../ui/banlist.ui" line="65"/>
         <source>Add</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="69"/>
+        <location filename="../ui/banlist.ui" line="72"/>
         <source>Remove</source>
         <translation type="unfinished"></translation>
     </message>
@@ -165,43 +165,43 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="69"/>
+        <location filename="../ui/main.ui" line="75"/>
         <source>Chorded Entry</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="112"/>
+        <location filename="../ui/main.ui" line="121"/>
         <source>Chord</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="117"/>
+        <location filename="../ui/main.ui" line="126"/>
         <source>Frequency</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="122"/>
-        <location filename="../ui/main.ui" line="184"/>
+        <location filename="../ui/main.ui" line="131"/>
+        <location filename="../ui/main.ui" line="202"/>
         <source>Last used</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="131"/>
+        <location filename="../ui/main.ui" line="146"/>
         <source>Character Entry</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="174"/>
+        <location filename="../ui/main.ui" line="192"/>
         <source>Word</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="179"/>
+        <location filename="../ui/main.ui" line="197"/>
         <source>Freq.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="189"/>
+        <location filename="../ui/main.ui" line="207"/>
         <source>Avg speed</source>
         <translation type="unfinished"></translation>
     </message>
