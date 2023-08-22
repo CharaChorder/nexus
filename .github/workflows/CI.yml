@@ -103,6 +103,7 @@ jobs:
           files: |
             nexus
             nexus.exe
+            nexusw.exe
             nexus.app
             README.md
             LICENSE
