@@ -205,7 +205,7 @@ class SQLiteBackend(Backend):
         """
         List words in the store
         :param limit: Maximum number of words to return
-        :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed
+        :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed, score
         :param reverse: Reverse sort order
         :param case: Case sensitivity
         :raises ValueError: if sort_by is invalid

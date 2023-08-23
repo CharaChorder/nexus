@@ -43,6 +43,7 @@ class WordMetadata:
         self.frequency = frequency
         self.last_used = last_used
         self.average_speed = average_speed
+        self.score = len(word) * frequency
 
     def __or__(self, other: Any) -> Self:
         """Merge two WordMetadata objects"""
@@ -62,7 +63,7 @@ class WordMetadata:
 
     def __str__(self) -> str:
         return f"Word: {self.word} | Frequency: {self.frequency} | Last used: {self.last_used} | " \
-               f"Average speed: {self.average_speed}"
+               f"Average speed: {self.average_speed} | Score: {self.score}"
 
 
 class WordMetadataAttr(Enum):
@@ -71,6 +72,7 @@ class WordMetadataAttr(Enum):
     frequency = "frequency"
     last_used = "lastused"
     average_speed = "avgspeed"
+    score = "score"
 
 
 class ChordMetadata:
