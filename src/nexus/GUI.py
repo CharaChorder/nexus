@@ -186,6 +186,7 @@ class GUI(object):
                 item = QTableWidgetItem()
                 item.setData(Qt.ItemDataRole.DisplayRole, word.score)
                 self.chentry_table.setItem(i, 4, item)
+                i += 1
 
         self.chentry_table.setRowCount(len(words))
         self.chentry_table.resizeColumnsToContents()
