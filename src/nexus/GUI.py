@@ -90,6 +90,10 @@ class GUI(object):
         self.chord_table: QTableWidget = self.window.chordTable
         self.statusbar: QStatusBar = self.window.statusbar
 
+        self.window.actionQuit.triggered.connect(self.app.quit)
+        self.window.actionQt_Default.triggered.connect(lambda: self.app.setStyleSheet(''))
+        self.window.actionNexus_Dark.triggered.connect(lambda: self.app.setStyleSheet(stylesheet))
+
         # Signals
         self.start_stop_button.clicked.connect(self.start_stop)
         self.refresh_button.clicked.connect(self.refresh)

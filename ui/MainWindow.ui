@@ -225,6 +225,55 @@
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>900</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionQuit"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <widget class="QMenu" name="menuTheme">
+     <property name="title">
+      <string>Theme</string>
+     </property>
+     <addaction name="actionQt_Default"/>
+     <addaction name="actionNexus_Dark"/>
+    </widget>
+    <addaction name="menuTheme"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuView"/>
+  </widget>
+  <action name="actionQuit">
+   <property name="text">
+    <string>Quit</string>
+   </property>
+   <property name="shortcut">
+    <string>Alt+Q</string>
+   </property>
+  </action>
+  <action name="actionQt_Default">
+   <property name="text">
+    <string>Qt Default</string>
+   </property>
+  </action>
+  <action name="actionNexus_Dark">
+   <property name="text">
+    <string>Nexus Dark</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
