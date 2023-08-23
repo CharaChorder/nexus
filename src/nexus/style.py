@@ -102,4 +102,14 @@ QScrollBar::add-page, QScrollBar::sub-page {
     background: none;
 }
 
+QMenuBar::item {
+    background: transparent;
+}
+QMenuBar::item:selected {
+    background: #1a1a1a;
+}
+QMenu::item:selected {
+    background: #1a1a1a;
+}
+
 '''
