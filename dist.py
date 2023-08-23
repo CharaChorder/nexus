@@ -19,6 +19,7 @@ parser.add_argument('-d', "--devel", action="store_true", help="Install module l
 parser.add_argument('-u', "--ui-only", action="store_true", help="Only convert ui files"
                                                                  "(you must first have set up a venv and installed the"
                                                                  "requirements to run this)")
+parser.add_argument("--no-venv", action="store_true", help="Don't use a virtual environment")
 parser.add_argument("--venv-path", type=str, help="[Relative] path to virtual environment to use")
 args = parser.parse_args()
 
@@ -31,7 +32,7 @@ def run_command(command: str):
 
 # Get OS
 os_name = "notwin"
-venv_path = f"{args.venv_path if args.venv_path else 'venv'}/bin/"
+venv_path = "" if args.no_venv else f"{args.venv_path if args.venv_path else 'venv'}/bin/"
 python_name = venv_path + "python"
 if sys.platform.startswith("win"):
     os_name = "win"
@@ -43,7 +44,9 @@ print(f"OS detected as {os_name}")
 
 if not args.ui_only:
     # Create virtual environment if it doesn't exist
-    if not os.path.isdir("venv"):
+    if args.no_venv:
+        print("Skipping virtual environment setup")
+    elif not os.path.isdir("venv"):
         print("Existing virtual environment not found, creating new one...")
         run_command("python3 -m venv venv")
     else:
@@ -55,8 +58,8 @@ if not args.ui_only:
 
 # Convert ui files to python
 print("Converting ui files to python...")
-for f in glob.glob('src/nexus/ui/*.py'):
-    run_command(f"{venv_path}pyside6-uic ui/{Path(f).stem}.ui -o {f}")
+for f in glob.glob('ui/*.ui'):
+    run_command(f"{venv_path}pyside6-uic {f} -o src/nexus/ui/{Path(f).stem}.py")
 
 # Generate translations
 print("Generating TS templates...")

@@ -4,32 +4,32 @@
 <context>
     <name>BanlistDialog</name>
     <message>
-        <location filename="../ui/banlist.ui" line="14"/>
+        <location filename="../ui/BanlistDialog.ui" line="14"/>
         <source>Banlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="39"/>
+        <location filename="../ui/BanlistDialog.ui" line="39"/>
         <source>Word</source>
         <translation>Cuvânt</translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="44"/>
+        <location filename="../ui/BanlistDialog.ui" line="44"/>
         <source>Date added</source>
         <translation>Dată adăugare</translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="49"/>
+        <location filename="../ui/BanlistDialog.ui" line="49"/>
         <source>Case</source>
         <translation>Majuscule</translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="62"/>
+        <location filename="../ui/BanlistDialog.ui" line="62"/>
         <source>Add</source>
         <translation>Adaugă</translation>
     </message>
     <message>
-        <location filename="../ui/banlist.ui" line="69"/>
+        <location filename="../ui/BanlistDialog.ui" line="69"/>
         <source>Remove</source>
         <translation>Scoate</translation>
     </message>
@@ -37,114 +37,101 @@
 <context>
     <name>BanwordDialog</name>
     <message>
-        <location filename="../ui/banword.ui" line="17"/>
+        <location filename="../ui/BanwordDialog.ui" line="17"/>
         <source>Ban word</source>
         <translation>Interzice cuvânt</translation>
     </message>
     <message>
-        <location filename="../ui/banword.ui" line="25"/>
+        <location filename="../ui/BanwordDialog.ui" line="25"/>
         <source>Word to ban:</source>
         <translation>Cuvinte pentru interzicere:</translation>
     </message>
     <message>
-        <location filename="../ui/banword.ui" line="39"/>
+        <location filename="../ui/BanwordDialog.ui" line="39"/>
         <source>Case:</source>
         <translation>Majuscule:</translation>
     </message>
     <message>
-        <location filename="../ui/banword.ui" line="46"/>
+        <location filename="../ui/BanwordDialog.ui" line="46"/>
         <source>Insensitive</source>
         <translation>Insensibil</translation>
     </message>
     <message>
-        <location filename="../ui/banword.ui" line="56"/>
+        <location filename="../ui/BanwordDialog.ui" line="56"/>
         <source>Sensitive</source>
         <translation>Sensibil</translation>
     </message>
     <message>
-        <location filename="../ui/banword.ui" line="63"/>
+        <location filename="../ui/BanwordDialog.ui" line="63"/>
         <source>First char</source>
         <translation>Primul caracter</translation>
     </message>
 </context>
 <context>
-    <name>ConfirmDialog</name>
-    <message>
-        <location filename="../ui/confirm.ui" line="14"/>
-        <source>Ban word</source>
-        <translation>Interzicere cuvânt</translation>
-    </message>
-    <message>
-        <location filename="../ui/confirm.ui" line="20"/>
-        <source>Are you sure?</source>
-        <translation>Ești sigur(ă)?</translation>
-    </message>
-</context>
-<context>
     <name>MainWindow</name>
     <message>
-        <location filename="../ui/main.ui" line="14"/>
+        <location filename="../ui/MainWindow.ui" line="14"/>
         <source>Nexus</source>
         <translation>Nexus</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="32"/>
+        <location filename="../ui/MainWindow.ui" line="32"/>
         <source>Start logging</source>
         <translation>Începe înregistrarea</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="39"/>
+        <location filename="../ui/MainWindow.ui" line="39"/>
         <source>Refresh</source>
         <translation>Reîmprospătează</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="46"/>
+        <location filename="../ui/MainWindow.ui" line="46"/>
         <source>Banlist</source>
         <translation>Listă interziceri</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="53"/>
+        <location filename="../ui/MainWindow.ui" line="53"/>
         <source>Export</source>
         <translation>Exportă</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="67"/>
+        <location filename="../ui/MainWindow.ui" line="67"/>
         <source>Chorded Entry</source>
         <translation type="unfinished">Intrare Chord</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="110"/>
+        <location filename="../ui/MainWindow.ui" line="110"/>
         <source>Chord</source>
         <translation type="unfinished">Chord</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="115"/>
+        <location filename="../ui/MainWindow.ui" line="115"/>
         <source>Frequency</source>
         <translation>Frecvență</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="120"/>
-        <location filename="../ui/main.ui" line="184"/>
+        <location filename="../ui/MainWindow.ui" line="120"/>
+        <location filename="../ui/MainWindow.ui" line="184"/>
         <source>Last used</source>
         <translation>Folosit ultima oară</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="131"/>
+        <location filename="../ui/MainWindow.ui" line="131"/>
         <source>Character Entry</source>
         <translation>Intrare caractere</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="174"/>
+        <location filename="../ui/MainWindow.ui" line="174"/>
         <source>Word</source>
         <translation>Cuvânt</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="179"/>
+        <location filename="../ui/MainWindow.ui" line="179"/>
         <source>Freq.</source>
         <translation>Frecv.</translation>
     </message>
     <message>
-        <location filename="../ui/main.ui" line="189"/>
+        <location filename="../ui/MainWindow.ui" line="189"/>
         <source>Avg speed</source>
         <translation>Viteză medie</translation>
     </message>
