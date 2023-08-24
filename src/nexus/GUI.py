@@ -3,6 +3,7 @@ from threading import Thread
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTranslator, QLocale
+from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
     QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel
 
@@ -73,6 +74,7 @@ class GUI(object):
         """Initialize GUI"""
         self.app = QApplication([])
         self.window = MainWindow()
+        QQuickStyle.setStyle('Fusion')
         self.app.setStyleSheet(stylesheet)
 
         # Translation
@@ -90,6 +92,7 @@ class GUI(object):
         self.chord_table: QTableWidget = self.window.chordTable
         self.statusbar: QStatusBar = self.window.statusbar
 
+        # Menu bar
         self.window.actionQuit.triggered.connect(self.app.quit)
         self.window.actionQt_Default.triggered.connect(lambda: self.app.setStyleSheet(''))
         self.window.actionNexus_Dark.triggered.connect(lambda: self.app.setStyleSheet(stylesheet))
