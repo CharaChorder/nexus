@@ -1,9 +1,9 @@
 import argparse
 from threading import Thread
 from pathlib import Path
+from typing import Literal
 
 from PySide6.QtCore import Qt, QTranslator, QLocale
-from PySide6.QtQuickControls2 import QQuickStyle
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
     QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel
 
@@ -61,7 +61,7 @@ class Translator(QTranslator):
     """Custom translator"""
 
     def translate(self, context: str, source: str, disambiguation=None, n=-1):
-        final = super().translate(context, source, disambiguation, n)
+        final = super().translate(context, source, disambiguation, n)  # type: ignore[no-untyped-call]
         if final:
             return final
         return source
@@ -74,8 +74,8 @@ class GUI(object):
         """Initialize GUI"""
         self.app = QApplication([])
         self.window = MainWindow()
-        QQuickStyle.setStyle('Fusion')
-        self.app.setStyleSheet(stylesheet)
+        self.default_style: str = self.app.style().name()
+        self.set_style('Nexus_Dark')
 
         # Translation
         self.translator = Translator(self.app)
@@ -85,8 +85,6 @@ class GUI(object):
 
         # Components
         self.start_stop_button: QPushButton = self.window.startStopButton
-        self.refresh_button: QPushButton = self.window.refreshButton
-        self.banlist_button: QPushButton = self.window.banlistButton
         self.export_button: QPushButton = self.window.exportButton
         self.chentry_table: QTableWidget = self.window.chentryTable
         self.chord_table: QTableWidget = self.window.chordTable
@@ -94,13 +92,14 @@ class GUI(object):
 
         # Menu bar
         self.window.actionQuit.triggered.connect(self.app.quit)
-        self.window.actionQt_Default.triggered.connect(lambda: self.app.setStyleSheet(''))
-        self.window.actionNexus_Dark.triggered.connect(lambda: self.app.setStyleSheet(stylesheet))
+        self.window.actionNexus_Dark.triggered.connect(lambda: self.set_style('Nexus_Dark'))
+        self.window.actionQt_Default.triggered.connect(lambda: self.set_style('Fusion'))
+        self.window.actionPlatform_Default.triggered.connect(lambda: self.set_style('Default'))
 
         # Signals
         self.start_stop_button.clicked.connect(self.start_stop)
-        self.refresh_button.clicked.connect(self.refresh)
-        self.banlist_button.clicked.connect(self.show_banlist)
+        self.window.refreshButton.clicked.connect(self.refresh)
+        self.window.banlistButton.clicked.connect(self.show_banlist)
         self.export_button.clicked.connect(self.export)
 
         self.freqlog: Freqlog | None = None  # for logging
@@ -108,6 +107,15 @@ class GUI(object):
         self.logging_thread: Thread | None = None
         self.start_stop_button_started = False
         self.args = args
+
+    def set_style(self, style: Literal['Nexus_Dark', 'Fusion', 'Default']):
+        self.app.setStyleSheet('')
+        if style == 'Default':
+            self.app.setStyle(self.default_style)
+        else:
+            self.app.setStyle('Fusion')
+        if style == 'Nexus_Dark':
+            self.app.setStyleSheet(stylesheet)
 
     def start_logging(self):
         if not self.freqlog:

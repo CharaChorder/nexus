@@ -111,5 +111,4 @@ QMenuBar::item:selected {
 QMenu::item:selected {
     background: #1a1a1a;
 }
-
 '''

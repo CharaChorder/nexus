@@ -231,7 +231,7 @@
      <x>0</x>
      <y>0</y>
      <width>900</width>
-     <height>20</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -248,8 +248,9 @@
      <property name="title">
       <string>Theme</string>
      </property>
-     <addaction name="actionQt_Default"/>
      <addaction name="actionNexus_Dark"/>
+     <addaction name="actionQt_Default"/>
+     <addaction name="actionPlatform_Default"/>
     </widget>
     <addaction name="menuTheme"/>
    </widget>
@@ -264,14 +265,19 @@
     <string>Alt+Q</string>
    </property>
   </action>
+  <action name="actionNexus_Dark">
+   <property name="text">
+    <string>Nexus Dark</string>
+   </property>
+  </action>
   <action name="actionQt_Default">
    <property name="text">
     <string>Qt Default</string>
    </property>
   </action>
-  <action name="actionNexus_Dark">
+  <action name="actionPlatform_Default">
    <property name="text">
-    <string>Nexus Dark</string>
+    <string>Platform Default</string>
    </property>
   </action>
  </widget>
