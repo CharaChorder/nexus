@@ -143,7 +143,8 @@ class SQLiteBackend(Backend):
             case CaseSensitivity.INSENSITIVE:
                 word = word.lower()
                 res = self._fetchone("SELECT word FROM banlist WHERE word = ? COLLATE NOCASE", (word,))
-                return res is not None
+                res_l = self._fetchone("SELECT word FROM banlist_lower WHERE word = ?", (word,))
+                return res is not None or res_l is not None
             case CaseSensitivity.FIRST_CHAR:
                 word_u = word[0].upper() + word[1:]
                 word_l = word[0].lower() + word[1:]
