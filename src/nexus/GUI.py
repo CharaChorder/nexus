@@ -5,7 +5,7 @@ from typing import Literal
 
 from PySide6.QtCore import Qt, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
-    QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel
+    QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel, QMenu
 
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
@@ -98,6 +98,14 @@ class GUI(object):
         self.window.refreshButton.clicked.connect(self.refresh)
         self.window.banlistButton.clicked.connect(self.show_banlist)
         self.export_button.clicked.connect(self.export)
+
+        # Chentry table right click menu
+        self.chentry_context_menu = QMenu(self.chentry_table)
+        self.chentry_table.contextMenuEvent = lambda event: self.chentry_context_menu.exec_(event.globalPos())
+
+        # Ban word action
+        banword_action = self.chentry_context_menu.addAction(self.tr("GUI", "Ban word"))
+        banword_action.triggered.connect(self.banword)
 
         # Styles
         self.default_style: str = self.app.style().name()
@@ -253,7 +261,6 @@ class GUI(object):
             bw_dialog.exec()
             refresh_banlist()
 
-        # TODO: support banning from right click menu
         def remove_banword():
             """Controller for remove button in banlist dialog"""
             # Get currently selected row(s)
@@ -290,6 +297,16 @@ class GUI(object):
             num_exported = self.temp_freqlog.export_words_to_csv(filename)
             self.statusbar.showMessage(
                 self.tr("GUI", "Exported {} words to {}".format(num_exported, filename)))
+
+    def banword(self):
+        """Controller for right click menu banword"""
+        for index in self.chentry_table.selectionModel().selectedRows():
+            word = self.chentry_table.item(index.row(), 0).text()
+            self.temp_freqlog.ban_word(word, CaseSensitivity.SENSITIVE)
+            self.statusbar.showMessage(self.tr("GUI", "Banned word {}").format(word))
+
+        # Refresh table
+        self.refresh()
 
     def exec(self):
         """Start the GUI"""
