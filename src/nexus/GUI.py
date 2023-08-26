@@ -14,7 +14,7 @@ from nexus.ui.MainWindow import Ui_MainWindow
 
 from nexus.style import Stylesheet, Colors
 
-from nexus.Freqlog.Definitions import CaseSensitivity
+from nexus.Freqlog.Definitions import CaseSensitivity, WordMetadataAttr, WordMetadataAttrLabel
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -98,6 +98,13 @@ class GUI(object):
         self.window.refreshButton.clicked.connect(self.refresh)
         self.window.banlistButton.clicked.connect(self.show_banlist)
         self.export_button.clicked.connect(self.export)
+
+        # Columns of chentry table
+        self.columns = [WordMetadataAttr.word, WordMetadataAttr.score, WordMetadataAttr.average_speed,
+                        WordMetadataAttr.frequency, WordMetadataAttr.last_used]
+        self.chentry_table.setColumnCount(5)
+        self.chentry_table.setHorizontalHeaderLabels(
+            [self.tr("GUI", WordMetadataAttrLabel[col]) for col in self.columns])
 
         # Chentry table right click menu
         self.chentry_context_menu = QMenu(self.chentry_table)
@@ -184,18 +191,30 @@ class GUI(object):
 
     def refresh(self):
         """Controller for refresh button"""
-        words = self.temp_freqlog.list_words()
+
+        # Save and disable sort
+        sort_by = self.chentry_table.horizontalHeader().sortIndicatorSection()
+        sort_order = self.chentry_table.horizontalHeader().sortIndicatorOrder()
         self.chentry_table.setSortingEnabled(False)
-        i = 0
-        words_set = set(map(lambda w: w.word, words.copy()))
-        while i < self.chentry_table.rowCount():
-            if self.chentry_table.item(i, 0).text() not in words_set:
-                self.chentry_table.removeRow(i)
-                i -= 1
-            i += 1
+
+        # Update entries in table
+        words = self.temp_freqlog.list_words(sort_by=sort_by, reverse=sort_order == Qt.SortOrder.DescendingOrder)
+        # t, w = 0, 0
+        words = list(words)
+        # while t < self.chentry_table.rowCount() or w < len(words):
+        #     if self.chentry_table.item(t, 0).text() not in words_set:
+        #         self.chentry_table.removeRow(i)
+        #         i -= 1
+        #     i += 1
+
+        # Add words that should be in the table but are not
         table_set = set(map(lambda w: self.chentry_table.item(w, 0).text(), range(self.chentry_table.rowCount())))
         for word in words:
             if word.word not in table_set:
+                i = 0
+                # match sort_by:
+                #     case 0:
+
                 self.chentry_table.insertRow(i)
                 self.chentry_table.setItem(i, 0, QTableWidgetItem(word.word))
                 item = QTableWidgetItem()
@@ -213,8 +232,11 @@ class GUI(object):
                 self.chentry_table.setItem(i, 4, item)
                 i += 1
 
+        # Resize view
         self.chentry_table.setRowCount(len(words))
         self.chentry_table.resizeColumnsToContents()
+
+        # Restore sorting
         self.chentry_table.setSortingEnabled(True)
         self.statusbar.showMessage(self.tr("GUI", "Loaded {} freqlogged words").format(len(words)))
 
