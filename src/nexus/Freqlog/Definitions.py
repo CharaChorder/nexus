@@ -58,12 +58,15 @@ class WordMetadata:
             self.frequency + other.frequency,
             max(self.last_used, other.last_used),
             (self.average_speed * self.frequency + other.average_speed * other.frequency) / (
-                        self.frequency + other.frequency)
+                    self.frequency + other.frequency)
         )
 
     def __str__(self) -> str:
         return f"Word: {self.word} | Frequency: {self.frequency} | Last used: {self.last_used} | " \
                f"Average speed: {self.average_speed} | Score: {self.score}"
+
+    def __repr__(self) -> str:
+        return f"WordMetadata({self.word})"
 
 
 class WordMetadataAttr(Enum):
@@ -73,6 +76,13 @@ class WordMetadataAttr(Enum):
     last_used = "lastused"
     average_speed = "avgspeed"
     score = "score"
+
+
+WordMetadataAttrLabel = {WordMetadataAttr.word: "Word",
+                         WordMetadataAttr.frequency: "Freq.",
+                         WordMetadataAttr.last_used: "Last used",
+                         WordMetadataAttr.average_speed: "Avg. speed",
+                         WordMetadataAttr.score: "Score"}
 
 
 class ChordMetadata:

@@ -396,12 +396,7 @@
           </column>
           <column>
            <property name="text">
-            <string>Freq.</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>Last used</string>
+            <string>Score</string>
            </property>
           </column>
           <column>
@@ -411,7 +406,12 @@
           </column>
           <column>
            <property name="text">
-            <string>Score</string>
+            <string>Freq.</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Last used</string>
            </property>
           </column>
          </widget>
