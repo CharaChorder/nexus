@@ -8,6 +8,7 @@ class Colors:
 
 
 class Stylesheet:
+    # noinspection SpellCheckingInspection
     dark = '''
         * {
             background-color: #0b0b0b;

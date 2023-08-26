@@ -1,9 +1,9 @@
 # Nexus
 
-CharaChorder's all-in-one desktop app, supporting Linux, Windows, and MacOS.
+CharaChorder's all-in-one desktop app, supporting Linux, Windows, and macOS.
 
 ## Build
-1. Get Python >=3.11 (using [pyenv](https://github.com/pyenv/pyenv) recommended on Linux/MacOS, Microsoft store has 3.11 for Windows)
+1. Get Python >=3.11 (using [pyenv](https://github.com/pyenv/pyenv) recommended on Linux/macOS, Microsoft store has 3.11 for Windows)
 2. Clone and build
 ```sh
 git clone https://github.com/CharaChorder/nexus

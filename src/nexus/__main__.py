@@ -226,7 +226,8 @@ def main():
                             logging.info(word)
             case "chords":  # get chords
                 if args.export:  # export chords
-                    freqlog.export_chords_to_csv(args.export)
+                    freqlog.export_chords_to_csv(args.export, args.num, ChordMetadataAttr[args.sort_by],
+                                                 args.order == Order.DESCENDING, CaseSensitivity[args.case])
                 elif len(args.chord) == 0:  # all chords
                     res = freqlog.list_chords(args.num, ChordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
                                               CaseSensitivity[args.case])
