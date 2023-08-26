@@ -65,6 +65,9 @@ class WordMetadata:
         return f"Word: {self.word} | Frequency: {self.frequency} | Last used: {self.last_used} | " \
                f"Average speed: {self.average_speed} | Score: {self.score}"
 
+    def __repr__(self) -> str:
+        return f"WordMetadata({self.word})"
+
 
 class WordMetadataAttr(Enum):
     """Enum for word metadata attributes"""

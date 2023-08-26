@@ -70,13 +70,13 @@
 <context>
     <name>GUI</name>
     <message>
-        <location filename="../src/nexus/GUI.py" line="177"/>
+        <location filename="../src/nexus/GUI.py" line="185"/>
         <source>GUI</source>
         <comment>Start logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="146"/>
+        <location filename="../src/nexus/GUI.py" line="154"/>
         <source>GUI</source>
         <comment>Starting...</comment>
         <translation type="unfinished"></translation>
@@ -84,59 +84,64 @@
     <message>
         <location filename="../src/nexus/GUI.py" line="107"/>
         <source>GUI</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="115"/>
+        <source>GUI</source>
         <comment>Ban word</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="157"/>
+        <location filename="../src/nexus/GUI.py" line="165"/>
         <source>GUI</source>
         <comment>Stop logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="162"/>
+        <location filename="../src/nexus/GUI.py" line="170"/>
         <source>GUI</source>
         <comment>Logging started</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="182"/>
+        <location filename="../src/nexus/GUI.py" line="190"/>
         <source>GUI</source>
         <comment>Logging stopped</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="219"/>
+        <location filename="../src/nexus/GUI.py" line="232"/>
         <source>GUI</source>
         <comment>Loaded {} freqlogged words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="280"/>
+        <location filename="../src/nexus/GUI.py" line="293"/>
         <source>GUI</source>
         <comment>Unban {} words?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="282"/>
+        <location filename="../src/nexus/GUI.py" line="295"/>
         <source>GUI</source>
         <comment>Unban one word?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="282"/>
+        <location filename="../src/nexus/GUI.py" line="295"/>
         <source>GUI</source>
         <comment>Confirm unban</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="299"/>
+        <location filename="../src/nexus/GUI.py" line="312"/>
         <source>GUI</source>
         <comment>Exported {} words to {}</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="306"/>
+        <location filename="../src/nexus/GUI.py" line="319"/>
         <source>GUI</source>
         <comment>Banned word {}</comment>
         <translation type="unfinished"></translation>
@@ -186,7 +191,7 @@
     </message>
     <message>
         <location filename="../ui/MainWindow.ui" line="333"/>
-        <location filename="../ui/MainWindow.ui" line="404"/>
+        <location filename="../ui/MainWindow.ui" line="414"/>
         <source>Last used</source>
         <translation type="unfinished"></translation>
     </message>
@@ -202,17 +207,17 @@
     </message>
     <message>
         <location filename="../ui/MainWindow.ui" line="399"/>
-        <source>Freq.</source>
+        <source>Score</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="409"/>
+        <location filename="../ui/MainWindow.ui" line="404"/>
         <source>Avg speed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="414"/>
-        <source>Score</source>
+        <location filename="../ui/MainWindow.ui" line="409"/>
+        <source>Freq.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
