@@ -14,7 +14,7 @@ from nexus.ui.MainWindow import Ui_MainWindow
 
 from nexus.style import Stylesheet, Colors
 
-from nexus.Freqlog.Definitions import CaseSensitivity, WordMetadataAttr, WordMetadataAttrLabel, WordMetadata
+from nexus.Freqlog.Definitions import CaseSensitivity, WordMetadataAttr, WordMetadataAttrLabel, WordMetadata, Defaults
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -82,7 +82,6 @@ class GUI(object):
 
         # Components
         self.start_stop_button: QPushButton = self.window.startStopButton
-        self.export_button: QPushButton = self.window.exportButton
         self.chentry_table: QTableWidget = self.window.chentryTable
         self.chord_table: QTableWidget = self.window.chordTable
         self.statusbar: QStatusBar = self.window.statusbar
@@ -92,12 +91,15 @@ class GUI(object):
         self.window.actionNexus_Dark.triggered.connect(lambda: self.set_style('Nexus_Dark'))
         self.window.actionQt_Default.triggered.connect(lambda: self.set_style('Fusion'))
         self.window.actionPlatform_Default.triggered.connect(lambda: self.set_style('Default'))
+        self.window.actionBanlist.triggered.connect(self.show_banlist)
+        self.window.actionExport.triggered.connect(self.export)
 
         # Signals
         self.start_stop_button.clicked.connect(self.start_stop)
         self.window.refreshButton.clicked.connect(self.refresh)
-        self.window.banlistButton.clicked.connect(self.show_banlist)
-        self.export_button.clicked.connect(self.export)
+
+        # Set default number of entries
+        self.window.entries_input.setValue(Defaults.DEFAULT_NUM_WORDS_GUI)
 
         # Columns of chentry table
         self.columns = [WordMetadataAttr.word, WordMetadataAttr.score, WordMetadataAttr.average_speed,
@@ -201,7 +203,9 @@ class GUI(object):
         self.chentry_table.setRowCount(0)
 
         # Add entries to the table
-        words = self.temp_freqlog.list_words()
+        words = self.temp_freqlog.list_words(limit=self.window.entries_input.value(), sort_by=self.columns[sort_by],
+                                             reverse=sort_order == Qt.SortOrder.DescendingOrder,
+                                             case=CaseSensitivity.INSENSITIVE)
 
         def _insert_row(row: int, word: WordMetadata):
             self.chentry_table.insertRow(row)
@@ -219,8 +223,8 @@ class GUI(object):
             item.setData(Qt.ItemDataRole.DisplayRole, word.last_used.isoformat(sep=" ", timespec="seconds"))
             self.chentry_table.setItem(row, 4, item)
 
-        for i, word in enumerate(words):
-            _insert_row(i, word)
+        for i, w in enumerate(words):
+            _insert_row(i, w)
 
         # Resize view
         self.chentry_table.setRowCount(len(words))

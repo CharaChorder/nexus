@@ -70,78 +70,78 @@
 <context>
     <name>GUI</name>
     <message>
-        <location filename="../src/nexus/GUI.py" line="185"/>
+        <location filename="../src/nexus/GUI.py" line="187"/>
         <source>GUI</source>
         <comment>Start logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="154"/>
+        <location filename="../src/nexus/GUI.py" line="156"/>
         <source>GUI</source>
         <comment>Starting...</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="107"/>
+        <location filename="../src/nexus/GUI.py" line="109"/>
         <source>GUI</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="115"/>
+        <location filename="../src/nexus/GUI.py" line="117"/>
         <source>GUI</source>
         <comment>Ban word</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="165"/>
+        <location filename="../src/nexus/GUI.py" line="167"/>
         <source>GUI</source>
         <comment>Stop logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="170"/>
+        <location filename="../src/nexus/GUI.py" line="172"/>
         <source>GUI</source>
         <comment>Logging started</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="190"/>
+        <location filename="../src/nexus/GUI.py" line="192"/>
         <source>GUI</source>
         <comment>Logging stopped</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="232"/>
+        <location filename="../src/nexus/GUI.py" line="236"/>
         <source>GUI</source>
         <comment>Loaded {} freqlogged words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="293"/>
+        <location filename="../src/nexus/GUI.py" line="297"/>
         <source>GUI</source>
         <comment>Unban {} words?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="295"/>
+        <location filename="../src/nexus/GUI.py" line="299"/>
         <source>GUI</source>
         <comment>Unban one word?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="295"/>
+        <location filename="../src/nexus/GUI.py" line="299"/>
         <source>GUI</source>
         <comment>Confirm unban</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="312"/>
+        <location filename="../src/nexus/GUI.py" line="316"/>
         <source>GUI</source>
         <comment>Exported {} words to {}</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="319"/>
+        <location filename="../src/nexus/GUI.py" line="323"/>
         <source>GUI</source>
         <comment>Banned word {}</comment>
         <translation type="unfinished"></translation>
@@ -161,102 +161,123 @@
     </message>
     <message>
         <location filename="../ui/MainWindow.ui" line="241"/>
+        <location filename="../ui/MainWindow.ui" line="546"/>
         <source>Refresh</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="248"/>
+        <location filename="../ui/MainWindow.ui" line="345"/>
+        <source>Entries to show:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.ui" line="541"/>
         <source>Banlist</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="255"/>
+        <location filename="../ui/MainWindow.ui" line="551"/>
         <source>Export</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="277"/>
+        <location filename="../ui/MainWindow.ui" line="263"/>
         <source>Chorded Entry</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="323"/>
+        <location filename="../ui/MainWindow.ui" line="312"/>
         <source>Chord</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="328"/>
+        <location filename="../ui/MainWindow.ui" line="317"/>
         <source>Frequency</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="333"/>
-        <location filename="../ui/MainWindow.ui" line="414"/>
+        <location filename="../ui/MainWindow.ui" line="322"/>
+        <location filename="../ui/MainWindow.ui" line="465"/>
         <source>Last used</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="348"/>
+        <location filename="../ui/MainWindow.ui" line="337"/>
         <source>Character Entry</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="394"/>
+        <location filename="../ui/MainWindow.ui" line="352"/>
+        <source>Enter 0 to show all entries</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.ui" line="377"/>
+        <source>Search:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.ui" line="390"/>
+        <source>Start typing to search for words...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.ui" line="445"/>
         <source>Word</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="399"/>
+        <location filename="../ui/MainWindow.ui" line="450"/>
         <source>Score</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="404"/>
+        <location filename="../ui/MainWindow.ui" line="455"/>
         <source>Avg speed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="409"/>
+        <location filename="../ui/MainWindow.ui" line="460"/>
         <source>Freq.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="441"/>
+        <location filename="../ui/MainWindow.ui" line="492"/>
         <source>File</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="447"/>
+        <location filename="../ui/MainWindow.ui" line="499"/>
         <source>View</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="451"/>
+        <location filename="../ui/MainWindow.ui" line="503"/>
         <source>Theme</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="464"/>
+        <location filename="../ui/MainWindow.ui" line="518"/>
         <source>Quit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="467"/>
+        <location filename="../ui/MainWindow.ui" line="521"/>
         <source>Alt+Q</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="477"/>
+        <location filename="../ui/MainWindow.ui" line="531"/>
         <source>Qt Default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="482"/>
+        <location filename="../ui/MainWindow.ui" line="536"/>
         <source>Platform Default</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/MainWindow.ui" line="472"/>
+        <location filename="../ui/MainWindow.ui" line="526"/>
         <source>Nexus Dark</source>
         <translation type="unfinished"></translation>
     </message>

@@ -22,7 +22,7 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1">
     <item>
-     <layout class="QHBoxLayout" name="toolbar" stretch="1,0,0,0">
+     <layout class="QHBoxLayout" name="toolbar" stretch="1,0">
       <item>
        <widget class="QPushButton" name="startStopButton">
         <property name="palette">
@@ -242,20 +242,6 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QPushButton" name="banlistButton">
-        <property name="text">
-         <string>Banlist</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="exportButton">
-        <property name="text">
-         <string>Export</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </item>
     <item>
@@ -287,6 +273,9 @@
           </property>
           <property name="editTriggers">
            <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="alternatingRowColors">
+           <bool>false</bool>
           </property>
           <property name="selectionBehavior">
            <enum>QAbstractItemView::SelectRows</enum>
@@ -349,6 +338,65 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
+         <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,1">
+          <item>
+           <widget class="QLabel" name="entries_label">
+            <property name="text">
+             <string>Entries to show:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="entries_input">
+            <property name="toolTip">
+             <string>Enter 0 to show all entries</string>
+            </property>
+            <property name="suffix">
+             <string/>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+            <property name="singleStep">
+             <number>0</number>
+            </property>
+            <property name="stepType">
+             <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
+            </property>
+            <property name="value">
+             <number>0</number>
+            </property>
+            <property name="displayIntegerBase">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="search_label">
+            <property name="text">
+             <string>Search:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="search_input">
+            <property name="inputMask">
+             <string/>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="placeholderText">
+             <string>Start typing to search for words...</string>
+            </property>
+            <property name="clearButtonEnabled">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
          <widget class="QTableWidget" name="chentryTable">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -358,6 +406,9 @@
           </property>
           <property name="editTriggers">
            <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="alternatingRowColors">
+           <bool>false</bool>
           </property>
           <property name="selectionBehavior">
            <enum>QAbstractItemView::SelectRows</enum>
@@ -433,13 +484,14 @@
      <x>0</x>
      <y>0</y>
      <width>900</width>
-     <height>22</height>
+     <height>35</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionExport"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuView">
@@ -455,6 +507,8 @@
      <addaction name="actionPlatform_Default"/>
     </widget>
     <addaction name="menuTheme"/>
+    <addaction name="actionRefresh"/>
+    <addaction name="actionBanlist"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuView"/>
@@ -480,6 +534,21 @@
   <action name="actionPlatform_Default">
    <property name="text">
     <string>Platform Default</string>
+   </property>
+  </action>
+  <action name="actionBanlist">
+   <property name="text">
+    <string>Banlist</string>
+   </property>
+  </action>
+  <action name="actionRefresh">
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+  </action>
+  <action name="actionExport">
+   <property name="text">
+    <string>Export</string>
    </property>
   </action>
  </widget>

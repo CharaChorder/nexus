@@ -43,7 +43,8 @@ def main():
     case_arg.add_argument("-c", "--case", default=CaseSensitivity.INSENSITIVE.name, help="Case sensitivity",
                           choices={case.name for case in CaseSensitivity})
     num_arg = argparse.ArgumentParser(add_help=False)
-    num_arg.add_argument("-n", "--num", default=10, help="Number of words to return (0 for all)", type=int)
+    num_arg.add_argument("-n", "--num", default=Defaults.DEFAULT_NUM_WORDS_CLI,
+                         help="Number of words to return (0 for all)", type=int)
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg, path_arg],
