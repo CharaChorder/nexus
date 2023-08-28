@@ -54,14 +54,15 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.word,
-                   reverse: bool = False, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> list[WordMetadata]:
+    def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.score, reverse: bool = True,
+                   case: CaseSensitivity = CaseSensitivity.INSENSITIVE, search: str = "") -> list[WordMetadata]:
         """
         List words in the store
         :param limit: Maximum number of words to return
         :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed, score
         :param reverse: Reverse sort order
         :param case: Case sensitivity
+        :param search: Part of word to search for
         """
 
     @abstractmethod

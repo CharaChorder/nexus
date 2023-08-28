@@ -127,6 +127,10 @@ class GUI(object):
         self.start_stop_button_started = False
         self.args = args
 
+        # Auto-refresh - must go at the end
+        self.window.entries_input.valueChanged.connect(self.refresh)
+        self.window.search_input.textChanged.connect(self.refresh)
+
     def set_style(self, style: Literal['Nexus_Dark', 'Fusion', 'Default']):
         self.app.setStyleSheet('')
         if style == 'Default':
@@ -205,7 +209,7 @@ class GUI(object):
         # Add entries to the table
         words = self.temp_freqlog.list_words(limit=self.window.entries_input.value(), sort_by=self.columns[sort_by],
                                              reverse=sort_order == Qt.SortOrder.DescendingOrder,
-                                             case=CaseSensitivity.INSENSITIVE)
+                                             case=CaseSensitivity.INSENSITIVE, search=self.window.search_input.text())
 
         def _insert_row(row: int, word: WordMetadata):
             self.chentry_table.insertRow(row)
