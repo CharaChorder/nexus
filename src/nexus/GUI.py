@@ -114,7 +114,7 @@ class GUI(object):
         self.chentry_table.contextMenuEvent = lambda event: self.chentry_context_menu.exec_(event.globalPos())
 
         # Ban word action
-        banword_action = self.chentry_context_menu.addAction(self.tr("GUI", "Ban word"))
+        banword_action = self.chentry_context_menu.addAction(self.tr("GUI", "Ban and delete"))
         banword_action.triggered.connect(self.banword)
 
         # Styles
