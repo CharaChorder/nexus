@@ -6,7 +6,7 @@ from nexus.Freqlog.backends.Backend import Backend
 from nexus.Freqlog.Definitions import BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
     WordMetadata, WordMetadataAttr
 
-# WARNING: Loaded into SQL query, do not use unsanitized user input
+# WARNING: Directly loaded into SQL query, do not use unsanitized user input
 SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM freqlog"
 
 
@@ -91,7 +91,7 @@ class SQLiteBackend(Backend):
                     if word_metadata is None:
                         word_metadata = WordMetadata(word, row[1], datetime.fromtimestamp(row[2]),
                                                      timedelta(seconds=row[3]))
-                    else:
+                    else:  # Combine (or) same word with different casing
                         word_metadata |= WordMetadata(word, row[1], datetime.fromtimestamp(row[2]),
                                                       timedelta(seconds=row[3]))
                 return word_metadata
@@ -104,7 +104,7 @@ class SQLiteBackend(Backend):
                                            timedelta(seconds=res_u[3])) if res_u else None
                 word_meta_l = WordMetadata(word, res_l[1], datetime.fromtimestamp(res_l[2]),
                                            timedelta(seconds=res_l[3])) if res_l else None
-                if not word_meta_u:
+                if not word_meta_u:  # first operand in or must not be None
                     return word_meta_l
                 return word_meta_u | word_meta_l
             case CaseSensitivity.SENSITIVE:
@@ -122,12 +122,12 @@ class SQLiteBackend(Backend):
     def log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """Log a word entry, creating it if it doesn't exist"""
         metadata = self.get_word_metadata(word, CaseSensitivity.SENSITIVE)
-        if metadata:
+        if metadata:  # Use or operator to combine metadata with existing entry
             metadata |= WordMetadata(word, 1, end_time, end_time - start_time)
             self._execute("UPDATE freqlog SET frequency=?, lastused=?, avgspeed=? WHERE word=?",
                           (metadata.frequency, metadata.last_used.timestamp(), metadata.average_speed.total_seconds(),
                            word))
-        else:
+        else:  # New entry
             self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?)",
                           (word, 1, end_time.timestamp(), (end_time - start_time).total_seconds()))
 
@@ -201,33 +201,38 @@ class SQLiteBackend(Backend):
                 self._execute("DELETE FROM banlist WHERE word=?", (word,))
         return True
 
-    def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.word,
-                   reverse: bool = False, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> list[WordMetadata]:
+    def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.score, reverse: bool = True,
+                   case: CaseSensitivity = CaseSensitivity.INSENSITIVE, search: str = "") -> list[WordMetadata]:
         """
         List words in the store
         :param limit: Maximum number of words to return
         :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed, score
         :param reverse: Reverse sort order
         :param case: Case sensitivity
-        :raises ValueError: if sort_by is invalid
+        :param search: Part of word to search for
         """
+        sql_search = f" WHERE word LIKE '%{search}%'" if search else ""
         if case == CaseSensitivity.SENSITIVE:
-            sql_sort_limit: str = sort_by.value  # WARNING: Loaded into SQL query, do not use unsanitized user input
+            # WARNING: Directly loaded into SQL query, do not use unsanitized user input
+            sql_sort_limit: str = sort_by.value
             if reverse:
                 sql_sort_limit += " DESC"
             if limit > 0:
                 sql_sort_limit += f" LIMIT {limit}"
-            res = self._fetchall(f"{SQL_SELECT_STAR_FROM_FREQLOG} ORDER BY {sql_sort_limit}")
+            res = self._fetchall(f"{SQL_SELECT_STAR_FROM_FREQLOG}{sql_search} ORDER BY {sql_sort_limit}")
             return [WordMetadata(row[0], row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
                     for row in res]
-        res = self._fetchall(SQL_SELECT_STAR_FROM_FREQLOG)
+
+        # Case INSENSITIVE or FIRST_CHAR
+        res = self._fetchall(SQL_SELECT_STAR_FROM_FREQLOG + sql_search)
         d: dict[WordMetadata] = {}
         for row in res:
-            word = row[0][0].lower() + row[0][1:] if case == CaseSensitivity.FIRST_CHAR else row[0].lower()
+            word = row[0]
+            word = word[0].lower() + word[1:] if case == CaseSensitivity.FIRST_CHAR else word.lower()  # un-case
             word_metadata = WordMetadata(word, row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
-            try:
+            try:  # Combine (or) same word with different casing
                 d[word] |= word_metadata
-            except KeyError:
+            except KeyError:  # New word
                 d[word] = word_metadata
         ret = sorted(list(d.values()), key=lambda x: getattr(x, sort_by.name), reverse=reverse)
         return ret[:limit] if limit > 0 else ret

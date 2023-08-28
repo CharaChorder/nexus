@@ -270,16 +270,19 @@ class Freqlog:
         return [self.unban_word(word, case) for word, case in entries.items()]
 
     def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.score,
-                   reverse: bool = True, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> list[WordMetadata]:
+                   reverse: bool = True, case: CaseSensitivity = CaseSensitivity.INSENSITIVE,
+                   search: str = "") -> list[WordMetadata]:
         """
         List words in the store
         :param limit: Maximum number of words to return
         :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed, score
         :param reverse: Reverse sort order
         :param case: Case sensitivity
+        :param search: Part of word to search for
         """
-        logging.info(f"Listing words, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}")
-        return self.backend.list_words(limit, sort_by, reverse, case)
+        logging.info(
+            f"Listing words, limit {limit}, sort_by {sort_by}, reverse {reverse}, case {case.name}, search {search}")
+        return self.backend.list_words(limit, sort_by, reverse, case, search)
 
     def export_words_to_csv(self, export_path: str, limit: int = -1,
                             sort_by: WordMetadataAttr = WordMetadataAttr.score,

@@ -43,7 +43,11 @@ def main():
     case_arg.add_argument("-c", "--case", default=CaseSensitivity.INSENSITIVE.name, help="Case sensitivity",
                           choices={case.name for case in CaseSensitivity})
     num_arg = argparse.ArgumentParser(add_help=False)
-    num_arg.add_argument("-n", "--num", default=10, help="Number of words to return (0 for all)", type=int)
+    num_arg.add_argument("-n", "--num", default=Defaults.DEFAULT_NUM_WORDS_CLI,
+                         help="Number of words to return (0 for all)", type=int)
+    search_arg = argparse.ArgumentParser(add_help=False)
+    search_arg.add_argument("-f", "--find", metavar="search", dest="search", help="Search for (part of) a word",
+                            required=False)
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg, path_arg],
@@ -61,22 +65,22 @@ def main():
                               help="Allowed keys in chord output")
     parser_start.add_argument("--add-modifier-key", action="append", default=[],
                               help="Add a modifier key to the default set",
-                              choices={key.name for key in set(keyboard.Key) - Defaults.DEFAULT_MODIFIER_KEYS})
+                              choices=sorted(key.name for key in set(keyboard.Key) - Defaults.DEFAULT_MODIFIER_KEYS))
     parser_start.add_argument("--remove-modifier-key", action="append", default=[],
                               help="Remove a modifier key from the default set",
-                              choices={key.name for key in Defaults.DEFAULT_MODIFIER_KEYS})
+                              choices=sorted(key.name for key in Defaults.DEFAULT_MODIFIER_KEYS))
 
     # Get words
     parser_words = subparsers.add_parser("words", help="Get list of freqlogged words",
-                                         parents=[log_arg, path_arg, case_arg, num_arg])
+                                         parents=[log_arg, path_arg, case_arg, num_arg, search_arg])
     parser_words.add_argument("word", help="Word(s) to get data of", nargs="*")
     parser_words.add_argument("-e", "--export", help="Export all freqlogged words as csv to file"
                                                      "(ignores word args)", required=False)
     parser_words.add_argument("-s", "--sort-by", default=WordMetadataAttr.frequency.name,
                               help=f"Sort by (default: {WordMetadataAttr.frequency.name})",
-                              choices={attr.name for attr in WordMetadataAttr})
+                              choices=[attr.name for attr in WordMetadataAttr])
     parser_words.add_argument("-o", "--order", default=Order.DESCENDING, help="Order (default: DESCENDING)",
-                              choices={order.name for order in Order})
+                              choices=[order.name for order in Order])
 
     # Get chords
     # parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
@@ -86,18 +90,18 @@ def main():
     #                                                   "(ignores chord args)", required=False)
     # parser_chords.add_argument("-s", "--sort-by", default=ChordMetadataAttr.frequency.name,
     #                            help=f"Sort by (default: {ChordMetadataAttr.frequency.name})")
-    #                            choices={attr.name for attr in ChordMetadataAttr})
+    #                            choices=[attr.name for attr in ChordMetadataAttr])
     # parser_chords.add_argument("-o", "--order", default=Order.ASCENDING, help="Order (default: DESCENDING)",
-    #                            choices={order.name for order in Order})
+    #                            choices=[order.name for order in Order])
 
     # Get banned words
     parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",
                                           parents=[log_arg, path_arg, num_arg])
     parser_banned.add_argument("-s", "--sort-by", default=BanlistAttr.date_added.name,
                                help="Sort by (default: DATE_ADDED)",
-                               choices={attr.name for attr in BanlistAttr})
+                               choices=[attr.name for attr in BanlistAttr])
     parser_banned.add_argument("-o", "--order", default=Order.DESCENDING, help="Order (default: DESCENDING)",
-                               choices={order.name for order in Order})
+                               choices=[order.name for order in Order])
 
     # Check ban
     parser_check = subparsers.add_parser("checkword", help="Check if a word is banned",
@@ -203,7 +207,7 @@ def main():
                     freqlog.export_words_to_csv(args.export)
                 elif len(args.word) == 0:  # all words
                     res = freqlog.list_words(args.num, WordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
-                                             CaseSensitivity[args.case])
+                                             CaseSensitivity[args.case], args.search)
                     if len(res) == 0:
                         logging.info("No words in freqlog. Start typing!")
                     else:
