@@ -11,6 +11,14 @@ SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM 
 SQL_SELECT_STAR_FROM_BANLIST = "SELECT word, dateadded FROM banlist"
 
 
+def decode_version(version: int) -> str:
+    return f"{version >> 16}.{version >> 8 & 0xFF}.{version & 0xFF}"
+
+
+def encode_version(version: str) -> int:
+    return int(version.split(".")[0]) << 16 | int(version.split(".")[1]) << 8 | int(version.split(".")[2])
+
+
 class SQLiteBackend(Backend):
 
     def __init__(self, db_path: str) -> None:
@@ -27,12 +35,12 @@ class SQLiteBackend(Backend):
         old_version = self._fetchone("PRAGMA user_version")[0]
 
         # Encode major, minor and patch version into a single 4-byte integer
-        sql_version: int = int(__version__.split(".")[0]) << 16 | int(__version__.split(".")[1]) << 8 | int(
-            __version__.split(".")[2])
+        sql_version: int = encode_version(__version__)
         if old_version < sql_version:
             self._upgrade_database(sql_version)
         elif old_version > sql_version:
-            raise ValueError(f"Database version {old_version} is newer than the current version {sql_version}")
+            raise ValueError(
+                f"Database version {decode_version(old_version)} is newer than the current version {__version__}")
 
         self._execute(f"PRAGMA user_version = {sql_version}")
 
