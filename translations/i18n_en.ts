@@ -70,13 +70,13 @@
 <context>
     <name>GUI</name>
     <message>
-        <location filename="../src/nexus/GUI.py" line="187"/>
+        <location filename="../src/nexus/GUI.py" line="191"/>
         <source>GUI</source>
         <comment>Start logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="156"/>
+        <location filename="../src/nexus/GUI.py" line="160"/>
         <source>GUI</source>
         <comment>Starting...</comment>
         <translation type="unfinished"></translation>
@@ -89,59 +89,59 @@
     <message>
         <location filename="../src/nexus/GUI.py" line="117"/>
         <source>GUI</source>
-        <comment>Ban word</comment>
+        <comment>Ban and delete</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="167"/>
+        <location filename="../src/nexus/GUI.py" line="171"/>
         <source>GUI</source>
         <comment>Stop logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="172"/>
+        <location filename="../src/nexus/GUI.py" line="176"/>
         <source>GUI</source>
         <comment>Logging started</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="192"/>
+        <location filename="../src/nexus/GUI.py" line="196"/>
         <source>GUI</source>
         <comment>Logging stopped</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="236"/>
+        <location filename="../src/nexus/GUI.py" line="240"/>
         <source>GUI</source>
         <comment>Loaded {} freqlogged words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="297"/>
+        <location filename="../src/nexus/GUI.py" line="301"/>
         <source>GUI</source>
         <comment>Unban {} words?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="299"/>
+        <location filename="../src/nexus/GUI.py" line="303"/>
         <source>GUI</source>
         <comment>Unban one word?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="299"/>
+        <location filename="../src/nexus/GUI.py" line="303"/>
         <source>GUI</source>
         <comment>Confirm unban</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="316"/>
+        <location filename="../src/nexus/GUI.py" line="320"/>
         <source>GUI</source>
         <comment>Exported {} words to {}</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="323"/>
+        <location filename="../src/nexus/GUI.py" line="327"/>
         <source>GUI</source>
         <comment>Banned word {}</comment>
         <translation type="unfinished"></translation>

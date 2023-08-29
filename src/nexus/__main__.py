@@ -43,8 +43,8 @@ def main():
     case_arg.add_argument("-c", "--case", default=CaseSensitivity.INSENSITIVE.name, help="Case sensitivity",
                           choices={case.name for case in CaseSensitivity})
     num_arg = argparse.ArgumentParser(add_help=False)
-    num_arg.add_argument("-n", "--num", default=Defaults.DEFAULT_NUM_WORDS_CLI,
-                         help="Number of words to return (0 for all)", type=int)
+    num_arg.add_argument("-n", "--num", type=int, required=False,
+                         help=f"Number of words to return (0 for all), default {Defaults.DEFAULT_NUM_WORDS_CLI}")
     search_arg = argparse.ArgumentParser(add_help=False)
     search_arg.add_argument("-f", "--find", metavar="search", dest="search", help="Search for (part of) a word",
                             required=False)
@@ -109,7 +109,8 @@ def main():
     parser_check.add_argument("word", help="Word(s) to check", nargs="+")
 
     # Ban
-    parser_ban = subparsers.add_parser("banword", help="Ban a word", parents=[log_arg, path_arg, case_arg])
+    parser_ban = subparsers.add_parser("banword", help="Ban a word and delete any existing entries of it",
+                                       parents=[log_arg, path_arg, case_arg])
     parser_ban.add_argument("word", help="Word(s) to ban", nargs="+")
 
     # Unban
@@ -152,15 +153,15 @@ def main():
                 logging.error("Must allow at least one key in chord")
                 exit_code = 3
         case "words":
-            if args.num < 0:
+            if args.num and args.num < 0:
                 logging.error("Number of words must be >= 0")
                 exit_code = 3
         case "chords":
-            if args.num < 0:
+            if args.num and args.num < 0:
                 logging.error("Number of chords must be >= 0")
                 exit_code = 3
         case "banlist":
-            if args.num < 0:
+            if args.num and args.num < 0:
                 logging.error("Number of words must be >= 0")
                 exit_code = 3
 
@@ -176,7 +177,9 @@ def main():
     if exit_code != 0:
         sys.exit(exit_code)
 
-    # Some features from this point on may not have been implemented
+    num = args.num if args.num else Defaults.DEFAULT_NUM_WORDS_CLI
+
+    # TODO: Some features from this point on may not have been implemented
     try:
         freqlog = Freqlog.Freqlog(args.freq_log_path, loggable=False)
         match args.command:
@@ -204,17 +207,19 @@ def main():
             # TODO: pretty print
             case "words":  # get words
                 if args.export:  # export words
-                    freqlog.export_words_to_csv(args.export)
+                    freqlog.export_words_to_csv(args.export, num, WordMetadataAttr[args.sort_by],
+                                                args.order == Order.DESCENDING, CaseSensitivity[args.case])
                 elif len(args.word) == 0:  # all words
-                    res = freqlog.list_words(args.num, WordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
-                                             CaseSensitivity[args.case], args.search)
+                    res = freqlog.list_words(limit=num, sort_by=WordMetadataAttr[args.sort_by],
+                                             reverse=args.order == Order.DESCENDING,
+                                             case=CaseSensitivity[args.case], search=args.search)
                     if len(res) == 0:
                         logging.info("No words in freqlog. Start typing!")
                     else:
                         for word in res:
                             logging.info(word)
                 else:  # specific words
-                    if args.num:
+                    if num:
                         logging.warning("-n/--num argument ignored when specific words are given")
                     words: list[WordMetadata] = []
                     for word in args.word:
@@ -230,10 +235,10 @@ def main():
                             logging.info(word)
             case "chords":  # get chords
                 if args.export:  # export chords
-                    freqlog.export_chords_to_csv(args.export, args.num, ChordMetadataAttr[args.sort_by],
+                    freqlog.export_chords_to_csv(args.export, num, ChordMetadataAttr[args.sort_by],
                                                  args.order == Order.DESCENDING, CaseSensitivity[args.case])
                 elif len(args.chord) == 0:  # all chords
-                    res = freqlog.list_chords(args.num, ChordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
+                    res = freqlog.list_chords(num, ChordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
                                               CaseSensitivity[args.case])
                     if len(res) == 0:
                         logging.info("No chords in freqlog. Start chording!")
@@ -241,7 +246,7 @@ def main():
                         for chord in res:
                             logging.info(chord)
                 else:  # specific chords
-                    if args.num:
+                    if num:
                         logging.warning("-n/--num argument ignored when specific chords are given")
                     chords: list[ChordMetadata] = []
                     for chord in args.chord:
@@ -256,8 +261,8 @@ def main():
                                             reverse=(args.order == Order.DESCENDING)):
                             logging.info(chord)
             case "banlist":  # get banned words
-                banlist_case, banlist_caseless = freqlog.list_banned_words(args.num, BanlistAttr[args.sort_by],
-                                                                           args.order == Order.DESCENDING)
+                banlist_case, banlist_caseless = freqlog.list_banned_words(limit=num, sort_by=BanlistAttr[args.sort_by],
+                                                                           reverse=args.order == Order.DESCENDING)
                 if len(banlist_case) == 0 and len(banlist_caseless) == 0:
                     logging.info("No banned words")
                 else:
