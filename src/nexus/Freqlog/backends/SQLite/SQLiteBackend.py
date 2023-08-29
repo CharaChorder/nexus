@@ -8,6 +8,7 @@ from nexus.Freqlog.Definitions import BanlistAttr, BanlistEntry, CaseSensitivity
 
 # WARNING: Directly loaded into SQL query, do not use unsanitized user input
 SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM freqlog"
+SQL_SELECT_STAR_FROM_BANLIST = "SELECT word, dateadded FROM banlist"
 
 
 class SQLiteBackend(Backend):
@@ -119,8 +120,10 @@ class SQLiteBackend(Backend):
         """
         raise NotImplementedError  # TODO: implement
 
-    def log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
-        """Log a word entry, creating it if it doesn't exist"""
+    def log_word(self, word: str, start_time: datetime, end_time: datetime) -> bool:
+        """Log a word entry if not banned, creating it if it doesn't exist"""
+        if self.check_banned(word, CaseSensitivity.SENSITIVE):
+            return False  # banned
         metadata = self.get_word_metadata(word, CaseSensitivity.SENSITIVE)
         if metadata:  # Use or operator to combine metadata with existing entry
             metadata |= WordMetadata(word, 1, end_time, end_time - start_time)
@@ -130,6 +133,7 @@ class SQLiteBackend(Backend):
         else:  # New entry
             self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?)",
                           (word, 1, end_time.timestamp(), (end_time - start_time).total_seconds()))
+        return True
 
     def log_chord(self, word: str, start_time: datetime, end_time: datetime) -> None:
         raise NotImplementedError  # TODO: implement
@@ -140,20 +144,21 @@ class SQLiteBackend(Backend):
         :returns: True if word is banned, False otherwise
         """
         match case:
-            case CaseSensitivity.INSENSITIVE:
+            case CaseSensitivity.INSENSITIVE:  # Only banned insensitively
                 word = word.lower()
-                res = self._fetchone("SELECT word FROM banlist WHERE word = ? COLLATE NOCASE", (word,))
-                res_l = self._fetchone("SELECT word FROM banlist_lower WHERE word = ?", (word,))
-                return res is not None or res_l is not None
-            case CaseSensitivity.FIRST_CHAR:
+                res = self._fetchone("SELECT word FROM banlist_lower WHERE word = ?", (word,))
+                return res is not None
+            case CaseSensitivity.FIRST_CHAR:  # Banned insensitively or by first char
                 word_u = word[0].upper() + word[1:]
                 word_l = word[0].lower() + word[1:]
                 res_u = self._fetchone("SELECT word FROM banlist WHERE word=?", (word_u,))
                 res_l = self._fetchone("SELECT word FROM banlist WHERE word=?", (word_l,))
-                return res_u is not None or res_l is not None
-            case CaseSensitivity.SENSITIVE:
+                res = self._fetchone("SELECT word FROM banlist_lower WHERE word = ?", (word,))
+                return res is not None or (res_u is not None and res_l is not None)
+            case CaseSensitivity.SENSITIVE:  # Banned insensitively or sensitively
                 res = self._fetchone("SELECT word FROM banlist WHERE word=?", (word,))
-                return res is not None
+                res_lower = self._fetchone("SELECT word FROM banlist_lower WHERE word = ?", (word,))
+                return res is not None or res_lower is not None
 
     def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> bool:
         """
@@ -166,7 +171,6 @@ class SQLiteBackend(Backend):
             case CaseSensitivity.INSENSITIVE:
                 word = word.lower()
                 self._execute("DELETE FROM freqlog WHERE word = ? COLLATE NOCASE", (word,))
-                self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (word, time.timestamp()))
                 self._execute("INSERT OR IGNORE INTO banlist_lower VALUES (?, ?)", (word, time.timestamp()))
             case CaseSensitivity.FIRST_CHAR:
                 word_u = word[0].upper() + word[1:]
@@ -257,14 +261,13 @@ class SQLiteBackend(Backend):
         :param reverse: Reverse sort order
         :returns: Tuple of (banned words with case, banned words without case)
         """
+        sql_sort_limit = sort_by.value
         if reverse:
-            sql_sort_limit = f"{sort_by.value} DESC"
-        else:
-            sql_sort_limit = sort_by.value
+            sql_sort_limit += " DESC"
         if limit > 0:
             sql_sort_limit += f" LIMIT {limit}"
-        res = self._fetchall(f"SELECT * FROM banlist ORDER BY {sql_sort_limit}")
-        res_lower = self._fetchall(f"SELECT * FROM banlist_lower ORDER BY {sql_sort_limit}")
+        res = self._fetchall(f"{SQL_SELECT_STAR_FROM_BANLIST} ORDER BY {sql_sort_limit}")
+        res_lower = self._fetchall(f"{SQL_SELECT_STAR_FROM_BANLIST}_lower ORDER BY {sql_sort_limit}")
         return {BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res}, \
             {BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res_lower}
 

@@ -117,6 +117,40 @@ class GUI(object):
         banword_action = self.chentry_context_menu.addAction(self.tr("GUI", "Ban and delete"))
         banword_action.triggered.connect(self.banword)
 
+        # Chentry table keyboard shortcuts
+        # TODO: These need to be reimplemented by subclassing QTableWidget and QLineInput
+        # def chentry_event_handler(event):
+        #     match event.key(), event.modifiers():
+        #         case Qt.Key_Delete, None:  # Delete bans word
+        #             self.banword()
+        #         case Qt.Key_C, Qt.ControlModifier:  # Ctrl+C copies selected row(s)
+        #             selected_rows = self.chentry_table.selectionModel().selectedRows()
+        #             if len(selected_rows) == 0:
+        #                 return
+        #             data = '\n'.join('\t'.join([self.chentry_table.item(row.row(), col).text()
+        #                                         for col, _ in enumerate(self.columns) for row in selected_rows]))
+        #             QApplication.clipboard().setText(data)
+        #         case Qt.Key_A, Qt.ControlModifier:  # Ctrl+A selects all rows
+        #             self.chentry_table.selectAll()
+        #         case Qt.Key_Escape, None:  # Escape clears selection
+        #             self.chentry_table.clearSelection()
+        #         case Qt.Key_F, Qt.ControlModifier:  # Ctrl+F focuses search input
+        #             self.window.search_input.setFocus()
+        #         case Qt.Key_R, Qt.ControlModifier:  # Ctrl+R refreshes
+        #             self.refresh()
+        #         case Qt.Key_Enter, Qt.ControlModifier:  # Ctrl+Enter starts/stops logging
+        #             self.start_stop()
+        # self.chentry_table.keyPressEvent = chentry_event_handler
+        #
+        # # Search input keyboard shortcuts
+        # def search_input_event_handler(event):
+        #     match event.key(), event.modifiers():
+        #         case Qt.Key_Escape, None:  # Escape clears search
+        #             self.window.search_input.clear()
+        #         case Qt.Key_Enter, None:  # Enter refreshes
+        #             self.refresh()
+        # self.window.search_input.keyPressEvent = search_input_event_handler
+
         # Styles
         self.default_style: str = self.app.style().name()
         self.set_style('Nexus_Dark')
@@ -243,7 +277,7 @@ class GUI(object):
         """Controller for banlist button"""
         bl_dialog = BanlistDialog()
 
-        def refresh_banlist():
+        def _refresh_banlist():
             """Refresh banlist table"""
             banlist_case, banlist_caseless = self.temp_freqlog.list_banned_words()
             bl_dialog.banlistTable.setRowCount(len(banlist_case) + len(banlist_caseless))
@@ -261,7 +295,7 @@ class GUI(object):
                 bl_dialog.banlistTable.setItem(i + len(banlist_case), 2, QTableWidgetItem("Insensitive"))
             bl_dialog.banlistTable.resizeColumnsToContents()
 
-        refresh_banlist()
+        _refresh_banlist()
 
         def banword():
             """Controller for banword button"""
@@ -271,16 +305,18 @@ class GUI(object):
                 """Controller for add button in banword dialog"""
                 word = bw_dialog.wordInput.text()
                 if bw_dialog.sensitive.isChecked():
-                    self.temp_freqlog.ban_word(word, CaseSensitivity.SENSITIVE)
+                    res = self.temp_freqlog.ban_word(word, CaseSensitivity.SENSITIVE)
                 elif bw_dialog.firstChar.isChecked():
-                    self.temp_freqlog.ban_word(word, CaseSensitivity.FIRST_CHAR)
+                    res = self.temp_freqlog.ban_word(word, CaseSensitivity.FIRST_CHAR)
                 else:
-                    self.temp_freqlog.ban_word(word, CaseSensitivity.INSENSITIVE)
+                    res = self.temp_freqlog.ban_word(word, CaseSensitivity.INSENSITIVE)
+                self.statusbar.showMessage(self.tr("GUI", "Banned '{}'").format(word) if res else
+                                           self.tr("GUI", "'{}' already banned").format(word))
 
             # Connect Ok button to add_banword
             bw_dialog.buttonBox.accepted.connect(add_banword)
             bw_dialog.exec()
-            refresh_banlist()
+            _refresh_banlist()
 
         def remove_banword():
             """Controller for remove button in banlist dialog"""
@@ -297,13 +333,27 @@ class GUI(object):
                 ] = (CaseSensitivity.SENSITIVE if bl_dialog.banlistTable.item(row.row(), 2).text() == "Sensitive"
                      else CaseSensitivity.INSENSITIVE)
             if len(selected_words) > 1:
-                confirm_text = self.tr("GUI", "Unban {} words?")
+                confirm_text = self.tr("GUI", "Unban {} words?".format(len(selected_words)))
             else:
-                confirm_text = self.tr("GUI", "Unban one word?")
+                confirm_text = self.tr("GUI", "Unban '{}'?".format(list(selected_words.keys())[0]))
+
+            def confirm_unban():
+                """Controller for OK button in confirm dialog"""
+                res = self.temp_freqlog.unban_words(selected_words).count(True)
+                if len(selected_words) == 1:
+                    word = list(selected_words.keys())[0]
+                    self.statusbar.showMessage(self.tr("GUI", "Unbanned '{}'").format(word) if res else
+                                               self.tr("GUI", "'{}' not banned").format(word))
+                elif res == 0:
+                    self.statusbar.showMessage(self.tr("GUI", "None of the selected words were banned"))
+                else:
+                    self.statusbar.showMessage(
+                        self.tr("GUI", "Unbanned {}/{} selected words").format(res, len(selected_words)))
+
             conf_dialog = ConfirmDialog(self.tr("GUI", "Confirm unban"), confirm_text.format(len(selected_words)))
-            conf_dialog.buttonBox.accepted.connect(lambda: self.temp_freqlog.unban_words(selected_words))
+            conf_dialog.buttonBox.accepted.connect(confirm_unban)
             conf_dialog.exec()
-            refresh_banlist()
+            _refresh_banlist()
 
         bl_dialog.addButton.clicked.connect(banword)
         bl_dialog.removeButton.clicked.connect(remove_banword)
@@ -317,17 +367,36 @@ class GUI(object):
                 filename += ".csv"
             num_exported = self.temp_freqlog.export_words_to_csv(filename)
             self.statusbar.showMessage(
-                self.tr("GUI", "Exported {} words to {}".format(num_exported, filename)))
+                self.tr("GUI", "Exported {} entries to {}".format(num_exported, filename)))
 
     def banword(self):
-        """Controller for right click menu banword"""
-        for index in self.chentry_table.selectionModel().selectedRows():
-            word = self.chentry_table.item(index.row(), 0).text()
-            self.temp_freqlog.ban_word(word, CaseSensitivity.INSENSITIVE)
-            self.statusbar.showMessage(self.tr("GUI", "Banned word {}").format(word))
+        """Controller for right click menu/delete key banword"""
+        # Get word(s) from selected row(s)
+        selected_words = {}
+        selected_words = {self.chentry_table.item(row.row(), 0).text(): CaseSensitivity.INSENSITIVE for row in
+                          self.chentry_table.selectionModel().selectedRows()}
+        if len(selected_words) > 1:
+            confirm_text = self.tr("GUI", "Ban and delete {} words?".format(len(selected_words)))
+        else:
+            confirm_text = self.tr("GUI", "Ban and delete '{}'?".format(list(selected_words.keys())[0]))
 
-        # Refresh table
-        self.refresh()
+        def confirm_ban():
+            """Controller for OK button in confirm dialog"""
+            res = self.temp_freqlog.ban_words(selected_words).count(True)
+            self.refresh()
+            if len(selected_words) == 1:
+                word = list(selected_words.keys())[0]
+                self.statusbar.showMessage(self.tr("GUI", "Banned '{}'").format(word) if res else
+                                           self.tr("GUI", "'{}' already banned").format(word))
+            elif res == 0:
+                self.statusbar.showMessage(self.tr("GUI", "All of the selected words were already banned"))
+            else:
+                self.statusbar.showMessage(
+                    self.tr("GUI", "Banned and deleted {}/{} selected words").format(res, len(selected_words)))
+
+        conf_dialog = ConfirmDialog(self.tr("GUI", "Confirm ban"), confirm_text.format(len(selected_words)))
+        conf_dialog.buttonBox.accepted.connect(confirm_ban)
+        conf_dialog.exec()
 
     def exec(self):
         """Start the GUI"""

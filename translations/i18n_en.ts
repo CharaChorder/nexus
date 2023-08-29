@@ -70,13 +70,13 @@
 <context>
     <name>GUI</name>
     <message>
-        <location filename="../src/nexus/GUI.py" line="191"/>
+        <location filename="../src/nexus/GUI.py" line="225"/>
         <source>GUI</source>
         <comment>Start logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="160"/>
+        <location filename="../src/nexus/GUI.py" line="194"/>
         <source>GUI</source>
         <comment>Starting...</comment>
         <translation type="unfinished"></translation>
@@ -93,57 +93,119 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="171"/>
+        <location filename="../src/nexus/GUI.py" line="205"/>
         <source>GUI</source>
         <comment>Stop logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="176"/>
+        <location filename="../src/nexus/GUI.py" line="210"/>
         <source>GUI</source>
         <comment>Logging started</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="196"/>
+        <location filename="../src/nexus/GUI.py" line="230"/>
         <source>GUI</source>
         <comment>Logging stopped</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="240"/>
+        <location filename="../src/nexus/GUI.py" line="274"/>
         <source>GUI</source>
         <comment>Loaded {} freqlogged words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="301"/>
+        <location filename="../src/nexus/GUI.py" line="313"/>
+        <location filename="../src/nexus/GUI.py" line="389"/>
+        <source>GUI</source>
+        <comment>Banned &apos;{}&apos;</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="314"/>
+        <location filename="../src/nexus/GUI.py" line="390"/>
+        <source>GUI</source>
+        <comment>&apos;{}&apos; already banned</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="336"/>
         <source>GUI</source>
         <comment>Unban {} words?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="303"/>
+        <location filename="../src/nexus/GUI.py" line="338"/>
         <source>GUI</source>
-        <comment>Unban one word?</comment>
+        <comment>Unban &apos;{}&apos;?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="303"/>
+        <location filename="../src/nexus/GUI.py" line="345"/>
+        <source>GUI</source>
+        <comment>Unbanned &apos;{}&apos;</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="346"/>
+        <source>GUI</source>
+        <comment>&apos;{}&apos; not banned</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="348"/>
+        <source>GUI</source>
+        <comment>None of the selected words were banned</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="351"/>
+        <source>GUI</source>
+        <comment>Unbanned {}/{} selected words</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="370"/>
+        <source>GUI</source>
+        <comment>Exported {} entries to {}</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="379"/>
+        <source>GUI</source>
+        <comment>Ban and delete {} words?</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="381"/>
+        <source>GUI</source>
+        <comment>Ban and delete &apos;{}&apos;?</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="392"/>
+        <source>GUI</source>
+        <comment>All of the selected words were already banned</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="395"/>
+        <source>GUI</source>
+        <comment>Banned and deleted {}/{} selected words</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="397"/>
+        <source>GUI</source>
+        <comment>Confirm ban</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="353"/>
         <source>GUI</source>
         <comment>Confirm unban</comment>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/nexus/GUI.py" line="320"/>
-        <source>GUI</source>
-        <comment>Exported {} words to {}</comment>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/nexus/GUI.py" line="327"/>
-        <source>GUI</source>
-        <comment>Banned word {}</comment>
         <translation type="unfinished"></translation>
     </message>
 </context>

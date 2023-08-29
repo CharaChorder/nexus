@@ -28,8 +28,10 @@ class Freqlog:
 
     def _log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """Log word to store"""
-        logging.info(f"Word: {word} - {start_time} - {end_time}")
-        self.backend.log_word(word, start_time, end_time)
+        if self.backend.log_word(word, start_time, end_time):
+            logging.info(f"Word: {word} - {start_time} - {end_time}")
+        else:
+            logging.info(f"Banned word: {start_time} - {end_time}")
 
     def _log_chord(self, chord: str, start_time: datetime, end_time: datetime) -> None:
         """Log chord to store"""

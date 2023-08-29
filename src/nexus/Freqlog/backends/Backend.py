@@ -23,8 +23,8 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
-        """Log a word entry, creating it if it doesn't exist"""
+    def log_word(self, word: str, start_time: datetime, end_time: datetime) -> bool:
+        """Log a word entry if not banned, creating it if it doesn't exist"""
 
     @abstractmethod
     def log_chord(self, word: str, start_time: datetime, end_time: datetime) -> None:
