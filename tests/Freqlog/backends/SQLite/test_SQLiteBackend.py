@@ -94,19 +94,21 @@ def test_ban_unban_word(loaded_backend, word, case, original, remaining):
     assert len(backend.list_words(0, WordMetadataAttr.frequency, True, case)) == original
     assert backend.list_banned_words(0, BanlistAttr.word, True) == (set(), set())
 
-    backend.ban_word(word, case, TIME)
+    assert backend.ban_word(word, case, TIME) is True
 
     # Post-ban, pre-unban
     assert backend.check_banned(word, case) is True
     assert backend.get_word_metadata(word, case) is None
+    assert backend.log_word(word, TIME, TIME) is False
     res, res1 = backend.list_banned_words(0, BanlistAttr.word, True)
     res, res1 = list(res), list(res1)
-    assert len(res) == 2 if case == CaseSensitivity.FIRST_CHAR else 1
-    assert res[0].word == word or res[1].word == word
-    res_word = res[0] if res[0].word == word else res[1]
     if case == CaseSensitivity.INSENSITIVE:
         assert res1[0].word == word or res1[1].word == word
         res_word = res1[0] if res1[0].word == word else res1[1]
+    else:
+        assert len(res) == 2 if case == CaseSensitivity.FIRST_CHAR else 1
+        assert res[0].word == word or res[1].word == word
+        res_word = res[0] if res[0].word == word else res[1]
     assert close_to(res_word.date_added, TIME)
     assert len(backend.list_words(0, WordMetadataAttr.frequency, True, case)) == remaining
 
@@ -115,3 +117,18 @@ def test_ban_unban_word(loaded_backend, word, case, original, remaining):
     # Post-unban
     assert backend.check_banned(word, case) is False
     assert backend.list_banned_words(0, BanlistAttr.word, False) == (set(), set())
+
+
+def test_dup_ban_unban(loaded_backend):
+    backend = loaded_backend
+    assert backend.ban_word("one", CaseSensitivity.SENSITIVE, TIME) is True
+    assert backend.ban_word("one", CaseSensitivity.SENSITIVE, TIME) is False
+    assert backend.unban_word("one", CaseSensitivity.SENSITIVE) is True
+    assert backend.unban_word("one", CaseSensitivity.SENSITIVE) is False
+
+
+def test_num_words(loaded_backend):
+    backend = loaded_backend
+    assert backend.num_words(CaseSensitivity.INSENSITIVE) == 3
+    assert backend.num_words(CaseSensitivity.SENSITIVE) == 5
+    assert backend.num_words(CaseSensitivity.FIRST_CHAR) == 4

@@ -271,6 +271,15 @@ class Freqlog:
         logging.info(f"Unbanning {len(entries)} words")
         return [self.unban_word(word, case) for word, case in entries.items()]
 
+    def num_words(self, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> int:
+        """
+        Get number of words in store
+        :param case: Case sensitivity
+        :return: Number of words in store
+        """
+        logging.info("Getting number of words")
+        return self.backend.num_words(case)
+
     def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.score,
                    reverse: bool = True, case: CaseSensitivity = CaseSensitivity.INSENSITIVE,
                    search: str = "") -> list[WordMetadata]:

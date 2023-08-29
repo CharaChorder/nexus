@@ -54,6 +54,14 @@ class Backend(ABC):
         """
 
     @abstractmethod
+    def num_words(self, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> int:
+        """
+        Get number of words in store
+        :param case: Case sensitivity
+        :return: Number of words in store
+        """
+
+    @abstractmethod
     def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.score, reverse: bool = True,
                    case: CaseSensitivity = CaseSensitivity.INSENSITIVE, search: str = "") -> list[WordMetadata]:
         """

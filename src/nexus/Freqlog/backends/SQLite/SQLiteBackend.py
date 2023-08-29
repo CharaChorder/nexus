@@ -213,6 +213,20 @@ class SQLiteBackend(Backend):
                 self._execute("DELETE FROM banlist WHERE word=?", (word,))
         return True
 
+    def num_words(self, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> int:
+        """
+        Get number of words in store
+        :param case: Case sensitivity
+        :return: Number of words in store
+        """
+        match case:
+            case CaseSensitivity.SENSITIVE:
+                return self._fetchone("SELECT COUNT(*) FROM freqlog")[0]
+            case CaseSensitivity.INSENSITIVE:
+                return len({row[0].lower() for row in self._fetchall("SELECT word FROM freqlog")})
+            case CaseSensitivity.FIRST_CHAR:
+                return len({row[0][0].lower() + row[0][1:] for row in self._fetchall("SELECT word FROM freqlog")})
+
     def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.score, reverse: bool = True,
                    case: CaseSensitivity = CaseSensitivity.INSENSITIVE, search: str = "") -> list[WordMetadata]:
         """

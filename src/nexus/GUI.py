@@ -271,7 +271,10 @@ class GUI(object):
         # Restore sorting
         self.chentry_table.setSortingEnabled(True)
         self.chentry_table.sortByColumn(sort_by, sort_order)
-        self.statusbar.showMessage(self.tr("GUI", "Loaded {} freqlogged words").format(len(words)))
+
+        # Update status
+        num_words = self.temp_freqlog.num_words(CaseSensitivity.INSENSITIVE)
+        self.statusbar.showMessage(self.tr("GUI", "Loaded {}/{} freqlogged words").format(len(words), num_words))
 
     def show_banlist(self):
         """Controller for banlist button"""
