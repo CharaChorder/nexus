@@ -7,8 +7,7 @@ from pynput import keyboard
 
 from nexus import __doc__, __version__, Freqlog
 from nexus.Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, Defaults, Order, \
-    WordMetadata, \
-    WordMetadataAttr
+    WordMetadata, WordMetadataAttr
 from nexus.GUI import GUI
 
 
@@ -189,7 +188,10 @@ def main():
             sys.exit(0)
 
         # All following commands use a num argument
-        num = args.num if args.num else Defaults.DEFAULT_NUM_WORDS_CLI
+        try:
+            num = args.num if args.num else Defaults.DEFAULT_NUM_WORDS_CLI
+        except AttributeError:
+            num = Defaults.DEFAULT_NUM_WORDS_CLI
         match args.command:
             case "startlog":  # start freqlogging
                 freqlog = Freqlog.Freqlog(args.freq_log_path, loggable=True)
@@ -220,7 +222,7 @@ def main():
                 elif len(args.word) == 0:  # all words
                     res = freqlog.list_words(limit=num, sort_by=WordMetadataAttr[args.sort_by],
                                              reverse=args.order == Order.DESCENDING,
-                                             case=CaseSensitivity[args.case], search=args.search)
+                                             case=CaseSensitivity[args.case], search=args.search if args.search else "")
                     if len(res) == 0:
                         print("No words in freqlog. Start typing!")
                     else:

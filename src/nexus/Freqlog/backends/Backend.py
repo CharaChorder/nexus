@@ -74,8 +74,8 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
-                    reverse: bool, case: CaseSensitivity) -> list[ChordMetadata]:
+    def list_chords(self, limit: int, sort_by: ChordMetadataAttr, reverse: bool,
+                    case: CaseSensitivity) -> list[ChordMetadata]:
         """
         List chords in the store
         :param limit: Maximum number of chords to return
@@ -85,8 +85,8 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) \
-            -> tuple[set[BanlistEntry], set[BanlistEntry]]:
+    def list_banned_words(self, limit: int, sort_by: BanlistAttr,
+                          reverse: bool) -> tuple[set[BanlistEntry], set[BanlistEntry]]:
         """
         List banned words
         :param limit: Maximum number of banned words to return

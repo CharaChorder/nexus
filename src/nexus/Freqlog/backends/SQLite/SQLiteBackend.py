@@ -274,8 +274,8 @@ class SQLiteBackend(Backend):
         """
         raise NotImplementedError  # TODO: implement
 
-    def list_banned_words(self, limit: int, sort_by: BanlistAttr, reverse: bool) \
-            -> tuple[set[BanlistEntry], set[BanlistEntry]]:
+    def list_banned_words(self, limit: int, sort_by: BanlistAttr,
+                          reverse: bool) -> tuple[set[BanlistEntry], set[BanlistEntry]]:
         """
         List banned words
         :param limit: Maximum number of banned words to return
