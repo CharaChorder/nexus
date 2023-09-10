@@ -156,7 +156,7 @@ class GUI(object):
         self.set_style('Nexus_Dark')
 
         self.freqlog: Freqlog | None = None  # for logging
-        self.temp_freqlog: Freqlog = Freqlog(args.freq_log_path, loggable=False)  # for other operations
+        self.temp_freqlog: Freqlog = Freqlog(args.freqlog_db_path, loggable=False)  # for other operations
         self.logging_thread: Thread | None = None
         self.start_stop_button_started = False
         self.args = args
@@ -177,7 +177,7 @@ class GUI(object):
 
     def start_logging(self):
         if not self.freqlog:
-            self.freqlog = Freqlog(self.args.freq_log_path, loggable=True)
+            self.freqlog = Freqlog(self.args.freqlog_db_path, loggable=True)
         self.freqlog.start_logging()
 
     def stop_logging(self):

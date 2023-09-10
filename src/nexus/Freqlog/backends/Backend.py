@@ -9,6 +9,10 @@ class Backend(ABC):
     """Base class for all backends"""
 
     @abstractmethod
+    def get_version(self) -> str:
+        """Get backend version"""
+
+    @abstractmethod
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata | None:
         """
         Get metadata for a word
@@ -20,6 +24,15 @@ class Backend(ABC):
         """
         Get metadata for a chord
         :returns: ChordMetadata if chord is found, None otherwise
+        """
+
+    @abstractmethod
+    def get_banlist_entry(self, word: str, case: CaseSensitivity) -> BanlistEntry | None:
+        """
+        Get a banlist entry
+        :param word: Word to get entry for
+        :param case: Case sensitivity
+        :return: BanlistEntry if word is banned for the specified case, None otherwise
         """
 
     @abstractmethod
@@ -93,6 +106,13 @@ class Backend(ABC):
         :param sort_by: Attribute to sort by: word
         :param reverse: Reverse sort order
         :returns: Tuple of (banned words with case, banned words without case)
+        """
+
+    @abstractmethod
+    def merge_backend(self, *args, **kwargs):
+        """
+        Merge backends
+        :raises ValueError: If backend-specific requirements are not met
         """
 
     def close(self) -> None:

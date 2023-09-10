@@ -147,14 +147,16 @@ class Freqlog:
                     logging.warning("Stopped freqlogging")
                     break
 
-    def __init__(self, db_path: str = Defaults.DEFAULT_DB_PATH, loggable: bool = True):
+    def __init__(self, path: str = Defaults.DEFAULT_DB_PATH, loggable: bool = True):
         """
         Initialize Freqlog
-        :param db_path: Path to database file
+        :param path: Path to backend (currently == SQLiteBackend)
         :param loggable: Whether to create listeners
         :raises ValueError: If the database version is newer than the current version
         """
-        self.backend: Backend = SQLiteBackend(db_path)
+        if loggable:
+            logging.info(f"Logging set to freqlog db at {path}")
+        self.backend: Backend = SQLiteBackend(path)
         self.q: Queue = Queue()
         self.listener: kbd.Listener | None = None
         self.mouse_listener: mouse.Listener | None = None
@@ -203,6 +205,11 @@ class Freqlog:
         self.is_logging = False
         logging.info("Stopped listeners")
 
+    def get_backend_version(self) -> str:
+        """Get backend version"""
+        logging.info("Getting backend version")
+        return self.backend.get_version()
+
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata:
         """Get metadata for a word"""
         logging.info(f"Getting metadata for '{word}', case {case.name}")
@@ -215,6 +222,16 @@ class Freqlog:
         """
         logging.info(f"Getting metadata for '{chord}'")
         return self.backend.get_chord_metadata(chord)
+
+    def get_banlist_entry(self, word: str, case: CaseSensitivity) -> BanlistEntry | None:
+        """
+        Get a banlist entry
+        :param word: Word to get entry for
+        :param case: Case sensitivity
+        :return: BanlistEntry if word is banned for the specified case, None otherwise
+        """
+        logging.info(f"Getting banlist entry for '{word}', case {case.name}")
+        return self.backend.get_banlist_entry(word, case)
 
     def check_banned(self, word: str, case: CaseSensitivity) -> bool:
         """
@@ -357,3 +374,11 @@ class Freqlog:
         """
         logging.info(f"Listing banned words, limit {limit}, sort_by {sort_by}, reverse {reverse}")
         return self.backend.list_banned_words(limit, sort_by, reverse)
+
+    def merge_backends(self, *args, **kwargs):
+        """
+        Merge backends
+        :raises ValueError: If backend-specific requirements are not met
+        """
+        logging.info(f"Merging backends: {args} {kwargs}")
+        self.backend.merge_backend(*args, **kwargs)
