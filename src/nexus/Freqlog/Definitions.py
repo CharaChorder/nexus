@@ -37,6 +37,11 @@ class Order(Enum):
     DESCENDING = False
 
 
+class Age(Enum):
+    OLDER = True
+    NEWER = False
+
+
 class WordMetadata:
     """Metadata for a word"""
 

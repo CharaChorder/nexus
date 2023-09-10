@@ -6,8 +6,9 @@ import sys
 from pynput import keyboard
 
 from nexus import __doc__, __version__, Freqlog
-from nexus.Freqlog.Definitions import BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, Defaults, Order, \
-    WordMetadata, WordMetadataAttr
+from nexus.Freqlog.Definitions import Age, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, Defaults, \
+    Order, WordMetadata, WordMetadataAttr
+from nexus.Freqlog.backends.SQLite import SQLiteBackend
 from nexus.GUI import GUI
 
 
@@ -22,6 +23,7 @@ def main():
         4: Could not access or write to database
         5: Requested word or chord not found
         6: Tried to ban already banned word or unban already unbanned word
+        7: Merge db requirements not met
         11: Python version < 3.11
         100: Feature not yet implemented
     """
@@ -33,11 +35,13 @@ def main():
     log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "NONE"]
 
     # Common arguments
+    # Log and path must be SUPPRESS for placement before and after command to work
+    #   (see https://stackoverflow.com/a/62906328/9206488)
     log_arg = argparse.ArgumentParser(add_help=False)
-    log_arg.add_argument("-l", "--log-level", default="INFO", help=f"One of {log_levels}",
+    log_arg.add_argument("-l", "--log-level", default=argparse.SUPPRESS, help=f"One of {log_levels}",
                          metavar="level", choices=log_levels)
     path_arg = argparse.ArgumentParser(add_help=False)
-    path_arg.add_argument("--freq-log-path", default=Defaults.DEFAULT_DB_PATH, help="Backend to use")
+    path_arg.add_argument("--freqlog-db-path", default=argparse.SUPPRESS, help="Path to db backend to use")
     case_arg = argparse.ArgumentParser(add_help=False)
     case_arg.add_argument("-c", "--case", default=CaseSensitivity.INSENSITIVE.name, help="Case sensitivity",
                           choices={case.name for case in CaseSensitivity})
@@ -49,9 +53,12 @@ def main():
                             required=False)
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description=__doc__, parents=[log_arg, path_arg],
+    parser = argparse.ArgumentParser(description=__doc__,
                                      epilog="Made with love by CharaChorder, source code available at "
                                             "https://github.com/CharaChorder/nexus")
+    parser.add_argument("-l", "--log-level", default="INFO", help=f"One of {log_levels}",
+                        metavar="level", choices=log_levels)
+    parser.add_argument("--freqlog-db-path", default=Defaults.DEFAULT_DB_PATH, help="Path to db backend to use")
     subparsers = parser.add_subparsers(dest="command", title="Commands")
 
     # Start freqlogging
@@ -122,6 +129,17 @@ def main():
     # Stop freqlogging
     # subparsers.add_parser("stoplog", help="Stop logging", parents=[log_arg])
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
+
+    # Merge db
+    parser_merge = subparsers.add_parser("mergedb", help="Merge two Freqlog databases", parents=[log_arg])
+    parser_merge.add_argument("--ban-data-keep", default=Age.OLDER.name,
+                              help=f"Which ban data to keep (default: {Age.OLDER.name})",
+                              choices=[age.name for age in Age])
+    parser_merge.add_argument("src1", help="Path to first source database")
+    parser_merge.add_argument("src2", help="Path to second source database")
+    parser_merge.add_argument("dst", help="Path to destination database")
+
+    # Parse arguments
     args = parser.parse_args()
 
     # Set up console logging
@@ -129,6 +147,7 @@ def main():
         logging.disable(logging.CRITICAL)
     else:
         logging.basicConfig(level=args.log_level, format="%(asctime)s - %(message)s")
+    logging.debug(f"Args: {args}")
 
     exit_code = 0
 
@@ -140,7 +159,7 @@ def main():
     match args.command:
         case "startlog":
             try:  # ensure that path is writable (WARNING: Must use 'a' instead of 'w' mode to avoid erasing file!!!)
-                with open(args.freq_log_path, "a"):
+                with open(args.freqlog_db_path, "a"):
                     pass
             except OSError as e:
                 logging.error(e)
@@ -168,6 +187,18 @@ def main():
                 exit_code = 3
 
     # Parse commands
+    if args.command == "mergedb":  # merge databases
+        # Merge databases
+        logging.warning("This feature has not been thoroughly tested and is not guaranteed to work. Manually verify"
+                        f"(via an export) that the destination DB ({args.dst}) contains all your data after merging.")
+        try:
+            src1: SQLiteBackend = Freqlog.Freqlog(args.src1, loggable=False)
+            src1.merge_backends(args.src2, args.dst, Age[args.ban_data_keep])
+            sys.exit(0)
+        except ValueError as e:
+            logging.error(e)
+            exit_code = 7
+
     if args.command == "stoplog":  # stop freqlogging
         # Kill freqlogging process
         logging.warning("This feature hasn't been implemented." +
@@ -182,7 +213,7 @@ def main():
     # TODO: Some features from this point on may not have been implemented
     try:
         # All following commands require a freqlog object
-        freqlog = Freqlog.Freqlog(args.freq_log_path, loggable=False)
+        freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=False)
         if args.command == "numwords":  # get number of words
             print(f"{freqlog.num_words(CaseSensitivity[args.case])} words in freqlog")
             sys.exit(0)
@@ -194,7 +225,7 @@ def main():
             num = Defaults.DEFAULT_NUM_WORDS_CLI
         match args.command:
             case "startlog":  # start freqlogging
-                freqlog = Freqlog.Freqlog(args.freq_log_path, loggable=True)
+                freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=True)
                 signal.signal(signal.SIGINT, lambda: freqlog.stop_logging())
                 freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
                                       Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(

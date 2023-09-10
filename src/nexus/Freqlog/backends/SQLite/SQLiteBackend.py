@@ -1,10 +1,13 @@
+import logging
+import os
 import sqlite3
 from datetime import datetime, timedelta
+from sqlite3 import Cursor
 
 from nexus import __version__
 from nexus.Freqlog.backends.Backend import Backend
-from nexus.Freqlog.Definitions import BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
-    WordMetadata, WordMetadataAttr
+from nexus.Freqlog.Definitions import Age, BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, \
+    ChordMetadataAttr, WordMetadata, WordMetadataAttr
 
 # WARNING: Directly loaded into SQL query, do not use unsanitized user input
 SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM freqlog"
@@ -17,6 +20,27 @@ def decode_version(version: int) -> str:
 
 def encode_version(version: str) -> int:
     return int(version.split(".")[0]) << 16 | int(version.split(".")[1]) << 8 | int(version.split(".")[2])
+
+
+def _init_db(cursor: Cursor, sql_version: int):
+    """
+    Initialize the database
+    """
+    # WARNING: Remember to change _upgrade_database and merge_db when changing DDL
+    cursor.execute(f"PRAGMA user_version = {sql_version}")
+    # Freqloq table
+    cursor.execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
+                   "lastused timestamp NOT NULL, avgspeed REAL NOT NULL) WITHOUT ROWID")
+    cursor.execute("CREATE INDEX IF NOT EXISTS freqlog_lower ON freqlog(word COLLATE NOCASE)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS freqlog_frequency ON freqlog(frequency)")
+    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS freqlog_lastused ON freqlog(lastused)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS freqlog_avgspeed ON freqlog(avgspeed)")
+    # Banlist table
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) WITHOUT ROWID")
+    cursor.execute("CREATE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS banlist_lower (word TEXT PRIMARY KEY COLLATE NOCASE,"
+                   "dateadded timestamp NOT NULL) WITHOUT ROWID")
 
 
 class SQLiteBackend(Backend):
@@ -42,22 +66,7 @@ class SQLiteBackend(Backend):
             raise ValueError(
                 f"Database version {decode_version(old_version)} is newer than the current version {__version__}")
 
-        self._execute(f"PRAGMA user_version = {sql_version}")
-
-        # Freqloq table
-        self._execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
-                      "lastused timestamp NOT NULL, avgspeed REAL NOT NULL) WITHOUT ROWID")
-        self._execute("CREATE INDEX IF NOT EXISTS freqlog_lower ON freqlog(word COLLATE NOCASE)")
-        self._execute("CREATE INDEX IF NOT EXISTS freqlog_frequency ON freqlog(frequency)")
-        self._execute("CREATE UNIQUE INDEX IF NOT EXISTS freqlog_lastused ON freqlog(lastused)")
-        self._execute("CREATE INDEX IF NOT EXISTS freqlog_avgspeed ON freqlog(avgspeed)")
-
-        # Banlist table
-        self._execute(
-            "CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) WITHOUT ROWID")
-        self._execute("CREATE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
-        self._execute("CREATE TABLE IF NOT EXISTS banlist_lower (word TEXT PRIMARY KEY COLLATE NOCASE,"
-                      "dateadded timestamp NOT NULL) WITHOUT ROWID")
+        _init_db(self.cursor, sql_version)
 
     def _execute(self, query: str, params=None) -> None:
         if params:
@@ -85,6 +94,10 @@ class SQLiteBackend(Backend):
         # TODO: populate this function when changing DDL
         # Remember to warn users to back up their database before upgrading
         pass
+
+    def get_version(self) -> str:
+        """Get the version of the database"""
+        return decode_version(self._fetchone("PRAGMA user_version")[0])
 
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata | None:
         """
@@ -128,6 +141,30 @@ class SQLiteBackend(Backend):
         """
         raise NotImplementedError  # TODO: implement
 
+    def get_banlist_entry(self, word: str, case: CaseSensitivity) -> BanlistEntry | None:
+        """
+        Get a banlist entry
+        :param word: Word to get entry for
+        :param case: Case sensitivity
+        :return: BanlistEntry if word is banned for the specified case, None otherwise
+        """
+        match case:
+            case CaseSensitivity.INSENSITIVE:
+                word = word.lower()
+                res = self._fetchone(f"{SQL_SELECT_STAR_FROM_BANLIST}_lower WHERE word = ? COLLATE NOCASE", (word,))
+                return BanlistEntry(res[0], datetime.fromtimestamp(res[1])) if res else None
+            case CaseSensitivity.FIRST_CHAR:
+                word_u = word[0].upper() + word[1:]
+                word_l = word[0].lower() + word[1:]
+                res_u = self._fetchone(f"{SQL_SELECT_STAR_FROM_BANLIST} WHERE word=?", (word_u,))
+                res_l = self._fetchone(f"{SQL_SELECT_STAR_FROM_BANLIST} WHERE word=?", (word_l,))
+                if res_u and res_l:
+                    return BanlistEntry(res_l[0], datetime.fromtimestamp(res_l[1]))
+                return None  # if only one or none are banned
+            case CaseSensitivity.SENSITIVE:
+                res = self._fetchone(f"{SQL_SELECT_STAR_FROM_BANLIST} WHERE word=?", (word,))
+                return BanlistEntry(res[0], datetime.fromtimestamp(res[1])) if res else None
+
     def log_word(self, word: str, start_time: datetime, end_time: datetime) -> bool:
         """Log a word entry if not banned, creating it if it doesn't exist"""
         if self.check_banned(word, CaseSensitivity.SENSITIVE):
@@ -142,6 +179,11 @@ class SQLiteBackend(Backend):
             self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?)",
                           (word, 1, end_time.timestamp(), (end_time - start_time).total_seconds()))
         return True
+
+    def _insert_word(self, word: str, frequency: int, last_used: datetime, average_speed: timedelta) -> None:
+        """Insert a word entry"""
+        self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?)",
+                      (word, frequency, last_used.timestamp(), average_speed.total_seconds()))
 
     def log_chord(self, word: str, start_time: datetime, end_time: datetime) -> None:
         raise NotImplementedError  # TODO: implement
@@ -292,6 +334,89 @@ class SQLiteBackend(Backend):
         res_lower = self._fetchall(f"{SQL_SELECT_STAR_FROM_BANLIST}_lower ORDER BY {sql_sort_limit}")
         return {BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res}, \
             {BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res_lower}
+
+    def merge_backend(self, src_db_path: str, dst_db_path: str, ban_date: Age) -> None:
+        """
+        Merge another database and this one into a new database
+        :param src_db_path: Path to the source database
+        :param dst_db_path: Path to the destination database
+        :param ban_date: Whether to use older or newer date banned for banlist entries of the same word (OLDER or NEWER)
+        :requires: src_db_path != dst_db_path != self.db_path
+        :requires: src_db_path must be a valid Freqlog database and readable
+        :requires: dst_db_path must not be an existing file but must be writable
+        :raises ValueError: If requirements are not met
+        """
+        # Assert requirements
+        if src_db_path == dst_db_path:
+            raise ValueError("src_db_path and dst_db_path must be different")
+        if src_db_path == self.db_path:
+            raise ValueError("src_db_path and self.db_path must be different")
+        if dst_db_path == self.db_path:
+            raise ValueError("dst_db_path and self.db_path must be different")
+        if os.path.isfile(dst_db_path):
+            raise ValueError("dst_db_path must not be an existing file")
+        try:  # ensure that src is writable (WARNING: Must use 'a' instead of 'w' mode to avoid erasing file!!!)
+            with open(src_db_path, "a"):
+                pass
+        except OSError as e:
+            raise ValueError("src_db_path must be writable") from e
+        try:
+            with open(dst_db_path, "w"):
+                pass
+        except OSError as e:
+            raise ValueError("dst_db_path must be writable") from e
+
+        # DB meta
+        src_db = SQLiteBackend(src_db_path)
+        dst_db = SQLiteBackend(dst_db_path)
+
+        # Merge databases
+        # TODO: optimize this/add progress bars (this takes a long time)
+        try:
+            # Merge banlist
+            logging.info("Merging banlist")
+            src_banned_words_cased, src_banned_words_uncased = src_db.list_banned_words(0, BanlistAttr.word, False)
+            banned_words_cased, banned_words_uncased = self.list_banned_words(0, BanlistAttr.word, False)
+
+            # Ban words from self banlist in dst db
+            for entry in banned_words_cased:
+                dst_db.ban_word(entry.word, CaseSensitivity.SENSITIVE, entry.date_added)
+            for entry in banned_words_uncased:
+                dst_db.ban_word(entry.word, CaseSensitivity.INSENSITIVE, entry.date_added)
+
+            # Ban words from src banlist in dst db
+            for entry in src_banned_words_cased:
+                dst_entry = dst_db.get_banlist_entry(entry.word, CaseSensitivity.SENSITIVE)
+                if dst_entry and ((ban_date == Age.OLDER and entry.date_added < dst_entry.date_added) or
+                                  (ban_date == Age.NEWER and entry.date_added > dst_entry.date_added)):
+                    dst_db.unban_word(entry.word, CaseSensitivity.SENSITIVE)
+                    dst_db.ban_word(entry.word, CaseSensitivity.SENSITIVE, entry.date_added)
+                else:
+                    dst_db.ban_word(entry.word, CaseSensitivity.SENSITIVE, entry.date_added)
+            for entry in src_banned_words_uncased:
+                dst_entry = dst_db.get_banlist_entry(entry.word, CaseSensitivity.INSENSITIVE)
+                if dst_entry and ((ban_date == Age.OLDER and entry.date_added < dst_entry.date_added) or
+                                  (ban_date == Age.NEWER and entry.date_added > dst_entry.date_added)):
+                    dst_db.unban_word(entry.word, CaseSensitivity.INSENSITIVE)
+                    dst_db.ban_word(entry.word, CaseSensitivity.INSENSITIVE, entry.date_added)
+                else:
+                    dst_db.ban_word(entry.word, CaseSensitivity.INSENSITIVE, entry.date_added)
+
+            # Merge freqlog
+            logging.info("Merging freqlog")
+            src_words = src_db.list_words(0, WordMetadataAttr.word, False, CaseSensitivity.SENSITIVE)
+            words = [word.word for word in self.list_words(0, WordMetadataAttr.word, False, CaseSensitivity.SENSITIVE)]
+            entries = self.list_words(0, WordMetadataAttr.word, False, CaseSensitivity.SENSITIVE)
+            for src_word in src_words:
+                if src_word.word in words:
+                    entries[words.index(src_word.word)] |= src_word
+                else:
+                    entries.append(src_word)
+            for word in entries:
+                dst_db._insert_word(word.word, word.frequency, word.last_used, word.average_speed)
+        finally:  # Close databases
+            src_db.close()
+            dst_db.close()
 
     def close(self) -> None:
         """Close the database connection"""
