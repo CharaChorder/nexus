@@ -29,9 +29,9 @@ class Freqlog:
     def _log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """Log word to store"""
         if self.backend.log_word(word, start_time, end_time):
-            logging.info(f"Word: {word} - {start_time} - {end_time}")
+            logging.info(f"Word: {word} - {round((end_time - start_time).total_seconds(), 3)}s")
         else:
-            logging.info(f"Banned word: {start_time} - {end_time}")
+            logging.info(f"Banned word: {word} - {round((end_time - start_time).total_seconds(), 3)}s")
 
     def _log_chord(self, chord: str, start_time: datetime, end_time: datetime) -> None:
         """Log chord to store"""
@@ -54,6 +54,13 @@ class Freqlog:
                     return q.get(block=True, timeout=0.5)  # Allow check for Ctrl-C every second
                 except queue.Empty:
                     pass
+                except TypeError:  # Weird bug in Threading (File "/usr/lib/python3.11/threading.py", line 324, in wait
+                    # gotit = waiter.acquire(True, timeout)
+                    #         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    # TypeError: main.<locals>.<lambda>() takes 0 positional arguments but 2 were given)
+                    # This except fixes it but I'm not sure what side effects it might have
+                    self.is_logging = False
+                    raise EmptyException
             if not self.is_logging:
                 raise EmptyException
 
