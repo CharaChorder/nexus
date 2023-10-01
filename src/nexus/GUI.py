@@ -5,7 +5,8 @@ from typing import Literal
 
 from PySide6.QtCore import Qt, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
-    QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel, QMenu
+    QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel, QMenu, QSystemTrayIcon
+from PySide6.QtGui import QIcon
 
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
@@ -73,6 +74,11 @@ class GUI(object):
         """Initialize GUI"""
         self.app = QApplication([])
         self.window = MainWindow()
+
+        self.tray_icon = QIcon(str(Path(__file__).resolve().parent) + '/icon.svg')
+        self.tray = QSystemTrayIcon()
+        self.tray.setIcon(self.tray_icon)
+        self.tray.setVisible(True)
 
         # Translation
         self.translator = Translator(self.app)
