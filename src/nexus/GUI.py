@@ -84,6 +84,7 @@ class GUI(object):
         # System tray
         self.tray_icon = QIcon(str(Path(__file__).resolve().parent) + '/icon.svg')
         self.tray = QSystemTrayIcon()
+        self.tray.activated.connect(self.show_hide)
         self.tray.setIcon(self.tray_icon)
         self.tray.setVisible(True)
 
@@ -177,6 +178,13 @@ class GUI(object):
         # Auto-refresh - must go at the end
         self.window.entries_input.valueChanged.connect(self.refresh)
         self.window.search_input.textChanged.connect(self.refresh)
+
+    def show_hide(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            if not self.window.isVisible():
+                self.window.show()
+            else:
+                self.window.hide()
 
     def set_style(self, style: Literal['Nexus_Dark', 'Fusion', 'Default']):
         self.app.setStyleSheet('')
