@@ -6,7 +6,7 @@ from typing import Literal
 from PySide6.QtCore import Qt, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
     QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel, QMenu, QSystemTrayIcon
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QAction
 
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
@@ -75,16 +75,23 @@ class GUI(object):
         self.app = QApplication([])
         self.window = MainWindow()
 
-        self.tray_icon = QIcon(str(Path(__file__).resolve().parent) + '/icon.svg')
-        self.tray = QSystemTrayIcon()
-        self.tray.setIcon(self.tray_icon)
-        self.tray.setVisible(True)
-
         # Translation
         self.translator = Translator(self.app)
         if self.translator.load(QLocale.system(), 'i18n', '_', str(Path(__file__).resolve().parent) + '/translations'):
             self.app.installTranslator(self.translator)
         self.tr = self.translator.translate
+
+        # System tray
+        self.tray_icon = QIcon(str(Path(__file__).resolve().parent) + '/icon.svg')
+        self.tray = QSystemTrayIcon()
+        self.tray.setIcon(self.tray_icon)
+        self.tray.setVisible(True)
+
+        self.tray_menu = QMenu()
+        self.start_stop_tray_menu_action = QAction(self.tr("GUI", "Start/stop logging"))
+        self.start_stop_tray_menu_action.triggered.connect(self.start_stop)
+        self.tray_menu.addAction(self.start_stop_tray_menu_action)
+        self.tray.setContextMenu(self.tray_menu)
 
         # Components
         self.start_stop_button: QPushButton = self.window.startStopButton
