@@ -98,7 +98,7 @@ def main():
     # parser_chords.add_argument("-e", "--export", help="Export freqlogged chords as csv to file"
     #                                                   "(ignores chord args)", required=False)
     # parser_chords.add_argument("-s", "--sort-by", default=ChordMetadataAttr.frequency.name,
-    #                            help=f"Sort by (default: {ChordMetadataAttr.frequency.name})")
+    #                            help=f"Sort by (default: {ChordMetadataAttr.frequency.name})"),
     #                            choices=[attr.name for attr in ChordMetadataAttr])
     # parser_chords.add_argument("-o", "--order", default=Order.ASCENDING, help="Order (default: DESCENDING)",
     #                            choices=[order.name for order in Order])
@@ -279,8 +279,8 @@ def main():
                     freqlog.export_chords_to_csv(args.export, num, ChordMetadataAttr[args.sort_by],
                                                  args.order == Order.DESCENDING, CaseSensitivity[args.case])
                 elif len(args.chord) == 0:  # all chords
-                    res = freqlog.list_chords(num, ChordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
-                                              CaseSensitivity[args.case])
+                    res = freqlog.list_logged_chords(num, ChordMetadataAttr[args.sort_by],
+                                                     args.order == Order.DESCENDING)
                     if len(res) == 0:
                         print("No chords in freqlog. Start chording!")
                     else:

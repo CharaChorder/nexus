@@ -9,6 +9,7 @@ from pynput import keyboard as kbd, mouse
 from .backends import Backend, SQLiteBackend
 from .Definitions import ActionType, BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
     Defaults, WordMetadata, WordMetadataAttr
+from ..CCSerial import CCSerial
 
 
 class Freqlog:
@@ -339,8 +340,8 @@ class Freqlog:
         logging.info(f"Exported {len(words)} words to {export_path}")
         return len(words)
 
-    def list_chords(self, limit: int, sort_by: ChordMetadataAttr, reverse: bool,
-                    case: CaseSensitivity) -> list[ChordMetadata]:
+    def list_logged_chords(self, limit: int, sort_by: ChordMetadataAttr, reverse: bool,
+                           case: CaseSensitivity) -> list[ChordMetadata]:
         """
         List chords in the store
         :param limit: Maximum number of chords to return
@@ -369,6 +370,16 @@ class Freqlog:
             f.write("\n".join(map(lambda c: ",".join(c.__dict__.values()), chords)))
         logging.info(f"Exported {len(chords)} chords to {export_path}")
         return len(chords)
+
+    @staticmethod
+    def list_device_chords() -> list[str]:
+        """
+        List chords in the store
+        :return: list of chords
+        """
+        cc = CCSerial()
+        dev = cc.get_devices()[0][0]
+        return cc.list_device_chords(dev)
 
     def list_banned_words(self, limit: int = -1, sort_by: BanlistAttr = BanlistAttr.word,
                           reverse: bool = False) -> tuple[set[BanlistEntry], set[BanlistEntry]]:
