@@ -22,9 +22,11 @@ class CCSerial:
         :returns: Device ID
         """
         ser: Serial = Serial(device, 115200, timeout=1)
-        ser.write(b"ID\r\n")
-        res = ser.readline().decode("utf-8").strip().split(" ")
-        ser.close()
+        try:
+            ser.write(b"ID\r\n")
+            res = ser.readline().decode("utf-8").strip().split(" ")
+        finally:
+            ser.close()
         if len(res) != 2 or res[0] != "ID":
             raise IOError(f"Invalid response: {res}")
         return res[1]
@@ -37,10 +39,12 @@ class CCSerial:
         :raises IOError: If serial response is invalid
         :returns: Device version
         """
-        ser: Serial = Serial(device, 115200, timeout=1)
-        ser.write(b"VERSION\r\n")
-        res = ser.readline().decode("utf-8").strip().split(" ")
-        ser.close()
+        try:
+            ser: Serial = Serial(device, 115200, timeout=1)
+            ser.write(b"VERSION\r\n")
+            res = ser.readline().decode("utf-8").strip().split(" ")
+        finally:
+            ser.close()
         if len(res) != 2 or res[0] != "VERSION":
             raise IOError(f"Invalid response: {res}")
         return res[1]
@@ -53,10 +57,12 @@ class CCSerial:
         :raises IOError: If serial response is invalid
         :returns: Chordmap count
         """
-        ser: Serial = Serial(device, 115200, timeout=1)
-        ser.write(b"CML C0\r\n")
-        res = ser.readline().decode("utf-8").strip().split(" ")
-        ser.close()
+        try:
+            ser: Serial = Serial(device, 115200, timeout=1)
+            ser.write(b"CML C0\r\n")
+            res = ser.readline().decode("utf-8").strip().split(" ")
+        finally:
+            ser.close()
         if len(res) != 3 or res[0] != "CML" or res[1] != "C0":
             raise IOError(f"Invalid response: {res}")
         return int(res[2])
@@ -73,10 +79,12 @@ class CCSerial:
         """
         if index < 0 or index >= CCSerial.get_chordmap_count(device):
             raise ValueError("Index out of range")
-        ser: Serial = Serial(device, 115200, timeout=1)
-        ser.write(f"CML C1 {index}\r\n".encode("utf-8"))
-        res = ser.readline().decode("utf-8").strip().split(" ")
-        ser.close()
+        try:
+            ser: Serial = Serial(device, 115200, timeout=1)
+            ser.write(f"CML C1 {index}\r\n".encode("utf-8"))
+            res = ser.readline().decode("utf-8").strip().split(" ")
+        finally:
+            ser.close()
         if len(res) != 6 or res[0] != "CML" or res[1] != "C1" or res[2] != str(index) or res[3] == "0" or res[4] == "0":
             raise IOError(f"Invalid response: {res}")
         return res[3], res[4]
@@ -95,10 +103,12 @@ class CCSerial:
             int(chord, 16)
         except ValueError:
             raise ValueError("Chord must be a hex string")
-        ser: Serial = Serial(device, 115200, timeout=1)
-        ser.write(f"CML C2 {chord}\r\n".encode("utf-8"))
-        res = ser.readline().decode("utf-8").strip().split(" ")
-        ser.close()
+        try:
+            ser: Serial = Serial(device, 115200, timeout=1)
+            ser.write(f"CML C2 {chord}\r\n".encode("utf-8"))
+            res = ser.readline().decode("utf-8").strip().split(" ")
+        finally:
+            ser.close()
         if len(res) != 4 or res[0] != "CML" or res[1] != "C2" or res[2] != chord:
             raise IOError(f"Invalid response: {res}")
         return res[3] if res[3] != "0" else None
@@ -122,10 +132,12 @@ class CCSerial:
             int(chordmap, 16)
         except ValueError:
             raise ValueError("Chordmap must be a hex string")
-        ser: Serial = Serial(device, 115200, timeout=1)
-        ser.write(f"CML C3 {chord}\r\n".encode("utf-8"))
-        res = ser.readline().decode("utf-8").strip().split(" ")
-        ser.close()
+        try:
+            ser: Serial = Serial(device, 115200, timeout=1)
+            ser.write(f"CML C3 {chord}\r\n".encode("utf-8"))
+            res = ser.readline().decode("utf-8").strip().split(" ")
+        finally:
+            ser.close()
         if len(res) != 5 or res[0] != "CML" or res[1] != "C3" or res[2] != chord:
             raise IOError(f"Invalid response: {res}")
         return res[4] == "0"
@@ -144,10 +156,12 @@ class CCSerial:
             int(chord, 16)
         except ValueError:
             raise ValueError("Chord must be a hex string")
-        ser: Serial = Serial(device, 115200, timeout=1)
-        ser.write(f"CML C4 {chord}\r\n".encode("utf-8"))
-        res = ser.readline().decode("utf-8").strip().split(" ")
-        ser.close()
+        try:
+            ser: Serial = Serial(device, 115200, timeout=1)
+            ser.write(f"CML C4 {chord}\r\n".encode("utf-8"))
+            res = ser.readline().decode("utf-8").strip().split(" ")
+        finally:
+            ser.close()
         if len(res) != 4 or res[0] != "CML" or res[1] != "C4":
             raise IOError(f"Invalid response: {res}")
         return res[3] == "0"
