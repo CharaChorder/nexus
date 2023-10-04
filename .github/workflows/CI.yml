@@ -41,8 +41,8 @@ jobs:
         if: always()
 
   docs:
-#    runs-on: ubuntu-latest
-    runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
+#    runs-on: [self-hosted, Linux]
     steps:
       - uses: actions/checkout@v3
       - name: Add README.md and LICENSE to artifact
@@ -55,8 +55,8 @@ jobs:
           if-no-files-found: error
 
   build-test:
-#    runs-on: ubuntu-latest
-    runs-on: [self-hosted, Linux]
+    runs-on: ubuntu-latest
+#    runs-on: [self-hosted, Linux]
     strategy:
       matrix:
         python-version: [ 3.11 ]
