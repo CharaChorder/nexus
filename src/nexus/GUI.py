@@ -75,19 +75,22 @@ class GUI(object):
         self.app = QApplication([])
         self.window = MainWindow()
 
+        script_parent_path = str(Path(__file__).resolve().parent)
+
         # Translation
         self.translator = Translator(self.app)
-        if self.translator.load(QLocale.system(), 'i18n', '_', str(Path(__file__).resolve().parent) + '/translations'):
+        if self.translator.load(QLocale.system(), 'i18n', '_', script_parent_path + '/translations'):
             self.app.installTranslator(self.translator)
         self.tr = self.translator.translate
 
         # System tray
-        self.tray_icon = QIcon(str(Path(__file__).resolve().parent) + '/icon.svg')
+        self.tray_icon = QIcon(script_parent_path + '/assets/images/icon.svg')
         self.tray = QSystemTrayIcon()
         self.tray.activated.connect(self.show_hide)
         self.tray.setIcon(self.tray_icon)
         self.tray.setVisible(True)
 
+        # System tray menu
         self.tray_menu = QMenu()
         self.start_stop_tray_menu_action = QAction(self.tr("GUI", "Start/stop logging"))
         self.start_stop_tray_menu_action.triggered.connect(self.start_stop)

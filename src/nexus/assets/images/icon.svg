@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<svg
+   width="48"
+   height="48"
+   viewBox="0 0 12.7 12.7"
+   version="1.1"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient
+       id="lg1">
+      <stop
+         style="stop-color:#1900e1;stop-opacity:1;"
+         offset="0" />
+      <stop
+         style="stop-color:#dc0000;stop-opacity:1;"
+         offset="1" />
+    </linearGradient>
+    <linearGradient
+       xlink:href="#lg1"
+       id="lg2"
+       gradientUnits="userSpaceOnUse"
+       x1="0.5"
+       y1="6"
+       x2="12"
+       y2="6"
+       gradientTransform="translate(0.1,0.05)" />
+    <linearGradient
+       xlink:href="#lg1"
+       id="lg3"
+       gradientUnits="userSpaceOnUse"
+       x1="0.5"
+       y1="6"
+       x2="11.5"
+       y2="6"
+       gradientTransform="translate(0.5,0.05)" />
+  </defs>
+  <g
+     id="layer1">
+    <g
+       id="g4"
+       transform="translate(-0.25)">
+      <path
+              style="fill:none;stroke:url(#lg2);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+              d="M 5.25,0.75 8,6.25 11,0.75"
+              id="path1" />
+      <path
+              style="fill:none;stroke:url(#lg3);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+              d="M 2.25,12 5.625,6 8.5,12"
+              id="path1-8" />
+    </g>
+  </g>
+</svg>
