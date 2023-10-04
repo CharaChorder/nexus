@@ -93,8 +93,11 @@ class GUI(object):
         # System tray menu
         self.tray_menu = QMenu()
         self.start_stop_tray_menu_action = QAction(self.tr("GUI", "Start/stop logging"))
+        self.quit_tray_menu_action = QAction(self.tr("GUI", "Quit"))
         self.start_stop_tray_menu_action.triggered.connect(self.start_stop)
+        self.quit_tray_menu_action.triggered.connect(self.app.quit)
         self.tray_menu.addAction(self.start_stop_tray_menu_action)
+        self.tray_menu.addAction(self.quit_tray_menu_action)
         self.tray.setContextMenu(self.tray_menu)
 
         # Components
