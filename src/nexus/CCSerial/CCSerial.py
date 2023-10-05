@@ -1,4 +1,4 @@
-from serial import Serial
+from serial import Serial, SerialException
 from serial.tools import list_ports
 from serial.tools.list_ports_common import ListPortInfo
 
@@ -18,7 +18,11 @@ class CCSerial:
         Initialize CharaChorder serial device
         :param device: Path to device (use CCSerial.get_devices()[<device_idx>][0])
         """
-        self.ser = Serial(device, 115200, timeout=1)
+        try:
+            self.ser = Serial(device, 115200, timeout=1)
+        except SerialException:
+            self.close()
+            raise
 
     def close(self):
         """
@@ -35,8 +39,9 @@ class CCSerial:
         try:
             self.ser.write(b"ID\r\n")
             res = self.ser.readline().decode("utf-8").strip().split(" ")
-        finally:
+        except Serial:
             self.close()
+            raise
         if len(res) != 2 or res[0] != "ID":
             raise IOError(f"Invalid response: {res}")
         return res[1]
@@ -50,8 +55,9 @@ class CCSerial:
         try:
             self.ser.write(b"VERSION\r\n")
             res = self.ser.readline().decode("utf-8").strip().split(" ")
-        finally:
+        except Exception:
             self.close()
+            raise
         if len(res) != 2 or res[0] != "VERSION":
             raise IOError(f"Invalid response: {res}")
         return res[1]
@@ -65,8 +71,9 @@ class CCSerial:
         try:
             self.ser.write(b"CML C0\r\n")
             res = self.ser.readline().decode("utf-8").strip().split(" ")
-        finally:
+        except Exception:
             self.close()
+            raise
         if len(res) != 3 or res[0] != "CML" or res[1] != "C0":
             raise IOError(f"Invalid response: {res}")
         return int(res[2])
@@ -84,8 +91,9 @@ class CCSerial:
         try:
             self.ser.write(f"CML C1 {index}\r\n".encode("utf-8"))
             res = self.ser.readline().decode("utf-8").strip().split(" ")
-        finally:
+        except Exception:
             self.close()
+            raise
         if len(res) != 6 or res[0] != "CML" or res[1] != "C1" or res[2] != str(index) or res[3] == "0" or res[4] == "0":
             raise IOError(f"Invalid response: {res}")
         return res[3], res[4]
@@ -105,8 +113,9 @@ class CCSerial:
         try:
             self.ser.write(f"CML C2 {chord}\r\n".encode("utf-8"))
             res = self.ser.readline().decode("utf-8").strip().split(" ")
-        finally:
+        except Exception:
             self.close()
+            raise
         if len(res) != 4 or res[0] != "CML" or res[1] != "C2" or res[2] != chord:
             raise IOError(f"Invalid response: {res}")
         return res[3] if res[3] != "0" else None
@@ -131,8 +140,9 @@ class CCSerial:
         try:
             self.ser.write(f"CML C3 {chord}\r\n".encode("utf-8"))
             res = self.ser.readline().decode("utf-8").strip().split(" ")
-        finally:
+        except Exception:
             self.close()
+            raise
         if len(res) != 5 or res[0] != "CML" or res[1] != "C3" or res[2] != chord:
             raise IOError(f"Invalid response: {res}")
         return res[4] == "0"
@@ -152,8 +162,9 @@ class CCSerial:
         try:
             self.ser.write(f"CML C4 {chord}\r\n".encode("utf-8"))
             res = self.ser.readline().decode("utf-8").strip().split(" ")
-        finally:
+        except Exception:
             self.close()
+            raise
         if len(res) != 4 or res[0] != "CML" or res[1] != "C4":
             raise IOError(f"Invalid response: {res}")
         return res[3] == "0"
@@ -179,14 +190,18 @@ class CCSerial:
         num_chords = self.get_chordmap_count()
         chordmaps = []
         for i in range(num_chords):
-            chord_hex = CCSerial.get_chordmap_by_index(i)[1]
+            chord_hex = self.get_chordmap_by_index(i)[1]
             chord_int = [int(chord_hex[i:i + 2], 16) for i in range(0, len(chord_hex), 2)]
             chord_utf8 = []
             for j, c in enumerate(chord_int):
                 if c < 32:  # 10-bit scan code
                     chord_int[j + 1] = (chord_int[j] << 8) | chord_int[j + 1]
+                elif c == 296:  # enter
+                    chord_utf8.append("\n")
                 elif c == 298 and len(chord_utf8) > 0:  # backspace
                     chord_utf8.pop()
+                elif c == 299:  # tab
+                    chord_utf8.append("\t")
                 elif c == 544:  # spaceright
                     chord_utf8.append(" ")
                 elif c > 126:  # TODO: support non-ASCII characters
