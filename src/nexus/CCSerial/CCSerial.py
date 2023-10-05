@@ -6,94 +6,93 @@ from serial.tools.list_ports_common import ListPortInfo
 class CCSerial:
 
     @staticmethod
-    def get_devices() -> list[ListPortInfo]:
+    def list_devices() -> list[ListPortInfo]:
         """
         List CharaChorder serial devices
         :returns: List of CharaChorder serial devices
         """
         return list(filter(lambda p: p.manufacturer == "CharaChorder", list_ports.comports()))
 
-    @staticmethod
-    def get_device_id(device: str) -> str:
+    def __init__(self, device: str) -> None:
+        """
+        Initialize CharaChorder serial device
+        :param device: Path to device (use CCSerial.get_devices()[<device_idx>][0])
+        """
+        self.ser = Serial(device, 115200, timeout=1)
+
+    def close(self):
+        """
+        Close serial connection, must be called after completion of all serial operations on one device
+        """
+        self.ser.close()
+
+    def get_device_id(self) -> str:
         """
         Get CharaChorder device ID
-        :param device: Device path
         :raises IOError: If serial response is invalid
         :returns: Device ID
         """
-        ser: Serial = Serial(device, 115200, timeout=1)
         try:
-            ser.write(b"ID\r\n")
-            res = ser.readline().decode("utf-8").strip().split(" ")
+            self.ser.write(b"ID\r\n")
+            res = self.ser.readline().decode("utf-8").strip().split(" ")
         finally:
-            ser.close()
+            self.close()
         if len(res) != 2 or res[0] != "ID":
             raise IOError(f"Invalid response: {res}")
         return res[1]
 
-    @staticmethod
-    def get_device_version(device: str) -> str:
+    def get_device_version(self) -> str:
         """
         Get CharaChorder device version
-        :param device: Device path
         :raises IOError: If serial response is invalid
         :returns: Device version
         """
         try:
-            ser: Serial = Serial(device, 115200, timeout=1)
-            ser.write(b"VERSION\r\n")
-            res = ser.readline().decode("utf-8").strip().split(" ")
+            self.ser.write(b"VERSION\r\n")
+            res = self.ser.readline().decode("utf-8").strip().split(" ")
         finally:
-            ser.close()
+            self.close()
         if len(res) != 2 or res[0] != "VERSION":
             raise IOError(f"Invalid response: {res}")
         return res[1]
 
-    @staticmethod
-    def get_chordmap_count(device: str) -> int:
+    def get_chordmap_count(self) -> int:
         """
         Get CharaChorder device chordmap count
-        :param device: Device path
         :raises IOError: If serial response is invalid
         :returns: Chordmap count
         """
         try:
-            ser: Serial = Serial(device, 115200, timeout=1)
-            ser.write(b"CML C0\r\n")
-            res = ser.readline().decode("utf-8").strip().split(" ")
+            self.ser.write(b"CML C0\r\n")
+            res = self.ser.readline().decode("utf-8").strip().split(" ")
         finally:
-            ser.close()
+            self.close()
         if len(res) != 3 or res[0] != "CML" or res[1] != "C0":
             raise IOError(f"Invalid response: {res}")
         return int(res[2])
 
-    @staticmethod
-    def get_chordmap_by_index(device: str, index: int) -> (str, str):
+    def get_chordmap_by_index(self, index: int) -> (str, str):
         """
         Get chordmap from CharaChorder device by index
-        :param device: Device path
         :param index: Chordmap index
         :raises ValueError: If index is out of range
         :raises IOError: If serial response is invalid
         :returns: Chord (hex), Chordmap (Hexadecimal CCActionCodes List)
         """
-        if index < 0 or index >= CCSerial.get_chordmap_count(device):
+        if index < 0 or index >= self.get_chordmap_count():
             raise ValueError("Index out of range")
         try:
-            ser: Serial = Serial(device, 115200, timeout=1)
-            ser.write(f"CML C1 {index}\r\n".encode("utf-8"))
-            res = ser.readline().decode("utf-8").strip().split(" ")
+            self.ser.write(f"CML C1 {index}\r\n".encode("utf-8"))
+            res = self.ser.readline().decode("utf-8").strip().split(" ")
         finally:
-            ser.close()
+            self.close()
         if len(res) != 6 or res[0] != "CML" or res[1] != "C1" or res[2] != str(index) or res[3] == "0" or res[4] == "0":
             raise IOError(f"Invalid response: {res}")
         return res[3], res[4]
 
-    @staticmethod
-    def get_chordmap_by_chord(device: str, chord: str) -> str | None:
+    def get_chordmap_by_chord(self, chord: str) -> str | None:
         """
         Get chordmap from CharaChorder device by chord
-        :param device: Device path
         :param chord: Chord (hex)
         :raises ValueError: If chord is not a hex string
         :raises IOError: If serial response is invalid
@@ -104,20 +103,17 @@ class CCSerial:
         except ValueError:
             raise ValueError("Chord must be a hex string")
         try:
-            ser: Serial = Serial(device, 115200, timeout=1)
-            ser.write(f"CML C2 {chord}\r\n".encode("utf-8"))
-            res = ser.readline().decode("utf-8").strip().split(" ")
+            self.ser.write(f"CML C2 {chord}\r\n".encode("utf-8"))
+            res = self.ser.readline().decode("utf-8").strip().split(" ")
         finally:
-            ser.close()
+            self.close()
         if len(res) != 4 or res[0] != "CML" or res[1] != "C2" or res[2] != chord:
             raise IOError(f"Invalid response: {res}")
         return res[3] if res[3] != "0" else None
 
-    @staticmethod
-    def set_chordmap_by_chord(device: str, chord: str, chordmap: str) -> bool:
+    def set_chordmap_by_chord(self, chord: str, chordmap: str) -> bool:
         """
         Set chordmap on CharaChorder device by chord
-        :param device: Device path
         :param chord: Chord (hex)
         :param chordmap: Chordmap (Hexadecimal CCActionCodes List)
         :raises ValueError: If chord or chordmap is not a hex string
@@ -133,20 +129,17 @@ class CCSerial:
         except ValueError:
             raise ValueError("Chordmap must be a hex string")
         try:
-            ser: Serial = Serial(device, 115200, timeout=1)
-            ser.write(f"CML C3 {chord}\r\n".encode("utf-8"))
-            res = ser.readline().decode("utf-8").strip().split(" ")
+            self.ser.write(f"CML C3 {chord}\r\n".encode("utf-8"))
+            res = self.ser.readline().decode("utf-8").strip().split(" ")
         finally:
-            ser.close()
+            self.close()
         if len(res) != 5 or res[0] != "CML" or res[1] != "C3" or res[2] != chord:
             raise IOError(f"Invalid response: {res}")
         return res[4] == "0"
 
-    @staticmethod
-    def del_chordmap_by_chord(device: str, chord: str) -> bool:
+    def del_chordmap_by_chord(self, chord: str) -> bool:
         """
         Delete chordmap from CharaChorder device by chord
-        :param device: Device path
         :param chord: Chord (hex)
         :raises ValueError: If chord is not a hex string
         :raises IOError: If serial response is invalid
@@ -157,11 +150,10 @@ class CCSerial:
         except ValueError:
             raise ValueError("Chord must be a hex string")
         try:
-            ser: Serial = Serial(device, 115200, timeout=1)
-            ser.write(f"CML C4 {chord}\r\n".encode("utf-8"))
-            res = ser.readline().decode("utf-8").strip().split(" ")
+            self.ser.write(f"CML C4 {chord}\r\n".encode("utf-8"))
+            res = self.ser.readline().decode("utf-8").strip().split(" ")
         finally:
-            ser.close()
+            self.close()
         if len(res) != 4 or res[0] != "CML" or res[1] != "C4":
             raise IOError(f"Invalid response: {res}")
         return res[3] == "0"
@@ -179,21 +171,20 @@ class CCSerial:
         else:
             raise NotImplementedError(f"Action code {code} ({hex(code)}) not supported yet")
 
-    @staticmethod
-    def list_device_chords(device: str) -> list[str]:
+    def list_device_chords(self) -> list[str]:
         """
         List all chord(map)s on CharaChorder device
         :return: list of chordmaps
         """
-        num_chords = CCSerial.get_chordmap_count(device)
+        num_chords = self.get_chordmap_count()
         chordmaps = []
         for i in range(num_chords):
-            chord_hex = CCSerial.get_chordmap_by_index(device, i)[1]
+            chord_hex = CCSerial.get_chordmap_by_index(i)[1]
             chord_int = [int(chord_hex[i:i + 2], 16) for i in range(0, len(chord_hex), 2)]
             chord_utf8 = []
-            for i, c in enumerate(chord_int):
+            for j, c in enumerate(chord_int):
                 if c < 32:  # 10-bit scan code
-                    chord_int[i + 1] = (chord_int[i] << 8) | chord_int[i + 1]
+                    chord_int[j + 1] = (chord_int[j] << 8) | chord_int[j + 1]
                 elif c == 298 and len(chord_utf8) > 0:  # backspace
                     chord_utf8.pop()
                 elif c == 544:  # spaceright
@@ -204,10 +195,3 @@ class CCSerial:
                     chord_utf8.append(chr(c))
             chordmaps.append("".join(chord_utf8).strip())
         return chordmaps
-
-
-if __name__ == '__main__':
-    cc = CCSerial()
-    dev = cc.get_devices()[0][0]
-    chords = cc.list_device_chords(dev)
-    print(chords)

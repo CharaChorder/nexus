@@ -377,9 +377,10 @@ class Freqlog:
         List chords in the store
         :return: list of chords
         """
-        cc = CCSerial()
-        dev = cc.get_devices()[0][0]
-        return cc.list_device_chords(dev)
+        dev = CCSerial(CCSerial.get_devices()[0][0])
+        chords = dev.list_device_chords()
+        dev.close()
+        return chords
 
     def list_banned_words(self, limit: int = -1, sort_by: BanlistAttr = BanlistAttr.word,
                           reverse: bool = False) -> tuple[set[BanlistEntry], set[BanlistEntry]]:
