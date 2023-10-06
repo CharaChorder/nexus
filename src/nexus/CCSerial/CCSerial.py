@@ -30,13 +30,13 @@ class CCSerial:
         """
         self.ser.close()
 
-    def _readline_to_list(self) -> list[str] | False:
+    def _readline_to_list(self) -> list[str]:
         """
         Read a line from the serial device and split it into a list
-        :return: List of strings if read was successful, False otherwise
+        :return: List of strings if read was successful, empty list otherwise
         """
         res = self.ser.readline().decode("utf-8")
-        return res.strip().split(" ") if res[-1] == "\n" else False
+        return res.strip().split(" ") if res[-1] == "\n" else []
 
     def get_device_id(self) -> str:
         """
