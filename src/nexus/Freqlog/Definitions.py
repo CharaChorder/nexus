@@ -61,13 +61,10 @@ class WordMetadata:
             return self
         if self.word != other.word:
             raise ValueError(f"Cannot merge WordMetadata objects with different words: {self.word} and {other.word}")
-        return WordMetadata(
-            self.word,
-            self.frequency + other.frequency,
-            max(self.last_used, other.last_used),
-            (self.average_speed * self.frequency + other.average_speed * other.frequency) / (
-                    self.frequency + other.frequency)
-        )
+        return WordMetadata(self.word, self.frequency + other.frequency,
+                            max(self.last_used, other.last_used),
+                            (self.average_speed * self.frequency + other.average_speed * other.frequency) / (
+                                    self.frequency + other.frequency))
 
     def __str__(self) -> str:
         return f"Word: {self.word} | Frequency: {self.frequency} | Last used: {self.last_used} | " \
@@ -86,11 +83,13 @@ class WordMetadataAttr(Enum):
     score = "score"
 
 
-WordMetadataAttrLabel = {WordMetadataAttr.word: "Word",
-                         WordMetadataAttr.frequency: "Freq.",
-                         WordMetadataAttr.last_used: "Last used",
-                         WordMetadataAttr.average_speed: "Avg. speed",
-                         WordMetadataAttr.score: "Score"}
+WordMetadataAttrLabel = {
+    WordMetadataAttr.word: "Word",
+    WordMetadataAttr.frequency: "Freq.",
+    WordMetadataAttr.last_used: "Last used",
+    WordMetadataAttr.average_speed: "Avg. speed",
+    WordMetadataAttr.score: "Score"
+}
 
 
 class ChordMetadata:
@@ -100,9 +99,24 @@ class ChordMetadata:
         self.chord = chord
         self.frequency = frequency
         self.last_used = last_used
+        self.score = len(chord) * frequency
+
+    def __or__(self, other: Any) -> Self:
+        """Merge two ChordMetadata objects"""
+        if other is not None and not isinstance(other, ChordMetadata):
+            raise TypeError(f"unsupported operand type(s) for |: '{type(self).__name__}' and '{type(other).__name__}'")
+        if other is None:
+            return self
+        if self.chord != other.chord:
+            raise ValueError(
+                f"Cannot merge ChordMetadata objects with different chords: {self.chord} and {other.chord}")
+        return ChordMetadata(self.chord, self.frequency + other.frequency, max(self.last_used, other.last_used))
 
     def __str__(self) -> str:
-        return f"Chord: {self.chord} | Frequency: {self.frequency} | Last used: {self.last_used} | "
+        return f"Chord: {self.chord} | Frequency: {self.frequency} | Last used: {self.last_used}"
+
+    def __repr__(self) -> str:
+        return f"ChordMetadata({self.chord})"
 
 
 class ChordMetadataAttr(Enum):
@@ -110,6 +124,15 @@ class ChordMetadataAttr(Enum):
     chord = "chord"
     frequency = "frequency"
     last_used = "lastused"
+    score = "score"
+
+
+ChordMetadataAttrLabel = {
+    ChordMetadataAttr.chord: "Chord",
+    ChordMetadataAttr.frequency: "Freq.",
+    ChordMetadataAttr.last_used: "Last used",
+    ChordMetadataAttr.score: "Score"
+}
 
 
 class BanlistEntry:

@@ -92,16 +92,16 @@ def main():
                               choices=[order.name for order in Order])
 
     # Get chords
-    # parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
-    #                                       parents=[log_arg, path_arg, num_arg])
-    # parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
-    # parser_chords.add_argument("-e", "--export", help="Export freqlogged chords as csv to file"
-    #                                                   "(ignores chord args)", required=False)
-    # parser_chords.add_argument("-s", "--sort-by", default=ChordMetadataAttr.frequency.name,
-    #                            help=f"Sort by (default: {ChordMetadataAttr.frequency.name})"),
-    #                            choices=[attr.name for attr in ChordMetadataAttr])
-    # parser_chords.add_argument("-o", "--order", default=Order.ASCENDING, help="Order (default: DESCENDING)",
-    #                            choices=[order.name for order in Order])
+    parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
+                                          parents=[log_arg, path_arg, num_arg])
+    parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
+    parser_chords.add_argument("-e", "--export", help="Export freqlogged chords as csv to file"
+                                                      "(ignores chord args)", required=False)
+    parser_chords.add_argument("-s", "--sort-by", default=ChordMetadataAttr.frequency.name,
+                               help=f"Sort by (default: {ChordMetadataAttr.frequency.name})",
+                               choices=[attr.name for attr in ChordMetadataAttr])
+    parser_chords.add_argument("-o", "--order", default=Order.ASCENDING, help="Order (default: DESCENDING)",
+                               choices=[order.name for order in Order])
 
     # Get banned words
     parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",

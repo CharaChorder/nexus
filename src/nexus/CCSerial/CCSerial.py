@@ -1,3 +1,5 @@
+from typing import Iterator
+
 from serial import Serial, SerialException
 from serial.tools import list_ports
 from serial.tools.list_ports_common import ListPortInfo
@@ -36,7 +38,7 @@ class CCSerial:
         :return: List of strings if read was successful, empty list otherwise
         """
         res = self.ser.readline().decode("utf-8")
-        return res.strip().split(" ") if res[-1] == "\n" else []
+        return res.strip().split(" ") if res and res[-1] == "\n" else []
 
     def get_device_id(self) -> str:
         """
@@ -204,13 +206,12 @@ class CCSerial:
         else:
             raise NotImplementedError(f"Action code {code} ({hex(code)}) not supported yet")
 
-    def list_device_chords(self) -> list[str]:
+    def list_device_chords(self) -> Iterator[str]:
         """
         List all chord(map)s on CharaChorder device
         :return: list of chordmaps
         """
         num_chords = self.get_chordmap_count()
-        chordmaps = []
         for i in range(num_chords):
             chord_hex = self.get_chordmap_by_index(i)[1]
             chord_int = [int(chord_hex[i:i + 2], 16) for i in range(0, len(chord_hex), 2)]
@@ -230,5 +231,4 @@ class CCSerial:
                     continue
                 else:
                     chord_utf8.append(chr(c))
-            chordmaps.append("".join(chord_utf8).strip())
-        return chordmaps
+            yield "".join(chord_utf8).strip()

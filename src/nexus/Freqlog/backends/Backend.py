@@ -37,11 +37,22 @@ class Backend(ABC):
 
     @abstractmethod
     def log_word(self, word: str, start_time: datetime, end_time: datetime) -> bool:
-        """Log a word entry if not banned, creating it if it doesn't exist"""
+        """
+        Log a word entry if not banned, creating it if it doesn't exist
+        :param word: Word to log
+        :param start_time: Timestamp of start of word started
+        :param end_time: Timestamp of end of word
+        :returns: True if word was logged, False if it was banned
+        """
 
     @abstractmethod
-    def log_chord(self, word: str, start_time: datetime, end_time: datetime) -> None:
-        """Log a chord entry, creating it if it doesn't exist"""
+    def log_chord(self, chord: str, end_time: datetime) -> None:
+        """
+        Log a chord entry if not banned, creating it if it doesn't exist
+        :param chord: Chord to log
+        :param end_time: Timestamp of end of chord
+        :returns: True if chord was logged, False if it was banned
+        """
 
     @abstractmethod
     def check_banned(self, word: str, case: CaseSensitivity) -> bool:
@@ -55,7 +66,7 @@ class Backend(ABC):
     @abstractmethod
     def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> bool:
         """
-        Delete a word entry and add it to the ban list
+        Delete a word/chord entry and add it to the ban list
         :returns: True if word was banned, False if it was already banned
         """
 
@@ -87,14 +98,18 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def list_chords(self, limit: int, sort_by: ChordMetadataAttr, reverse: bool,
-                    case: CaseSensitivity) -> list[ChordMetadata]:
+    def num_chords(self):
+        """Get number of chords in store"""
+
+    @abstractmethod
+    def list_chords(self, limit: int, sort_by: ChordMetadataAttr = ChordMetadataAttr.score, reverse: bool = True,
+                    search: str = "") -> list[ChordMetadata]:
         """
         List chords in the store
         :param limit: Maximum number of chords to return
         :param sort_by: Attribute to sort by: chord, frequency, last_used, average_speed
         :param reverse: Reverse sort order
-        :param case: Case sensitivity
+        :param search: Part of chord to search for
         """
 
     @abstractmethod
