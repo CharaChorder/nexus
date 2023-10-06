@@ -30,6 +30,14 @@ class CCSerial:
         """
         self.ser.close()
 
+    def _readline_to_list(self) -> list[str] | False:
+        """
+        Read a line from the serial device and split it into a list
+        :return: List of strings if read was successful, False otherwise
+        """
+        res = self.ser.readline().decode("utf-8")
+        return res.strip().split(" ") if res[-1] == "\n" else False
+
     def get_device_id(self) -> str:
         """
         Get CharaChorder device ID
@@ -38,8 +46,10 @@ class CCSerial:
         """
         try:
             self.ser.write(b"ID\r\n")
-            res = self.ser.readline().decode("utf-8").strip().split(" ")
-        except Serial:
+            res = None
+            while not res or len(res) == 1:  # Drop serial output from chording during this time
+                res = self._readline_to_list()
+        except Exception:
             self.close()
             raise
         if len(res) != 2 or res[0] != "ID":
@@ -54,7 +64,9 @@ class CCSerial:
         """
         try:
             self.ser.write(b"VERSION\r\n")
-            res = self.ser.readline().decode("utf-8").strip().split(" ")
+            res = None
+            while not res or len(res) == 1:  # Drop serial output from chording during this time
+                res = self._readline_to_list()
         except Exception:
             self.close()
             raise
@@ -70,7 +82,9 @@ class CCSerial:
         """
         try:
             self.ser.write(b"CML C0\r\n")
-            res = self.ser.readline().decode("utf-8").strip().split(" ")
+            res = None
+            while not res or len(res) == 1:  # Drop serial output from chording during this time
+                res = self._readline_to_list()
         except Exception:
             self.close()
             raise
@@ -90,7 +104,9 @@ class CCSerial:
             raise ValueError("Index out of range")
         try:
             self.ser.write(f"CML C1 {index}\r\n".encode("utf-8"))
-            res = self.ser.readline().decode("utf-8").strip().split(" ")
+            res = None
+            while not res or len(res) == 1:  # Drop serial output from chording during this time
+                res = self._readline_to_list()
         except Exception:
             self.close()
             raise
@@ -112,7 +128,9 @@ class CCSerial:
             raise ValueError("Chord must be a hex string")
         try:
             self.ser.write(f"CML C2 {chord}\r\n".encode("utf-8"))
-            res = self.ser.readline().decode("utf-8").strip().split(" ")
+            res = None
+            while not res or len(res) == 1:  # Drop serial output from chording during this time
+                res = self._readline_to_list()
         except Exception:
             self.close()
             raise
@@ -139,7 +157,9 @@ class CCSerial:
             raise ValueError("Chordmap must be a hex string")
         try:
             self.ser.write(f"CML C3 {chord}\r\n".encode("utf-8"))
-            res = self.ser.readline().decode("utf-8").strip().split(" ")
+            res = None
+            while not res or len(res) == 1:  # Drop serial output from chording during this time
+                res = self._readline_to_list()
         except Exception:
             self.close()
             raise
@@ -161,7 +181,9 @@ class CCSerial:
             raise ValueError("Chord must be a hex string")
         try:
             self.ser.write(f"CML C4 {chord}\r\n".encode("utf-8"))
-            res = self.ser.readline().decode("utf-8").strip().split(" ")
+            res = None
+            while not res or len(res) == 1:  # Drop serial output from chording during this time
+                res = self._readline_to_list()
         except Exception:
             self.close()
             raise
