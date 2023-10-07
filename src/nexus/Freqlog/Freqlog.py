@@ -99,6 +99,9 @@ class Freqlog:
             if not word:  # Don't log if word is empty
                 return
 
+            # Trim whitespace from start and end of word
+            word = word.strip()
+
             # Only log words/chords that have >= min_length characters
             if len(word) >= min_length:
                 if avg_char_time_after_last_bs and avg_char_time_after_last_bs > timedelta(
@@ -194,7 +197,7 @@ class Freqlog:
         logging.info(f"Getting {self.dev.get_chordmap_count()} chords from device")
         self.chords = []
         for chord in self.dev.list_device_chords():
-            self.chords.append(chord)
+            self.chords.append(chord.strip())
             if not self.is_logging:  # Short circuit if logging is stopped
                 logging.info("Stopped getting chords from device")
                 break
