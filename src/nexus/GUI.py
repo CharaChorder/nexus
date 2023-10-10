@@ -1,4 +1,5 @@
 import argparse
+import os
 from threading import Thread
 from pathlib import Path
 from typing import Literal
@@ -79,12 +80,12 @@ class GUI(object):
 
         # Translation
         self.translator = Translator(self.app)
-        if self.translator.load(QLocale.system(), 'i18n', '_', script_parent_path + '/translations'):
+        if self.translator.load(QLocale.system(), 'i18n', '_', os.path.join(script_parent_path, 'translations')):
             self.app.installTranslator(self.translator)
         self.tr = self.translator.translate
 
         # System tray
-        self.tray_icon = QIcon(script_parent_path + '/assets/images/icon.svg')
+        self.tray_icon = QIcon(os.path.join(script_parent_path, 'assets', 'images', 'icon.ico'))
         self.tray = QSystemTrayIcon()
         self.tray.activated.connect(self.show_hide)
         self.tray.setIcon(self.tray_icon)
