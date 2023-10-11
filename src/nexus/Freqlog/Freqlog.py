@@ -135,7 +135,21 @@ class Freqlog:
 
                 # On backspace, remove last char from word if word is not empty
                 if key == kbd.Key.backspace and word:
-                    word = word[:-1]
+                    if (key.ctrl_l in active_modifier_keys or key.ctrl_r in active_modifier_keys or
+                            key.ctrl in active_modifier_keys):
+                        # Remove last word from word
+                        # TODO: make this work - rn _log_and_reset_word() is called immediately upon ctrl keydown
+                        # TODO: make this configurable (i.e. for macos, vim, etc)
+                        if " " in word:
+                            word = word[:word.rfind(" ")]
+                        elif "\t" in word:
+                            word = word[:word.rfind("\t")]
+                        elif "\n" in word:
+                            word = word[:word.rfind("\n")]
+                        else:  # word is only one word
+                            word = ""
+                    else:
+                        word = word[:-1]
                     chars_since_last_bs = 0
                     avg_char_time_after_last_bs = None
                     self.q.task_done()
@@ -167,7 +181,7 @@ class Freqlog:
                     continue
 
                 # Add new char to word and update word timing if no modifier keys are pressed
-                if isinstance(key, kbd.KeyCode) and not active_modifier_keys:
+                if isinstance(key, kbd.KeyCode) and not active_modifier_keys and key.char:
                     word += key.char
                     chars_since_last_bs += 1
                     if not word_start_time:
