@@ -70,140 +70,152 @@
 <context>
     <name>GUI</name>
     <message>
-        <location filename="../src/nexus/GUI.py" line="225"/>
+        <location filename="../src/nexus/GUI.py" line="253"/>
         <source>GUI</source>
         <comment>Start logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="194"/>
+        <location filename="../src/nexus/GUI.py" line="222"/>
         <source>GUI</source>
         <comment>Starting...</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="109"/>
+        <location filename="../src/nexus/GUI.py" line="96"/>
+        <source>GUI</source>
+        <comment>Start/stop logging</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="97"/>
+        <source>GUI</source>
+        <comment>Quit</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/nexus/GUI.py" line="130"/>
         <source>GUI</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="117"/>
+        <location filename="../src/nexus/GUI.py" line="138"/>
         <source>GUI</source>
         <comment>Ban and delete</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="205"/>
+        <location filename="../src/nexus/GUI.py" line="233"/>
         <source>GUI</source>
         <comment>Stop logging</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="210"/>
+        <location filename="../src/nexus/GUI.py" line="238"/>
         <source>GUI</source>
         <comment>Logging started</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="230"/>
+        <location filename="../src/nexus/GUI.py" line="258"/>
         <source>GUI</source>
         <comment>Logging stopped</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="277"/>
+        <location filename="../src/nexus/GUI.py" line="305"/>
         <source>GUI</source>
         <comment>Loaded {}/{} freqlogged words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="316"/>
-        <location filename="../src/nexus/GUI.py" line="392"/>
+        <location filename="../src/nexus/GUI.py" line="344"/>
+        <location filename="../src/nexus/GUI.py" line="420"/>
         <source>GUI</source>
         <comment>Banned &apos;{}&apos;</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="317"/>
-        <location filename="../src/nexus/GUI.py" line="393"/>
+        <location filename="../src/nexus/GUI.py" line="345"/>
+        <location filename="../src/nexus/GUI.py" line="421"/>
         <source>GUI</source>
         <comment>&apos;{}&apos; already banned</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="339"/>
+        <location filename="../src/nexus/GUI.py" line="367"/>
         <source>GUI</source>
         <comment>Unban {} words?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="341"/>
+        <location filename="../src/nexus/GUI.py" line="369"/>
         <source>GUI</source>
         <comment>Unban &apos;{}&apos;?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="348"/>
+        <location filename="../src/nexus/GUI.py" line="376"/>
         <source>GUI</source>
         <comment>Unbanned &apos;{}&apos;</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="349"/>
+        <location filename="../src/nexus/GUI.py" line="377"/>
         <source>GUI</source>
         <comment>&apos;{}&apos; not banned</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="351"/>
+        <location filename="../src/nexus/GUI.py" line="379"/>
         <source>GUI</source>
         <comment>None of the selected words were banned</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="354"/>
+        <location filename="../src/nexus/GUI.py" line="382"/>
         <source>GUI</source>
         <comment>Unbanned {}/{} selected words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="373"/>
+        <location filename="../src/nexus/GUI.py" line="401"/>
         <source>GUI</source>
         <comment>Exported {} entries to {}</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="382"/>
+        <location filename="../src/nexus/GUI.py" line="410"/>
         <source>GUI</source>
         <comment>Ban and delete {} words?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="384"/>
+        <location filename="../src/nexus/GUI.py" line="412"/>
         <source>GUI</source>
         <comment>Ban and delete &apos;{}&apos;?</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="395"/>
+        <location filename="../src/nexus/GUI.py" line="423"/>
         <source>GUI</source>
         <comment>All of the selected words were already banned</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="398"/>
+        <location filename="../src/nexus/GUI.py" line="426"/>
         <source>GUI</source>
         <comment>Banned and deleted {}/{} selected words</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="400"/>
+        <location filename="../src/nexus/GUI.py" line="428"/>
         <source>GUI</source>
         <comment>Confirm ban</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="356"/>
+        <location filename="../src/nexus/GUI.py" line="384"/>
         <source>GUI</source>
         <comment>Confirm unban</comment>
         <translation type="unfinished"></translation>

@@ -1,11 +1,13 @@
 import argparse
+import os
 from threading import Thread
 from pathlib import Path
 from typing import Literal
 
 from PySide6.QtCore import Qt, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
-    QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel, QMenu
+    QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel, QMenu, QSystemTrayIcon
+from PySide6.QtGui import QIcon, QAction
 
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
@@ -74,11 +76,30 @@ class GUI(object):
         self.app = QApplication([])
         self.window = MainWindow()
 
+        script_parent_path = str(Path(__file__).resolve().parent)
+
         # Translation
         self.translator = Translator(self.app)
-        if self.translator.load(QLocale.system(), 'i18n', '_', str(Path(__file__).resolve().parent) + '/translations'):
+        if self.translator.load(QLocale.system(), 'i18n', '_', os.path.join(script_parent_path, 'translations')):
             self.app.installTranslator(self.translator)
         self.tr = self.translator.translate
+
+        # System tray
+        self.tray_icon = QIcon(os.path.join(script_parent_path, 'assets', 'images', 'icon.ico'))
+        self.tray = QSystemTrayIcon()
+        self.tray.activated.connect(self.show_hide)
+        self.tray.setIcon(self.tray_icon)
+        self.tray.setVisible(True)
+
+        # System tray menu
+        self.tray_menu = QMenu()
+        self.start_stop_tray_menu_action = QAction(self.tr("GUI", "Start/stop logging"))
+        self.quit_tray_menu_action = QAction(self.tr("GUI", "Quit"))
+        self.start_stop_tray_menu_action.triggered.connect(self.start_stop)
+        self.quit_tray_menu_action.triggered.connect(self.app.quit)
+        self.tray_menu.addAction(self.start_stop_tray_menu_action)
+        self.tray_menu.addAction(self.quit_tray_menu_action)
+        self.tray.setContextMenu(self.tray_menu)
 
         # Components
         self.start_stop_button: QPushButton = self.window.startStopButton
@@ -164,6 +185,13 @@ class GUI(object):
         # Auto-refresh - must go at the end
         self.window.entries_input.valueChanged.connect(self.refresh)
         self.window.search_input.textChanged.connect(self.refresh)
+
+    def show_hide(self, reason):
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            if not self.window.isVisible():
+                self.window.show()
+            else:
+                self.window.hide()
 
     def set_style(self, style: Literal['Nexus_Dark', 'Fusion', 'Default']):
         self.app.setStyleSheet('')
