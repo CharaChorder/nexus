@@ -85,10 +85,10 @@ class GUI(object):
         self.tr = self.translator.translate
 
         # System tray
-        self.tray_icon = QIcon(os.path.join(script_parent_path, 'assets', 'images', 'icon.ico'))
+        self.nexus_icon = QIcon(os.path.join(script_parent_path, 'assets', 'images', 'icon.ico'))
         self.tray = QSystemTrayIcon()
         self.tray.activated.connect(self.show_hide)
-        self.tray.setIcon(self.tray_icon)
+        self.tray.setIcon(self.nexus_icon)
         self.tray.setVisible(True)
 
         # System tray menu
@@ -100,6 +100,9 @@ class GUI(object):
         self.tray_menu.addAction(self.start_stop_tray_menu_action)
         self.tray_menu.addAction(self.quit_tray_menu_action)
         self.tray.setContextMenu(self.tray_menu)
+
+        # Set window icon
+        self.window.setWindowIcon(self.nexus_icon)
 
         # Components
         self.start_stop_button: QPushButton = self.window.startStopButton
