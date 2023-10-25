@@ -59,9 +59,9 @@ class Freqlog:
             logging.warning(f"Chord '{chord}' not found in device chords, treating as word")
             self._log_word(chord, start_time, end_time)
         if self.backend.log_chord(chord, end_time):
-            logging.info(f"Chord: {chord} - {start_time} - {end_time}")
+            logging.info(f"Chord: {chord} - {end_time}")
         else:
-            logging.info(f"Banned chord, {start_time} - {end_time}")
+            logging.info(f"Banned chord, {end_time}")
             logging.debug(f"(Banned chord was '{chord}')")
 
     def _process_queue(self):
@@ -70,6 +70,7 @@ class Freqlog:
         word_end_time: datetime | None = None
         chars_since_last_bs: int = 0
         avg_char_time_after_last_bs: timedelta | None = None
+        last_key_was_whitespace: bool = False
         active_modifier_keys: set = set()
 
         def _get_timed_interruptable(q, timeout):
@@ -95,7 +96,8 @@ class Freqlog:
 
         def _log_and_reset_word(min_length: int = 2) -> None:
             """Log word to file and reset word metadata"""
-            nonlocal word, word_start_time, word_end_time, chars_since_last_bs, avg_char_time_after_last_bs
+            nonlocal word, word_start_time, word_end_time, chars_since_last_bs, avg_char_time_after_last_bs, \
+                last_key_was_whitespace
             if not word:  # Don't log if word is empty
                 return
 
@@ -115,6 +117,7 @@ class Freqlog:
             word_end_time = None
             chars_since_last_bs = 0
             avg_char_time_after_last_bs = None
+            last_key_was_whitespace = False
 
         while self.is_logging:
             try:
@@ -124,8 +127,11 @@ class Freqlog:
 
                 # Blocking here makes the while-True non-blocking
                 action, key, time_pressed = _get_timed_interruptable(self.q, self.new_word_threshold)
-                logging.debug(f"{action}: {key} - {time_pressed}")
-                logging.debug(f"word: '{word}', active_modifier_keys: {active_modifier_keys}")
+
+                # Debug keystrokes
+                if isinstance(key, kbd.Key) or isinstance(key, kbd.KeyCode):
+                    logging.debug(f"{action}: {key} - {time_pressed}")
+                    logging.debug(f"word: '{word}', active_modifier_keys: {active_modifier_keys}")
 
                 # Update modifier keys
                 if action == ActionType.PRESS and key in self.modifier_keys:
@@ -135,11 +141,11 @@ class Freqlog:
 
                 # On backspace, remove last char from word if word is not empty
                 if key == kbd.Key.backspace and word:
-                    if (key.ctrl_l in active_modifier_keys or key.ctrl_r in active_modifier_keys or
-                            key.ctrl in active_modifier_keys):
+                    if active_modifier_keys.intersection({kbd.Key.ctrl, kbd.Key.ctrl_l, kbd.Key.ctrl_r,
+                                                          kbd.Key.cmd, kbd.Key.cmd_l, kbd.Key.cmd_r}):
                         # Remove last word from word
-                        # TODO: make this work - rn _log_and_reset_word() is called immediately upon ctrl keydown
-                        # TODO: make this configurable (i.e. for macos, vim, etc)
+                        # TODO: make this work - rn _log_and_reset_word() is called immediately upon ctrl/cmd keydown
+                        # TODO: make this configurable (i.e. for vim, etc)
                         if " " in word:
                             word = word[:word.rfind(" ")]
                         elif "\t" in word:
@@ -158,8 +164,8 @@ class Freqlog:
                 # Handle whitespace
                 if isinstance(key, kbd.Key) and key in {kbd.Key.space, kbd.Key.tab, kbd.Key.enter}:
                     # If key is whitespace and timing is more than chord_char_threshold, log and reset word
-                    if (word and word_end_time and word_start_time and (word_end_time - word_start_time) / len(word) >
-                            timedelta(milliseconds=self.chord_char_threshold)):
+                    if (word and avg_char_time_after_last_bs and
+                            avg_char_time_after_last_bs > timedelta(milliseconds=self.chord_char_threshold)):
                         _log_and_reset_word()
                     else:  # Add whitespace to word
                         match key:
@@ -169,11 +175,12 @@ class Freqlog:
                                 word += "\t"
                             case kbd.Key.enter:
                                 word += "\n"
+                        last_key_was_whitespace = True
                     self.q.task_done()
                     continue
 
-                # On modifier key, log and reset word if it exists
-                # Non-chord key = key in modifier keys or non-key
+                # On non-chord key, log and reset word if it exists
+                #   Non-chord key = key in modifier keys or non-key
                 if key in self.modifier_keys or not (isinstance(key, kbd.Key) or isinstance(key, kbd.KeyCode)):
                     if word:
                         _log_and_reset_word()
@@ -182,6 +189,9 @@ class Freqlog:
 
                 # Add new char to word and update word timing if no modifier keys are pressed
                 if isinstance(key, kbd.KeyCode) and not active_modifier_keys and key.char:
+                    if (last_key_was_whitespace and word and word_end_time and
+                            (time_pressed - word_end_time) > timedelta(milliseconds=self.chord_char_threshold)):
+                        _log_and_reset_word()
                     word += key.char
                     chars_since_last_bs += 1
                     if not word_start_time:
@@ -194,6 +204,7 @@ class Freqlog:
                         avg_char_time_after_last_bs = time_pressed - word_end_time
                     word_end_time = time_pressed
                     self.q.task_done()
+
             except EmptyException:  # queue is empty
                 # If word is older than NEW_WORD_THRESHOLD seconds, log and reset word
                 if word:
