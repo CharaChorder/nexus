@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Iterator
 
 from serial import Serial, SerialException
@@ -5,23 +6,53 @@ from serial.tools import list_ports
 from serial.tools.list_ports_common import ListPortInfo
 
 
+@dataclass
+class CCDevice:
+    """
+    CharaChorder device
+    """
+    name: str
+    device: ListPortInfo
+
+    def __repr__(self):
+        return self.name + " (" + self.device.device + ")"
+
+    def __str__(self):
+        return self.name + " (" + self.device.device + ")"
+
+
 class CCSerial:
 
     @staticmethod
-    def list_devices() -> list[ListPortInfo]:
+    def list_devices() -> list[CCDevice]:
         """
         List CharaChorder serial devices
         :returns: List of CharaChorder serial devices
         """
-        return list(filter(lambda p: p.manufacturer == "CharaChorder", list_ports.comports()))
+        devices: list[CCDevice] = []
+        for dev in list_ports.comports():
+            match dev.vid:
+                case 9114:  # Adafruit (M0)
+                    match dev.pid:
+                        case 32783:
+                            devices.append(CCDevice("CharaChorder One", dev))
+                        case 32796:
+                            devices.append(CCDevice("CharaChorder Lite (M0)", dev))
+                case 12346:  # Espressif (S2)
+                    match dev.pid:
+                        case 33070:
+                            devices.append(CCDevice("CharaChorder Lite (S2)", dev))
+                        case 33163:
+                            devices.append(CCDevice("CharaChorder X", dev))
+        return devices
 
-    def __init__(self, device: str) -> None:
+    def __init__(self, device: CCDevice) -> None:
         """
         Initialize CharaChorder serial device
         :param device: Path to device (use CCSerial.get_devices()[<device_idx>][0])
         """
         try:
-            self.ser = Serial(device, 115200, timeout=1)
+            self.ser = Serial(device.device.device, 115200, timeout=1)
         except SerialException:
             self.close()
             raise

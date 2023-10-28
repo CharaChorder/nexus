@@ -251,7 +251,7 @@ class Freqlog:
                 logging.debug(f"Other devices: {devices[1:]}")
             logging.info(f"Connecting to CharaChorder device at {devices[0]}")
             try:
-                self.dev = CCSerial(devices[0][0])
+                self.dev = CCSerial(devices[0])
                 self.num_chords = self.dev.get_chordmap_count()
             except SerialException as e:
                 logging.error(f"Failed to connect to CharaChorder device: {devices[0]}")
