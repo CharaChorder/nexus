@@ -13,10 +13,14 @@ from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
 from nexus.ui.BanwordDialog import Ui_BanwordDialog
 from nexus.ui.MainWindow import Ui_MainWindow
-
 from nexus.style import Stylesheet, Colors
-
 from nexus.Freqlog.Definitions import CaseSensitivity, WordMetadataAttr, WordMetadataAttrLabel, WordMetadata, Defaults
+
+if os.name == 'nt':  # Needed for taskbar icon on Windows
+    import ctypes
+    from nexus import __id__, __version__
+
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(f"{__id__}.{__version__}")
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -85,7 +89,7 @@ class GUI(object):
         self.tr = self.translator.translate
 
         # System tray
-        self.nexus_icon = QIcon(os.path.join(script_parent_path, 'assets', 'images', 'icon.ico'))
+        self.nexus_icon = QIcon(":images/icon.ico")
         self.tray = QSystemTrayIcon()
         self.tray.activated.connect(self.show_hide)
         self.tray.setIcon(self.nexus_icon)
@@ -101,7 +105,7 @@ class GUI(object):
         self.tray_menu.addAction(self.quit_tray_menu_action)
         self.tray.setContextMenu(self.tray_menu)
 
-        # Set window icon
+        # Set window icon - required for pyinstalled app
         self.window.setWindowIcon(self.nexus_icon)
 
         # Components

@@ -1,4 +1,5 @@
 """All-in-one cross-platform CharaChorder desktop app."""
 
 __author__ = "CharaChorder"
-__version__ = "0.3.0"
+__id__ = "com.charachorder.nexus"
+__version__ = "0.4.0"

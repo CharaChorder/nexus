@@ -46,7 +46,7 @@ repos:
           - --statistics
           - --max-line-length=120
           - --per-file-ignores=src/nexus/Freqlog/backends/__init__.py:F401
-          - --exclude=venv,src/nexus/ui
+          - --exclude=venv,src/nexus/ui,resources_rc.py
         additional_dependencies: [flake8]
       - id: pytest
         name: pytest
