@@ -53,12 +53,11 @@ class Freqlog:
         """
         if not self.chords:
             logging.warning("Chords not loaded, not logging chord")
-            return
-        if chord not in self.chords:
+        elif chord not in self.chords:
             # Actually a word, not a chord?
             logging.warning(f"Chord '{chord}' not found in device chords, treating as word")
             self._log_word(chord, start_time, end_time)
-        if self.backend.log_chord(chord, end_time):
+        elif self.backend.log_chord(chord, end_time):
             logging.info(f"Chord: {chord} - {end_time}")
         else:
             logging.info(f"Banned chord, {end_time}")
@@ -221,11 +220,15 @@ class Freqlog:
         """
         logging.info(f"Getting {self.dev.get_chordmap_count()} chords from device")
         self.chords = []
+        started_logging = False  # prevent early short-circuit
         for chord in self.dev.list_device_chords():
             self.chords.append(chord.strip())
             if not self.is_logging:  # Short circuit if logging is stopped
-                logging.info("Stopped getting chords from device")
-                break
+                if started_logging:
+                    logging.info("Stopped getting chords from device")
+                    break
+            else:
+                started_logging = True
         else:
             logging.info(f"Got {len(self.chords)} chords from device")
 
@@ -260,6 +263,7 @@ class Freqlog:
                 logging.error(f"I/O error while getting number of chords from CharaChorder device: {devices[0]}")
                 logging.error(e)
 
+        self.is_logging: bool = False  # Used in self._get_chords, needs to be initialized here
         if loggable:
             logging.info(f"Logging set to freqlog db at {path}")
 
@@ -281,7 +285,6 @@ class Freqlog:
         self.chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD
         self.allowed_keys_in_chord: set = Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD
         self.modifier_keys: set = Defaults.DEFAULT_MODIFIER_KEYS
-        self.is_logging: bool = False
         self.killed: bool = False
 
     def start_logging(self, new_word_threshold: float | None = None, chord_char_threshold: int | None = None,
