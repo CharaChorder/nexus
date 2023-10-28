@@ -231,6 +231,8 @@ class Freqlog:
                 started_logging = True
         else:
             logging.info(f"Got {len(self.chords)} chords from device")
+        if self.dev:
+            self.dev.close()
 
     def __init__(self, path: str = Defaults.DEFAULT_DB_PATH, loggable: bool = True):
         """

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Iterator
 
-from serial import Serial, SerialException
+from serial import Serial
 from serial.tools import list_ports
 from serial.tools.list_ports_common import ListPortInfo
 
@@ -51,11 +51,7 @@ class CCSerial:
         Initialize CharaChorder serial device
         :param device: Path to device (use CCSerial.get_devices()[<device_idx>][0])
         """
-        try:
-            self.ser = Serial(device.device.device, 115200, timeout=1)
-        except SerialException:
-            self.close()
-            raise
+        self.ser = Serial(device.device.device, 115200, timeout=1)
 
     def close(self):
         """
