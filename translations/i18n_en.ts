@@ -9,27 +9,27 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanlistDialog.ui" line="42"/>
+        <location filename="../ui/BanlistDialog.ui" line="46"/>
         <source>Word</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanlistDialog.ui" line="47"/>
+        <location filename="../ui/BanlistDialog.ui" line="51"/>
         <source>Date added</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanlistDialog.ui" line="52"/>
+        <location filename="../ui/BanlistDialog.ui" line="56"/>
         <source>Case</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanlistDialog.ui" line="65"/>
+        <location filename="../ui/BanlistDialog.ui" line="69"/>
         <source>Add</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanlistDialog.ui" line="72"/>
+        <location filename="../ui/BanlistDialog.ui" line="76"/>
         <source>Remove</source>
         <translation type="unfinished"></translation>
     </message>
@@ -42,27 +42,27 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanwordDialog.ui" line="25"/>
+        <location filename="../ui/BanwordDialog.ui" line="29"/>
         <source>Word to ban:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanwordDialog.ui" line="39"/>
+        <location filename="../ui/BanwordDialog.ui" line="43"/>
         <source>Case:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanwordDialog.ui" line="46"/>
+        <location filename="../ui/BanwordDialog.ui" line="50"/>
         <source>Insensitive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanwordDialog.ui" line="56"/>
+        <location filename="../ui/BanwordDialog.ui" line="60"/>
         <source>Sensitive</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ui/BanwordDialog.ui" line="63"/>
+        <location filename="../ui/BanwordDialog.ui" line="67"/>
         <source>First char</source>
         <translation type="unfinished"></translation>
     </message>

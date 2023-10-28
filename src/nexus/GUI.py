@@ -105,8 +105,8 @@ class GUI(object):
         self.tray_menu.addAction(self.quit_tray_menu_action)
         self.tray.setContextMenu(self.tray_menu)
 
-        # Set window icon - required for pyinstalled app
-        self.window.setWindowIcon(self.nexus_icon)
+        # # Set window icon - required for pyinstalled app
+        # self.window.setWindowIcon(self.nexus_icon)
 
         # Components
         self.start_stop_button: QPushButton = self.window.startStopButton
