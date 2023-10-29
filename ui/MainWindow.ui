@@ -7,11 +7,15 @@
     <x>0</x>
     <y>0</y>
     <width>900</width>
-    <height>550</height>
+    <height>580</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Nexus</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/images/icon.ico</normaloff>:/images/icon.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
@@ -552,6 +556,8 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

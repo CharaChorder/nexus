@@ -61,6 +61,10 @@ print("Converting ui files to python...")
 for f in glob.glob('ui/*.ui'):
     run_command(f"{venv_path}pyside6-uic {f} -o src/nexus/ui/{Path(f).stem}.py")
 
+# Generate resources
+print("Generating resources...")
+run_command(f"{venv_path}pyside6-rcc ui/resources.qrc -o resources_rc.py")
+
 # Generate translations
 print("Generating TS templates...")
 run_command(f"{venv_path}pyside6-lupdate " +
@@ -73,7 +77,7 @@ for f in glob.glob('translations/*.ts'):
 
 if not (args.no_build or args.ui_only):
     # Pyinstaller command
-    build_cmd = "pyinstaller --onefile --name nexus src/nexus/__main__.py"
+    build_cmd = "pyinstaller --onefile --name nexus src/nexus/__main__.py --icon ui/images/icon.ico"
     if os_name == "notwin":  # Add hidden imports for Linux
         build_cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
 

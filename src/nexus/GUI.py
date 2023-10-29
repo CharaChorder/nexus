@@ -9,14 +9,18 @@ from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidge
     QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel, QMenu, QSystemTrayIcon
 from PySide6.QtGui import QIcon, QAction
 
+from nexus import __id__, __version__
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
 from nexus.ui.BanwordDialog import Ui_BanwordDialog
 from nexus.ui.MainWindow import Ui_MainWindow
-
 from nexus.style import Stylesheet, Colors
-
 from nexus.Freqlog.Definitions import CaseSensitivity, WordMetadataAttr, WordMetadataAttrLabel, WordMetadata, Defaults
+
+if os.name == 'nt':  # Needed for taskbar icon on Windows
+    import ctypes
+
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(f"{__id__}.{__version__}")
 
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -85,10 +89,10 @@ class GUI(object):
         self.tr = self.translator.translate
 
         # System tray
-        self.tray_icon = QIcon(os.path.join(script_parent_path, 'assets', 'images', 'icon.ico'))
+        self.nexus_icon = QIcon(":images/icon.ico")
         self.tray = QSystemTrayIcon()
         self.tray.activated.connect(self.show_hide)
-        self.tray.setIcon(self.tray_icon)
+        self.tray.setIcon(self.nexus_icon)
         self.tray.setVisible(True)
 
         # System tray menu
@@ -100,6 +104,9 @@ class GUI(object):
         self.tray_menu.addAction(self.start_stop_tray_menu_action)
         self.tray_menu.addAction(self.quit_tray_menu_action)
         self.tray.setContextMenu(self.tray_menu)
+
+        # Set window icon - required for Wayland
+        self.app.setDesktopFileName(f"{__id__}")
 
         # Components
         self.start_stop_button: QPushButton = self.window.startStopButton
