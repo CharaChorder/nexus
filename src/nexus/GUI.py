@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidge
     QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel, QMenu, QSystemTrayIcon
 from PySide6.QtGui import QIcon, QAction
 
+from nexus import __id__, __version__
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
 from nexus.ui.BanwordDialog import Ui_BanwordDialog
@@ -18,7 +19,6 @@ from nexus.Freqlog.Definitions import CaseSensitivity, WordMetadataAttr, WordMet
 
 if os.name == 'nt':  # Needed for taskbar icon on Windows
     import ctypes
-    from nexus import __id__, __version__
 
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(f"{__id__}.{__version__}")
 
@@ -105,8 +105,8 @@ class GUI(object):
         self.tray_menu.addAction(self.quit_tray_menu_action)
         self.tray.setContextMenu(self.tray_menu)
 
-        # # Set window icon - required for pyinstalled app
-        # self.window.setWindowIcon(self.nexus_icon)
+        # Set window icon - required for Wayland
+        self.app.setDesktopFileName(f"{__id__}")
 
         # Components
         self.start_stop_button: QPushButton = self.window.startStopButton

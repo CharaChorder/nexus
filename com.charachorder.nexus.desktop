@@ -1,0 +1,9 @@
+[Desktop Entry]
+Comment=CharaChorder's all-in-one desktop app, supporting Linux, Windows, and macOS.
+Exec=nexus
+Icon=ui/images/icon.ico
+Name=nexus
+StartupNotify=true
+StartupWMClass=nexus
+Terminal=false
+Type=Application
