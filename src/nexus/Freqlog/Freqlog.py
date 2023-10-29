@@ -53,7 +53,7 @@ class Freqlog:
         """
         if not self.chords:
             logging.warning("Chords not loaded, not logging chord")
-        elif chord not in self.chords:
+        elif chord not in self.chords:  # TODO: handle chord modifications (i.e. tense, plural, case)
             # Actually a word, not a chord?
             logging.warning(f"Chord '{chord}' not found in device chords, treating as word")
             self._log_word(chord, start_time, end_time)

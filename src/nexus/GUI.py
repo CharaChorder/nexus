@@ -354,7 +354,7 @@ class GUI(object):
             self.statusbar.showMessage(self.tr("GUI", "Loaded {}/{} freqlogged words, {}/{} logged chords "
                                                       "(no CharaChorder device with chords connected)").format(
                 len(words), num_words, len(chords), num_chords))
-        else:
+        else:  # TODO: this is an inaccurate count of chords, because chords on device can be modified (i.e. + shift)
             self.statusbar.showMessage(self.tr("GUI", "Loaded {}/{} freqlogged words, {}/{} logged chords "
                                                       "(+ {} unused chords on device)").format(
                 len(words), num_words, len(chords), num_chords, self.temp_freqlog.num_chords - num_chords))
