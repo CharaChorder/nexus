@@ -11,4 +11,4 @@ nexus.egg-info/
 **/__pycache__/
 src/nexus/ui/*.py
 src/nexus/translations/
-/src/nexus/resources_rc.py
+/src/resources_rc.py
