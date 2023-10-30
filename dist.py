@@ -63,7 +63,7 @@ for f in glob.glob('ui/*.ui'):
 
 # Generate resources
 print("Generating resources...")
-run_command(f"{venv_path}pyside6-rcc ui/resources.qrc -o resources_rc.py")
+run_command(f"{venv_path}pyside6-rcc ui/resources.qrc -o src/nexus/resources_rc.py")
 
 # Generate translations
 print("Generating TS templates...")
