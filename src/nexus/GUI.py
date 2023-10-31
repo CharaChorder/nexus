@@ -437,14 +437,19 @@ class GUI(object):
             def _add_banword():
                 """Controller for add button in banword dialog"""
                 word = bw_dialog.wordInput.text()
+
+                # Truncate word for display if too long
+                display_word = word if len(word) <= 20 else word[:17] + "…" + word[-3:]
+
+                # Ban word by selected case
                 if bw_dialog.sensitive.isChecked():
                     res = self.temp_freqlog.ban_word(word, CaseSensitivity.SENSITIVE)
                 elif bw_dialog.firstChar.isChecked():
                     res = self.temp_freqlog.ban_word(word, CaseSensitivity.FIRST_CHAR)
                 else:
                     res = self.temp_freqlog.ban_word(word, CaseSensitivity.INSENSITIVE)
-                self.statusbar.showMessage(self.tr("GUI", "Banned '{}'").format(word) if res else
-                                           self.tr("GUI", "'{}' already banned").format(word))
+                self.statusbar.showMessage(self.tr("GUI", "Banned '{}'").format(display_word) if res else
+                                           self.tr("GUI", "'{}' already banned").format(display_word))
 
             # Connect Ok button to add_banword
             bw_dialog.buttonBox.accepted.connect(_add_banword)
@@ -465,18 +470,21 @@ class GUI(object):
                     bl_dialog.banlistTable.item(row.row(), 0).text()
                 ] = (CaseSensitivity.SENSITIVE if bl_dialog.banlistTable.item(row.row(), 2).text() == "Sensitive"
                      else CaseSensitivity.INSENSITIVE)
-            if len(selected_words) > 1:
-                confirm_text = self.tr("GUI", "Unban {} words?".format(len(selected_words)))
+            if len(selected_words) == 1:
+                display_word = list(selected_words.keys())[0]
+
+                # Truncate word for display if too long
+                display_word = display_word if len(display_word) <= 20 else display_word[:17] + "…" + display_word[-3:]
+                confirm_text = self.tr("GUI", "Unban '{}'?".format(display_word))
             else:
-                confirm_text = self.tr("GUI", "Unban '{}'?".format(list(selected_words.keys())[0]))
+                confirm_text = self.tr("GUI", "Unban {} words?".format(len(selected_words)))
 
             def _confirm_unban():
                 """Controller for OK button in confirm dialog"""
                 res = self.temp_freqlog.unban_words(selected_words).count(True)
                 if len(selected_words) == 1:
-                    word = list(selected_words.keys())[0]
-                    self.statusbar.showMessage(self.tr("GUI", "Unbanned '{}'").format(word) if res else
-                                               self.tr("GUI", "'{}' not banned").format(word))
+                    self.statusbar.showMessage(self.tr("GUI", "Unbanned '{}'").format(display_word) if res else
+                                               self.tr("GUI", "'{}' not banned").format(display_word))
                 elif res == 0:
                     self.statusbar.showMessage(self.tr("GUI", "None of the selected words were banned"))
                 else:
@@ -518,22 +526,24 @@ class GUI(object):
         table = self.chord_table if is_chord else self.chentry_table
         selected_words = {table.item(row.row(), 0).text(): CaseSensitivity.INSENSITIVE for row in
                           table.selectionModel().selectedRows()}
-        if len(selected_words) > 1:
+        if len(selected_words) == 1:
+            # Truncate word for display if too long
+            word = list(selected_words.keys())[0]
+            display_word = word if len(word) <= 20 else word[:17] + "…" + word[-3:]
+            confirm_text = self.tr("GUI", "Ban and delete '{}'?".format(display_word))
+        else:
             if is_chord:
                 confirm_text = self.tr("GUI", "Ban and delete {} chords?".format(len(selected_words)))
             else:
                 confirm_text = self.tr("GUI", "Ban and delete {} words?".format(len(selected_words)))
-        else:
-            confirm_text = self.tr("GUI", "Ban and delete '{}'?".format(list(selected_words.keys())[0]))
 
         def _confirm_ban():
             """Controller for OK button in confirm dialog"""
             res = self.temp_freqlog.ban_words(selected_words).count(True)
             self.refresh()
             if len(selected_words) == 1:
-                word = list(selected_words.keys())[0]
-                self.statusbar.showMessage(self.tr("GUI", "Banned '{}'").format(word) if res else
-                                           self.tr("GUI", "'{}' already banned").format(word))
+                self.statusbar.showMessage(self.tr("GUI", "Banned '{}'").format(display_word) if res else
+                                           self.tr("GUI", "'{}' already banned").format(display_word))
             elif res == 0:
                 if is_chord:
                     self.statusbar.showMessage(self.tr("GUI", "All of the selected chords were already banned"))
