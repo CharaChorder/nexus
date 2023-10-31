@@ -365,7 +365,7 @@ class SQLiteBackend(Backend):
         :param reverse: Reverse sort order
         :param search: Part of chord to search for
         """
-        sql_search = f" WHERE word LIKE '%{search}%'" if search else ""
+        sql_search = f" WHERE chord LIKE '%{search}%'" if search else ""
         sql_sort_limit = sort_by.value
         if reverse:
             sql_sort_limit += " DESC"

@@ -129,7 +129,8 @@ class GUI(object):
         self.window.refreshButton.clicked.connect(self.refresh)
 
         # Set default number of entries
-        self.window.entries_input.setValue(Defaults.DEFAULT_NUM_WORDS_GUI)
+        self.window.chentry_entries_input.setValue(Defaults.DEFAULT_NUM_WORDS_GUI)
+        self.window.chord_entries_input.setValue(Defaults.DEFAULT_NUM_WORDS_GUI)
 
         # Columns of chentry table
         self.chentry_columns = [WordMetadataAttr.word, WordMetadataAttr.score, WordMetadataAttr.average_speed,
@@ -209,8 +210,10 @@ class GUI(object):
         self.args = args
 
         # Auto-refresh - must go at the end
-        self.window.entries_input.valueChanged.connect(self.refresh)
-        self.window.search_input.textChanged.connect(self.refresh)
+        self.window.chentry_entries_input.valueChanged.connect(self.refresh)
+        self.window.chord_entries_input.valueChanged.connect(self.refresh)
+        self.window.chentry_search_input.textChanged.connect(self.refresh)
+        self.window.chord_search_input.textChanged.connect(self.refresh)
 
     def show_hide(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
@@ -278,28 +281,23 @@ class GUI(object):
         self.window.repaint()
         self.start_stop_button_started = not self.start_stop_button_started
 
-    def refresh(self):
-        """Controller for refresh button"""
+    def refresh_chentry_table(self, show_status: bool = True) -> list[WordMetadata]:
+        """Refresh just the chentry table"""
+
         # Save and disable sorting
         self.chentry_table.setSortingEnabled(False)
         chentry_sort_by = self.chentry_table.horizontalHeader().sortIndicatorSection()
         chentry_sort_order = self.chentry_table.horizontalHeader().sortIndicatorOrder()
-        chord_sort_by = self.chord_table.horizontalHeader().sortIndicatorSection()
-        chord_sort_order = self.chord_table.horizontalHeader().sortIndicatorOrder()
 
-        # Clear tables
+        # Clear table
         self.chentry_table.setRowCount(0)
-        self.chord_table.setRowCount(0)
 
-        # Add entries to the tables
-        words = self.temp_freqlog.list_words(limit=self.window.entries_input.value(),
+        # Add entries to the table
+        words = self.temp_freqlog.list_words(limit=self.window.chentry_entries_input.value(),
                                              sort_by=self.chentry_columns[chentry_sort_by],
                                              reverse=chentry_sort_order == Qt.SortOrder.DescendingOrder,
-                                             case=CaseSensitivity.INSENSITIVE, search=self.window.search_input.text())
-        chords = self.temp_freqlog.list_logged_chords(limit=self.window.entries_input.value(),
-                                                      sort_by=self.chord_columns[chord_sort_by],
-                                                      reverse=chord_sort_order == Qt.SortOrder.DescendingOrder,
-                                                      search=self.window.search_input.text())
+                                             case=CaseSensitivity.INSENSITIVE,
+                                             search=self.window.chentry_search_input.text())
 
         def _insert_chentry_row(row: int, word: WordMetadata):
             """Insert a row into the chentry table"""
@@ -318,6 +316,42 @@ class GUI(object):
             item.setData(Qt.ItemDataRole.DisplayRole, word.last_used.isoformat(sep=" ", timespec="seconds"))
             self.chentry_table.setItem(row, 4, item)
 
+        # Populate table
+        for i, w in enumerate(words):
+            _insert_chentry_row(i, w)
+
+        # Resize view
+        self.chentry_table.setRowCount(len(words))
+        self.chentry_table.resizeColumnsToContents()
+
+        # Restore sorting
+        self.chentry_table.setSortingEnabled(True)
+        self.chentry_table.sortByColumn(chentry_sort_by, chentry_sort_order)
+
+        if show_status:
+            # Update status
+            num_words = self.temp_freqlog.num_words(CaseSensitivity.INSENSITIVE)
+            self.statusbar.showMessage(self.tr("GUI", "Loaded {}/{} freqlogged words").format(len(words), num_words))
+
+        return words
+
+    def refresh_chord_table(self, show_status: bool = True) -> list[ChordMetadata]:
+        """Refresh just the chord table"""
+
+        # Save and disable sorting
+        self.chord_table.setSortingEnabled(False)
+        chord_sort_by = self.chord_table.horizontalHeader().sortIndicatorSection()
+        chord_sort_order = self.chord_table.horizontalHeader().sortIndicatorOrder()
+
+        # Clear table
+        self.chord_table.setRowCount(0)
+
+        # Add entries to the table
+        chords = self.temp_freqlog.list_logged_chords(limit=self.window.chord_entries_input.value(),
+                                                      sort_by=self.chord_columns[chord_sort_by],
+                                                      reverse=chord_sort_order == Qt.SortOrder.DescendingOrder,
+                                                      search=self.window.chord_search_input.text())
+
         def _insert_chord_row(row: int, chord: ChordMetadata):
             """Insert a row into the chord table"""
             self.chord_table.insertRow(row)
@@ -329,23 +363,36 @@ class GUI(object):
             item.setData(Qt.ItemDataRole.DisplayRole, chord.frequency)
             self.chord_table.setItem(row, 2, item)
 
-        # Populate tables
-        for i, w in enumerate(words):
-            _insert_chentry_row(i, w)
+        # Populate table
         for i, c in enumerate(chords):
             _insert_chord_row(i, c)
 
-        # Resize views
-        self.chentry_table.setRowCount(len(words))
-        self.chentry_table.resizeColumnsToContents()
+        # Resize view
         self.chord_table.setRowCount(len(chords))
         self.chord_table.resizeColumnsToContents()
 
         # Restore sorting
-        self.chentry_table.setSortingEnabled(True)
-        self.chentry_table.sortByColumn(chentry_sort_by, chentry_sort_order)
         self.chord_table.setSortingEnabled(True)
         self.chord_table.sortByColumn(chord_sort_by, chord_sort_order)
+
+        if show_status:
+            # Update status
+            num_chords = self.temp_freqlog.num_logged_chords()
+            if self.temp_freqlog.num_chords is None:
+                self.statusbar.showMessage(self.tr("GUI", "Loaded {}/{} logged chords "
+                                                          "(no CharaChorder device with chords connected)").format(
+                    len(chords), num_chords))
+            else:
+                self.statusbar.showMessage(self.tr("GUI", "Loaded {}/{} logged chords "
+                                                          "(+ {} unused chords on device)").format(
+                    len(chords), num_chords, self.temp_freqlog.num_chords - num_chords))
+
+        return chords
+
+    def refresh(self):
+        """Controller for refresh button - refresh both tables"""
+        words = self.refresh_chentry_table(False)
+        chords = self.refresh_chord_table(False)
 
         # Update status
         num_words = self.temp_freqlog.num_words(CaseSensitivity.INSENSITIVE)
