@@ -53,9 +53,9 @@ def main():
                             required=False)
 
     # Parse command line arguments
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     epilog="Made with love by CharaChorder, source code available at "
-                                            "https://github.com/CharaChorder/nexus")
+    parser = argparse.ArgumentParser(
+        description=__doc__, epilog="Made with love by CharaChorder, source code, license, and more info available at "
+                                    "https://github.com/CharaChorder/nexus")
     parser.add_argument("-l", "--log-level", default="INFO", help=f"One of {log_levels}",
                         metavar="level", choices=log_levels)
     parser.add_argument("--freqlog-db-path", default=Defaults.DEFAULT_DB_PATH, help="Path to db backend to use")
