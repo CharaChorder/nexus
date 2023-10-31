@@ -11,39 +11,48 @@ from nexus.Freqlog.Definitions import Age, BanlistAttr, BanlistEntry, CaseSensit
 
 # WARNING: Directly loaded into SQL query, do not use unsanitized user input
 SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM freqlog"
+SQL_SELECT_STAR_FROM_CHORDLOG = "SELECT chord, frequency, lastused FROM chordlog"
 SQL_SELECT_STAR_FROM_BANLIST = "SELECT word, dateadded FROM banlist"
 
 
-def decode_version(version: int) -> str:
-    return f"{version >> 16}.{version >> 8 & 0xFF}.{version & 0xFF}"
-
-
-def encode_version(version: str) -> int:
-    return int(version.split(".")[0]) << 16 | int(version.split(".")[1]) << 8 | int(version.split(".")[2])
-
-
-def _init_db(cursor: Cursor, sql_version: int):
-    """
-    Initialize the database
-    """
-    # WARNING: Remember to change _upgrade_database and merge_db when changing DDL
-    cursor.execute(f"PRAGMA user_version = {sql_version}")
-    # Freqloq table
-    cursor.execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
-                   "lastused timestamp NOT NULL, avgspeed REAL NOT NULL) WITHOUT ROWID")
-    cursor.execute("CREATE INDEX IF NOT EXISTS freqlog_lower ON freqlog(word COLLATE NOCASE)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS freqlog_frequency ON freqlog(frequency)")
-    cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS freqlog_lastused ON freqlog(lastused)")
-    cursor.execute("CREATE INDEX IF NOT EXISTS freqlog_avgspeed ON freqlog(avgspeed)")
-    # Banlist table
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) WITHOUT ROWID")
-    cursor.execute("CREATE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS banlist_lower (word TEXT PRIMARY KEY COLLATE NOCASE,"
-                   "dateadded timestamp NOT NULL) WITHOUT ROWID")
-
-
 class SQLiteBackend(Backend):
+
+    @staticmethod
+    def decode_version(version: int) -> str:
+        return f"{version >> 16}.{version >> 8 & 0xFF}.{version & 0xFF}"
+
+    @staticmethod
+    def encode_version(version: str) -> int:
+        return int(version.split(".")[0]) << 16 | int(version.split(".")[1]) << 8 | int(version.split(".")[2])
+
+    @staticmethod
+    def _init_db(cursor: Cursor, sql_version: int):
+        """
+        Initialize the database
+        """
+        # WARNING: Remember to change _upgrade_database and merge_db when changing DDL
+        cursor.execute(f"PRAGMA user_version = {sql_version}")
+
+        # Freqloq table
+        cursor.execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
+                       "lastused timestamp NOT NULL, avgspeed REAL NOT NULL) WITHOUT ROWID")
+        cursor.execute("CREATE INDEX IF NOT EXISTS freqlog_lower ON freqlog(word COLLATE NOCASE)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS freqlog_frequency ON freqlog(frequency)")
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS freqlog_lastused ON freqlog(lastused)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS freqlog_avgspeed ON freqlog(avgspeed)")
+
+        # Chordlog table
+        cursor.execute("CREATE TABLE IF NOT EXISTS chordlog (chord TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
+                       "lastused timestamp NOT NULL) WITHOUT ROWID")
+        cursor.execute("CREATE INDEX IF NOT EXISTS chordlog_frequency ON chordlog(frequency)")
+        cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS chordlog_lastused ON chordlog(lastused)")
+
+        # Banlist table
+        cursor.execute(
+            "CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) WITHOUT ROWID")
+        cursor.execute("CREATE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS banlist_lower (word TEXT PRIMARY KEY COLLATE NOCASE,"
+                       "dateadded timestamp NOT NULL) WITHOUT ROWID")
 
     def __init__(self, db_path: str) -> None:
         """
@@ -59,14 +68,14 @@ class SQLiteBackend(Backend):
         old_version = self._fetchone("PRAGMA user_version")[0]
 
         # Encode major, minor and patch version into a single 4-byte integer
-        sql_version: int = encode_version(__version__)
+        sql_version: int = self.encode_version(__version__)
         if old_version < sql_version:
             self._upgrade_database(sql_version)
         elif old_version > sql_version:
             raise ValueError(
-                f"Database version {decode_version(old_version)} is newer than the current version {__version__}")
+                f"Database version {self.decode_version(old_version)} is newer than the current version {__version__}")
 
-        _init_db(self.cursor, sql_version)
+        self._init_db(self.cursor, sql_version)
 
     def _execute(self, query: str, params=None) -> None:
         if params:
@@ -97,7 +106,7 @@ class SQLiteBackend(Backend):
 
     def get_version(self) -> str:
         """Get the version of the database"""
-        return decode_version(self._fetchone("PRAGMA user_version")[0])
+        return self.decode_version(self._fetchone("PRAGMA user_version")[0])
 
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata | None:
         """
@@ -139,7 +148,8 @@ class SQLiteBackend(Backend):
         Get metadata for a chord
         :returns: ChordMetadata if chord is found, None otherwise
         """
-        raise NotImplementedError  # TODO: implement
+        res = self._fetchone(f"{SQL_SELECT_STAR_FROM_CHORDLOG} WHERE chord=?", (chord,))
+        return ChordMetadata(res[0], res[1], datetime.fromtimestamp(res[2])) if res else None
 
     def get_banlist_entry(self, word: str, case: CaseSensitivity) -> BanlistEntry | None:
         """
@@ -166,7 +176,13 @@ class SQLiteBackend(Backend):
                 return BanlistEntry(res[0], datetime.fromtimestamp(res[1])) if res else None
 
     def log_word(self, word: str, start_time: datetime, end_time: datetime) -> bool:
-        """Log a word entry if not banned, creating it if it doesn't exist"""
+        """
+        Log a word entry if not banned, creating it if it doesn't exist
+        :param word: Word to log
+        :param start_time: Timestamp of start of word started
+        :param end_time: Timestamp of end of word
+        :returns: True if word was logged, False if it was banned
+        """
         if self.check_banned(word, CaseSensitivity.SENSITIVE):
             return False  # banned
         metadata = self.get_word_metadata(word, CaseSensitivity.SENSITIVE)
@@ -185,8 +201,27 @@ class SQLiteBackend(Backend):
         self._execute("INSERT INTO freqlog VALUES (?, ?, ?, ?)",
                       (word, frequency, last_used.timestamp(), average_speed.total_seconds()))
 
-    def log_chord(self, word: str, start_time: datetime, end_time: datetime) -> None:
-        raise NotImplementedError  # TODO: implement
+    def _insert_chord(self, chord, frequency, last_used):
+        """Insert a chord entry"""
+        self._execute("INSERT INTO chordlog VALUES (?, ?, ?)", (chord, frequency, last_used.timestamp()))
+
+    def log_chord(self, chord: str, end_time: datetime) -> bool:
+        """
+        Log a chord entry if not banned, creating it if it doesn't exist
+        :param chord: Chord to log
+        :param end_time: Timestamp of end of chord
+        :returns: True if chord was logged, False if it was banned
+        """
+        if self.check_banned(chord, CaseSensitivity.SENSITIVE):
+            return False  # banned
+        metadata = self.get_chord_metadata(chord)
+        if metadata:  # Use or operator to combine metadata with existing entry
+            metadata |= ChordMetadata(chord, 1, end_time)
+            self._execute("UPDATE chordlog SET frequency=?, lastused=? WHERE chord=?",
+                          (metadata.frequency, metadata.last_used.timestamp(), chord))
+        else:  # New entry
+            self._execute("INSERT INTO chordlog VALUES (?, ?, ?)", (chord, 1, end_time.timestamp()))
+        return True
 
     def check_banned(self, word: str, case: CaseSensitivity) -> bool:
         """
@@ -212,11 +247,13 @@ class SQLiteBackend(Backend):
 
     def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> bool:
         """
-        Delete a word entry and add it to the ban list
+        Delete a word/chord entry and add it to the ban list
         :returns: True if word was banned, False if it was already banned
         """
         if self.check_banned(word, case):
             return False  # already banned
+
+        # Freqlog
         match case:
             case CaseSensitivity.INSENSITIVE:
                 word = word.lower()
@@ -232,6 +269,9 @@ class SQLiteBackend(Backend):
             case CaseSensitivity.SENSITIVE:
                 self._execute("DELETE FROM freqlog WHERE word=?", (word,))
                 self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (word, time.timestamp()))
+
+        # Chordlog
+        self._execute("DELETE FROM chordlog WHERE chord=?", (word,))
         return True
 
     def unban_word(self, word: str, case: CaseSensitivity) -> bool:
@@ -257,9 +297,9 @@ class SQLiteBackend(Backend):
 
     def num_words(self, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> int:
         """
-        Get number of words in store
+        Get number of words in db
         :param case: Case sensitivity
-        :return: Number of words in store
+        :return: Number of words in db
         """
         match case:
             case CaseSensitivity.SENSITIVE:
@@ -272,7 +312,7 @@ class SQLiteBackend(Backend):
     def list_words(self, limit: int = -1, sort_by: WordMetadataAttr = WordMetadataAttr.score, reverse: bool = True,
                    case: CaseSensitivity = CaseSensitivity.INSENSITIVE, search: str = "") -> list[WordMetadata]:
         """
-        List words in the store
+        List words in the db
         :param limit: Maximum number of words to return
         :param sort_by: Attribute to sort by: word, frequency, last_used, average_speed, score
         :param reverse: Reverse sort order
@@ -287,6 +327,13 @@ class SQLiteBackend(Backend):
                 sql_sort_limit += " DESC"
             if limit > 0:
                 sql_sort_limit += f" LIMIT {limit}"
+            if sort_by == WordMetadataAttr.score:  # Score is not a column in the database
+                res = self._fetchall(
+                    f"{SQL_SELECT_STAR_FROM_FREQLOG}{sql_search}{f' LIMIT {limit}' if limit > 0 else ''}")
+                return sorted([WordMetadata(row[0], row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
+                               for row in res], key=lambda x: x.score, reverse=reverse)
+
+            # Valid sort_by column
             res = self._fetchall(f"{SQL_SELECT_STAR_FROM_FREQLOG}{sql_search} ORDER BY {sql_sort_limit}")
             return [WordMetadata(row[0], row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
                     for row in res]
@@ -305,16 +352,32 @@ class SQLiteBackend(Backend):
         ret = sorted(list(d.values()), key=lambda x: getattr(x, sort_by.name), reverse=reverse)
         return ret[:limit] if limit > 0 else ret
 
-    def list_chords(self, limit: int, sort_by: ChordMetadataAttr,
-                    reverse: bool, case: CaseSensitivity) -> list[ChordMetadata]:
+    def num_chords(self):
+        """Get number of chords in db"""
+        return self._fetchone("SELECT COUNT(*) FROM chordlog")[0]
+
+    def list_chords(self, limit: int, sort_by: ChordMetadataAttr = ChordMetadataAttr.score, reverse: bool = True,
+                    search: str = "") -> list[ChordMetadata]:
         """
-        List chords in the store
+        List chords in the db
         :param limit: Maximum number of chords to return
         :param sort_by: Attribute to sort by: chord, frequency, last_used, average_speed
         :param reverse: Reverse sort order
-        :param case: Case sensitivity
+        :param search: Part of chord to search for
         """
-        raise NotImplementedError  # TODO: implement
+        sql_search = f" WHERE chord LIKE '%{search}%'" if search else ""
+        sql_sort_limit = sort_by.value
+        if reverse:
+            sql_sort_limit += " DESC"
+        if limit > 0:
+            sql_sort_limit += f" LIMIT {limit}"
+        if sort_by == ChordMetadataAttr.score:  # Score is not a column in the database
+            res = self._fetchall(
+                f"{SQL_SELECT_STAR_FROM_CHORDLOG}{sql_search}{f' LIMIT {limit}' if limit > 0 else ''}")
+            return sorted([ChordMetadata(row[0], row[1], datetime.fromtimestamp(row[2])) for row in res],
+                          key=lambda x: x.score, reverse=reverse)
+        res = self._fetchall(f"{SQL_SELECT_STAR_FROM_CHORDLOG}{sql_search} ORDER BY {sql_sort_limit}")
+        return [ChordMetadata(row[0], row[1], datetime.fromtimestamp(row[2])) for row in res]
 
     def list_banned_words(self, limit: int, sort_by: BanlistAttr,
                           reverse: bool) -> tuple[set[BanlistEntry], set[BanlistEntry]]:
@@ -414,6 +477,19 @@ class SQLiteBackend(Backend):
                     entries.append(src_word)
             for word in entries:
                 dst_db._insert_word(word.word, word.frequency, word.last_used, word.average_speed)
+
+            # Merge chordlog
+            logging.info("Merging chordlog")
+            src_chords = src_db.list_chords(0, ChordMetadataAttr.chord, False, "")
+            chords = [chord.chord for chord in self.list_chords(0, ChordMetadataAttr.chord, False, "")]
+            entries = self.list_chords(0, ChordMetadataAttr.chord, False, "")
+            for src_chord in src_chords:
+                if src_chord.chord in chords:
+                    entries[chords.index(src_chord.chord)] |= src_chord
+                else:
+                    entries.append(src_chord)
+            for chord in entries:
+                dst_db._insert_chord(chord.chord, chord.frequency, chord.last_used)
         finally:  # Close databases
             src_db.close()
             dst_db.close()

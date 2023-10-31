@@ -92,16 +92,16 @@ def main():
                               choices=[order.name for order in Order])
 
     # Get chords
-    # parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
-    #                                       parents=[log_arg, path_arg, num_arg])
-    # parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
-    # parser_chords.add_argument("-e", "--export", help="Export freqlogged chords as csv to file"
-    #                                                   "(ignores chord args)", required=False)
-    # parser_chords.add_argument("-s", "--sort-by", default=ChordMetadataAttr.frequency.name,
-    #                            help=f"Sort by (default: {ChordMetadataAttr.frequency.name})")
-    #                            choices=[attr.name for attr in ChordMetadataAttr])
-    # parser_chords.add_argument("-o", "--order", default=Order.ASCENDING, help="Order (default: DESCENDING)",
-    #                            choices=[order.name for order in Order])
+    parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
+                                          parents=[log_arg, path_arg, num_arg])
+    parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
+    parser_chords.add_argument("-e", "--export", help="Export freqlogged chords as csv to file"
+                                                      "(ignores chord args)", required=False)
+    parser_chords.add_argument("-s", "--sort-by", default=ChordMetadataAttr.frequency.name,
+                               help=f"Sort by (default: {ChordMetadataAttr.frequency.name})",
+                               choices=[attr.name for attr in ChordMetadataAttr])
+    parser_chords.add_argument("-o", "--order", default=Order.ASCENDING, help="Order (default: DESCENDING)",
+                               choices=[order.name for order in Order])
 
     # Get banned words
     parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",
@@ -210,112 +210,107 @@ def main():
     if exit_code != 0:
         sys.exit(exit_code)
 
-    # TODO: Some features from this point on may not have been implemented
-    try:
-        # All following commands require a freqlog object
-        freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=False)
-        if args.command == "numwords":  # get number of words
-            print(f"{freqlog.num_words(CaseSensitivity[args.case])} words in freqlog")
-            sys.exit(0)
+    # All following commands require a freqlog object
+    freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=False)
+    if args.command == "numwords":  # get number of words
+        print(f"{freqlog.num_words(CaseSensitivity[args.case])} words in freqlog")
+        sys.exit(0)
 
-        # All following commands use a num argument
-        try:
-            num = args.num if args.num else Defaults.DEFAULT_NUM_WORDS_CLI
-        except AttributeError:
-            num = Defaults.DEFAULT_NUM_WORDS_CLI
-        match args.command:
-            case "startlog":  # start freqlogging
-                freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=True)
-                signal.signal(signal.SIGINT, lambda: freqlog.stop_logging())
-                freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
-                                      Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
-                                          args.add_modifier_key))
-            case "checkword":  # check if word is banned
-                for word in args.word:
-                    if freqlog.check_banned(word, CaseSensitivity[args.case]):
-                        print(f"'{word}' is banned")
-                        exit_code = 1
-                    else:
-                        print(f"'{word}' is not banned")
-            case "banword":  # ban word
-                for word in args.word:
-                    if not freqlog.ban_word(word, CaseSensitivity[args.case]):
-                        exit_code = 6
-            case "unbanword":  # unban word
-                for word in args.word:
-                    if not freqlog.unban_word(word, CaseSensitivity[args.case]):
-                        exit_code = 6
-            # TODO: pretty print
-            case "words":  # get words
-                if args.export:  # export words
-                    freqlog.export_words_to_csv(args.export, num, WordMetadataAttr[args.sort_by],
-                                                args.order == Order.DESCENDING, CaseSensitivity[args.case])
-                elif len(args.word) == 0:  # all words
-                    res = freqlog.list_words(limit=num, sort_by=WordMetadataAttr[args.sort_by],
-                                             reverse=args.order == Order.DESCENDING,
-                                             case=CaseSensitivity[args.case], search=args.search if args.search else "")
-                    if len(res) == 0:
-                        print("No words in freqlog. Start typing!")
-                    else:
-                        for word in res:
-                            print(word)
-                else:  # specific words
-                    if num:
-                        logging.warning("-n/--num argument ignored when specific words are given")
-                    words: list[WordMetadata] = []
-                    for word in args.word:
-                        res = freqlog.get_word_metadata(word, CaseSensitivity[args.case])
-                        if res is None:
-                            print(f"Word '{word}' not found")
-                            exit_code = 5
-                        else:
-                            words.append(res)
-                    if len(words) > 0:
-                        for word in sorted(words, key=lambda x: getattr(x, args.sort_by),
-                                           reverse=(args.order == Order.DESCENDING)):
-                            print(word)
-            case "chords":  # get chords
-                if args.export:  # export chords
-                    freqlog.export_chords_to_csv(args.export, num, ChordMetadataAttr[args.sort_by],
-                                                 args.order == Order.DESCENDING, CaseSensitivity[args.case])
-                elif len(args.chord) == 0:  # all chords
-                    res = freqlog.list_chords(num, ChordMetadataAttr[args.sort_by], args.order == Order.DESCENDING,
-                                              CaseSensitivity[args.case])
-                    if len(res) == 0:
-                        print("No chords in freqlog. Start chording!")
-                    else:
-                        for chord in res:
-                            print(chord)
-                else:  # specific chords
-                    if num:
-                        logging.warning("-n/--num argument ignored when specific chords are given")
-                    chords: list[ChordMetadata] = []
-                    for chord in args.chord:
-                        res = freqlog.get_chord_metadata(chord)
-                        if res is None:
-                            print(f"Chord '{chord}' not found")
-                            exit_code = 5
-                        else:
-                            chords.append(res)
-                    if len(chords) > 0:
-                        for chord in sorted(chords, key=lambda x: getattr(x, args.sort_by),
-                                            reverse=(args.order == Order.DESCENDING)):
-                            print(chord)
-            case "banlist":  # get banned words
-                banlist_case, banlist_caseless = freqlog.list_banned_words(limit=num, sort_by=BanlistAttr[args.sort_by],
-                                                                           reverse=args.order == Order.DESCENDING)
-                if len(banlist_case) == 0 and len(banlist_caseless) == 0:
-                    print("No banned words")
+    # All following commands use a num argument
+    try:
+        num = args.num if args.num else Defaults.DEFAULT_NUM_WORDS_CLI
+    except AttributeError:
+        num = Defaults.DEFAULT_NUM_WORDS_CLI
+    match args.command:
+        case "startlog":  # start freqlogging
+            freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=True)
+            signal.signal(signal.SIGINT, lambda: freqlog.stop_logging())
+            freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
+                                  Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
+                                      args.add_modifier_key))
+        case "checkword":  # check if word is banned
+            for word in args.word:
+                if freqlog.check_banned(word, CaseSensitivity[args.case]):
+                    print(f"'{word}' is banned")
+                    exit_code = 1
                 else:
-                    for entry in banlist_caseless:
-                        entry.word += "*"
-                    print("Banned words (* denotes case-insensitive entries):")
-                    for entry in sorted(banlist_case | banlist_caseless, key=lambda x: getattr(x, args.sort_by),
+                    print(f"'{word}' is not banned")
+        case "banword":  # ban word
+            for word in args.word:
+                if not freqlog.ban_word(word, CaseSensitivity[args.case]):
+                    exit_code = 6
+        case "unbanword":  # unban word
+            for word in args.word:
+                if not freqlog.unban_word(word, CaseSensitivity[args.case]):
+                    exit_code = 6
+        # TODO: pretty print
+        case "words":  # get words
+            if args.export:  # export words
+                freqlog.export_words_to_csv(args.export, num, WordMetadataAttr[args.sort_by],
+                                            args.order == Order.DESCENDING, CaseSensitivity[args.case])
+            elif len(args.word) == 0:  # all words
+                res = freqlog.list_words(limit=num, sort_by=WordMetadataAttr[args.sort_by],
+                                         reverse=args.order == Order.DESCENDING,
+                                         case=CaseSensitivity[args.case], search=args.search if args.search else "")
+                if len(res) == 0:
+                    print("No words in freqlog. Start typing!")
+                else:
+                    for word in res:
+                        print(word)
+            else:  # specific words
+                if num:
+                    logging.warning("-n/--num argument ignored when specific words are given")
+                words: list[WordMetadata] = []
+                for word in args.word:
+                    res = freqlog.get_word_metadata(word, CaseSensitivity[args.case])
+                    if res is None:
+                        print(f"Word '{word}' not found")
+                        exit_code = 5
+                    else:
+                        words.append(res)
+                if len(words) > 0:
+                    for word in sorted(words, key=lambda x: getattr(x, args.sort_by),
+                                       reverse=(args.order == Order.DESCENDING)):
+                        print(word)
+        case "chords":  # get chords
+            if args.export:  # export chords
+                freqlog.export_chords_to_csv(args.export, num, ChordMetadataAttr[args.sort_by],
+                                             args.order == Order.DESCENDING)
+            elif len(args.chord) == 0:  # all chords
+                res = freqlog.list_logged_chords(num, ChordMetadataAttr[args.sort_by],
+                                                 args.order == Order.DESCENDING)
+                if len(res) == 0:
+                    print("No chords in freqlog. Start chording!")
+                else:
+                    for chord in res:
+                        print(chord)
+            else:  # specific chords
+                if num:
+                    logging.warning("-n/--num argument ignored when specific chords are given")
+                chords: list[ChordMetadata] = []
+                for chord in args.chord:
+                    res = freqlog.get_chord_metadata(chord)
+                    if res is None:
+                        print(f"Chord '{chord}' not found")
+                        exit_code = 5
+                    else:
+                        chords.append(res)
+                if len(chords) > 0:
+                    for chord in sorted(chords, key=lambda x: getattr(x, args.sort_by),
                                         reverse=(args.order == Order.DESCENDING)):
-                        print(entry)
-    except NotImplementedError:
-        logging.error(f"The '{args.command}' command has not been implemented yet")
-        exit_code = 100
+                        print(chord)
+        case "banlist":  # get banned words
+            banlist_case, banlist_caseless = freqlog.list_banned_words(limit=num, sort_by=BanlistAttr[args.sort_by],
+                                                                       reverse=args.order == Order.DESCENDING)
+            if len(banlist_case) == 0 and len(banlist_caseless) == 0:
+                print("No banned words")
+            else:
+                for entry in banlist_caseless:
+                    entry.word += "*"
+                print("Banned words (* denotes case-insensitive entries):")
+                for entry in sorted(banlist_case | banlist_caseless, key=lambda x: getattr(x, args.sort_by),
+                                    reverse=(args.order == Order.DESCENDING)):
+                    print(entry)
     sys.exit(exit_code)
 
 

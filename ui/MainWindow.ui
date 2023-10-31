@@ -266,7 +266,66 @@
        <property name="title">
         <string>Chorded Entry</string>
        </property>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <layout class="QHBoxLayout" name="chordSearchFilterBar" stretch="0,0,0,1">
+          <item>
+           <widget class="QLabel" name="chord_entries_label">
+            <property name="text">
+             <string># shown:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="chord_entries_input">
+            <property name="toolTip">
+             <string>Enter 0 to show all entries</string>
+            </property>
+            <property name="suffix">
+             <string/>
+            </property>
+            <property name="maximum">
+             <number>10000</number>
+            </property>
+            <property name="singleStep">
+             <number>0</number>
+            </property>
+            <property name="stepType">
+             <enum>QAbstractSpinBox::AdaptiveDecimalStepType</enum>
+            </property>
+            <property name="value">
+             <number>0</number>
+            </property>
+            <property name="displayIntegerBase">
+             <number>10</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="chord_search_label">
+            <property name="text">
+             <string>Search:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="chord_search_input">
+            <property name="inputMask">
+             <string/>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="placeholderText">
+             <string>Start typing to search for chords...</string>
+            </property>
+            <property name="clearButtonEnabled">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
         <item>
          <widget class="QTableWidget" name="chordTable">
           <property name="sizePolicy">
@@ -342,16 +401,16 @@
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,0,0,1">
+         <layout class="QHBoxLayout" name="chentrySearchFilterBar" stretch="0,0,0,1">
           <item>
-           <widget class="QLabel" name="entries_label">
+           <widget class="QLabel" name="chentry_entries_label">
             <property name="text">
-             <string>Entries to show:</string>
+             <string># shown:</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QSpinBox" name="entries_input">
+           <widget class="QSpinBox" name="chentry_entries_input">
             <property name="toolTip">
              <string>Enter 0 to show all entries</string>
             </property>
@@ -376,14 +435,14 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="search_label">
+           <widget class="QLabel" name="chentry_search_label">
             <property name="text">
              <string>Search:</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="search_input">
+           <widget class="QLineEdit" name="chentry_search_input">
             <property name="inputMask">
              <string/>
             </property>

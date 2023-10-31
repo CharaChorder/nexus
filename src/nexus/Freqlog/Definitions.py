@@ -7,12 +7,13 @@ from pynput.keyboard import Key
 
 class Defaults:
     # Allowed keys in chord output: a-z, A-Z, 0-9, apostrophe, dash, underscore, slash, backslash, tilde
-    DEFAULT_ALLOWED_KEYS_IN_CHORD: set = {chr(i) for i in range(97, 123)} | {chr(i) for i in range(65, 91)} | \
-                                         {chr(i) for i in range(48, 58)} | {"'", "-", "_", "/", "\\", "~"}
+    DEFAULT_ALLOWED_KEYS_IN_CHORD: set = \
+        {chr(i) for i in range(ord('a'), ord('z') + 1)} | {chr(i) for i in range(ord('A'), ord('Z') + 1)} | \
+        {chr(i) for i in range(ord('0'), ord('9') + 1)} | {"'", "-", "_", "/", "\\", "~"}
     DEFAULT_MODIFIER_KEYS: set = {Key.ctrl, Key.ctrl_l, Key.ctrl_r, Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr, Key.cmd,
                                   Key.cmd_l, Key.cmd_r}
     DEFAULT_NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
-    DEFAULT_CHORD_CHAR_THRESHOLD: int = 30  # milliseconds between characters in a chord to be considered a chord
+    DEFAULT_CHORD_CHAR_THRESHOLD: int = 5  # milliseconds between characters in a chord to be considered a chord
     DEFAULT_DB_PATH: str = "nexus_freqlog_db.sqlite3"
     DEFAULT_NUM_WORDS_CLI: int = 10
     DEFAULT_NUM_WORDS_GUI: int = 100
@@ -60,13 +61,10 @@ class WordMetadata:
             return self
         if self.word != other.word:
             raise ValueError(f"Cannot merge WordMetadata objects with different words: {self.word} and {other.word}")
-        return WordMetadata(
-            self.word,
-            self.frequency + other.frequency,
-            max(self.last_used, other.last_used),
-            (self.average_speed * self.frequency + other.average_speed * other.frequency) / (
-                    self.frequency + other.frequency)
-        )
+        return WordMetadata(self.word, self.frequency + other.frequency,
+                            max(self.last_used, other.last_used),
+                            (self.average_speed * self.frequency + other.average_speed * other.frequency) / (
+                                    self.frequency + other.frequency))
 
     def __str__(self) -> str:
         return f"Word: {self.word} | Frequency: {self.frequency} | Last used: {self.last_used} | " \
@@ -85,11 +83,13 @@ class WordMetadataAttr(Enum):
     score = "score"
 
 
-WordMetadataAttrLabel = {WordMetadataAttr.word: "Word",
-                         WordMetadataAttr.frequency: "Freq.",
-                         WordMetadataAttr.last_used: "Last used",
-                         WordMetadataAttr.average_speed: "Avg. speed",
-                         WordMetadataAttr.score: "Score"}
+WordMetadataAttrLabel = {
+    WordMetadataAttr.word: "Word",
+    WordMetadataAttr.frequency: "Freq.",
+    WordMetadataAttr.last_used: "Last used",
+    WordMetadataAttr.average_speed: "Avg. speed",
+    WordMetadataAttr.score: "Score"
+}
 
 
 class ChordMetadata:
@@ -99,9 +99,24 @@ class ChordMetadata:
         self.chord = chord
         self.frequency = frequency
         self.last_used = last_used
+        self.score = len(chord) * frequency
+
+    def __or__(self, other: Any) -> Self:
+        """Merge two ChordMetadata objects"""
+        if other is not None and not isinstance(other, ChordMetadata):
+            raise TypeError(f"unsupported operand type(s) for |: '{type(self).__name__}' and '{type(other).__name__}'")
+        if other is None:
+            return self
+        if self.chord != other.chord:
+            raise ValueError(
+                f"Cannot merge ChordMetadata objects with different chords: {self.chord} and {other.chord}")
+        return ChordMetadata(self.chord, self.frequency + other.frequency, max(self.last_used, other.last_used))
 
     def __str__(self) -> str:
-        return f"Chord: {self.chord} | Frequency: {self.frequency} | Last used: {self.last_used} | "
+        return f"Chord: {self.chord} | Frequency: {self.frequency} | Last used: {self.last_used}"
+
+    def __repr__(self) -> str:
+        return f"ChordMetadata({self.chord})"
 
 
 class ChordMetadataAttr(Enum):
@@ -109,6 +124,15 @@ class ChordMetadataAttr(Enum):
     chord = "chord"
     frequency = "frequency"
     last_used = "lastused"
+    score = "score"
+
+
+ChordMetadataAttrLabel = {
+    ChordMetadataAttr.chord: "Chord",
+    ChordMetadataAttr.frequency: "Freq.",
+    ChordMetadataAttr.last_used: "Last used",
+    ChordMetadataAttr.score: "Score"
+}
 
 
 class BanlistEntry:
