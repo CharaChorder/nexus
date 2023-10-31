@@ -484,8 +484,8 @@ class Freqlog:
         logging.info(f"Exporting chords, limit {limit}, sort_by {sort_by}, reverse {reverse}")
         chords = self.backend.list_chords(limit, sort_by, reverse)
         with open(export_path, "w") as f:
-            f.write(",".join(ChordMetadataAttr.__dict__.keys()) + "\n")
-            f.write("\n".join(map(lambda c: ",".join(c.__dict__.values()), chords)))
+            f.write(",".join(filter(lambda k: not k.startswith("_"), ChordMetadataAttr.__dict__.keys())) + "\n")
+            f.write("\n".join(map(lambda c: ",".join(map(str, c.__dict__.values())), chords)))
         logging.info(f"Exported {len(chords)} chords to {export_path}")
         return len(chords)
 
