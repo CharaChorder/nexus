@@ -384,6 +384,28 @@ class Freqlog:
         logging.info(f"Banning {len(entries)} words - {time_added}")
         return [self.ban_word(word, case, time_added) for word, case in entries.items()]
 
+    def delete_word(self, word: str, case: CaseSensitivity) -> bool:
+        """
+        Delete a word/chord entry
+        :returns: True if word was deleted, False if it's not in the database
+        """
+        logging.info(f"Deleting '{word}', case {case.name}")
+        res = self.backend.delete_word(word, case)
+        if res:
+            logging.warning(f"Deleted '{word}', case {case.name}")
+        else:
+            logging.warning(f"'{word}', case {case.name} doesn't exist in freqlog")
+        return res
+
+    def delete_words(self, entries: dict[str: CaseSensitivity]) -> list[bool]:
+        """
+        Delete multiple word entries
+        :param entries: dict of {word to delete: case sensitivity}
+        :return: list of bools, True if word was deleted, False if it was already deleted
+        """
+        logging.info(f"Deleting {len(entries)} words")
+        return [self.delete_word(word, case) for word, case in entries.items()]
+
     def unban_word(self, word: str, case: CaseSensitivity) -> bool:
         """
         Remove a banlist entry
@@ -488,6 +510,28 @@ class Freqlog:
             f.write("\n".join(map(lambda c: ",".join(map(str, c.__dict__.values())), chords)))
         logging.info(f"Exported {len(chords)} chords to {export_path}")
         return len(chords)
+
+    def delete_logged_chord(self, chord: str) -> bool:
+        """
+        Delete a chord entry
+        :returns: True if chord was deleted, False if it's not in the database
+        """
+        logging.info(f"Deleting '{chord}'")
+        res = self.backend.delete_chord(chord)
+        if res:
+            logging.warning(f"Deleted '{chord}'")
+        else:
+            logging.warning(f"'{chord}' doesn't exist in freqlog")
+        return res
+
+    def delete_logged_chords(self, chords: list[str]) -> list[bool]:
+        """
+        Delete multiple chord entries
+        :param chords: list of chords to delete
+        :return: list of bools, True if chord was deleted, False if it was already deleted
+        """
+        logging.info(f"Deleting {len(chords)} chords")
+        return [self.delete_logged_chord(chord) for chord in chords]
 
     def list_banned_words(self, limit: int = -1, sort_by: BanlistAttr = BanlistAttr.word,
                           reverse: bool = False) -> tuple[set[BanlistEntry], set[BanlistEntry]]:

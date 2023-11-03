@@ -71,6 +71,13 @@ class Backend(ABC):
         """
 
     @abstractmethod
+    def delete_word(self, word: str, case: CaseSensitivity) -> bool:
+        """
+        Delete a word/chord entry
+        :returns: True if word was deleted, False if it's not in the database
+        """
+
+    @abstractmethod
     def unban_word(self, word: str, case: CaseSensitivity) -> bool:
         """
         Remove a word from the ban list
@@ -110,6 +117,13 @@ class Backend(ABC):
         :param sort_by: Attribute to sort by: chord, frequency, last_used, average_speed
         :param reverse: Reverse sort order
         :param search: Part of chord to search for
+        """
+
+    @abstractmethod
+    def delete_chord(self, chord: str) -> bool:
+        """
+        Delete a chord entry
+        :returns: True if chord was deleted, False if it's not in the database
         """
 
     @abstractmethod

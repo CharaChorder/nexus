@@ -274,6 +274,26 @@ class SQLiteBackend(Backend):
         self._execute("DELETE FROM chordlog WHERE chord=?", (word,))
         return True
 
+    def delete_word(self, word: str, case: CaseSensitivity) -> bool:
+        """
+        Delete a word/chord entry
+        :returns: True if word was deleted, False if it's not in the database
+        """
+        if not self.get_word_metadata(word, case):
+            return False
+        match case:
+            case CaseSensitivity.INSENSITIVE:
+                word = word.lower()
+                self._execute("DELETE FROM freqlog WHERE word = ? COLLATE NOCASE", (word,))
+            case CaseSensitivity.FIRST_CHAR:
+                word_u = word[0].upper() + word[1:]
+                word_l = word[0].lower() + word[1:]
+                self._execute("DELETE FROM freqlog WHERE word=?", (word_u,))
+                self._execute("DELETE FROM freqlog WHERE word=?", (word_l,))
+            case CaseSensitivity.SENSITIVE:
+                self._execute("DELETE FROM freqlog WHERE word=?", (word,))
+        return True
+
     def unban_word(self, word: str, case: CaseSensitivity) -> bool:
         """
         Remove a word from the ban list
@@ -378,6 +398,16 @@ class SQLiteBackend(Backend):
                           key=lambda x: x.score, reverse=reverse)
         res = self._fetchall(f"{SQL_SELECT_STAR_FROM_CHORDLOG}{sql_search} ORDER BY {sql_sort_limit}")
         return [ChordMetadata(row[0], row[1], datetime.fromtimestamp(row[2])) for row in res]
+
+    def delete_chord(self, chord: str) -> bool:
+        """
+        Delete a chord entry
+        :returns: True if chord was deleted, False if it's not in the database
+        """
+        if not self.get_chord_metadata(chord):
+            return False
+        self._execute("DELETE FROM chordlog WHERE chord=?", (chord,))
+        return True
 
     def list_banned_words(self, limit: int, sort_by: BanlistAttr,
                           reverse: bool) -> tuple[set[BanlistEntry], set[BanlistEntry]]:

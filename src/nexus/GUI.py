@@ -144,6 +144,10 @@ class GUI(object):
         self.chentry_context_menu = QMenu(self.chentry_table)
         self.chentry_table.contextMenuEvent = lambda event: self.chentry_context_menu.exec_(event.globalPos())
 
+        # Delete word action
+        deleteword_action = self.chentry_context_menu.addAction(self.translator.translate("GUI", "Delete"))
+        deleteword_action.triggered.connect(self.delete_entry)
+
         # Ban word action
         banword_action = self.chentry_context_menu.addAction(
             self.translator.translate("GUI", "Ban and delete"))
@@ -198,6 +202,10 @@ class GUI(object):
         banchord_action = self.chord_context_menu.addAction(
             self.translator.translate("GUI", "Ban and delete"))
         banchord_action.triggered.connect(lambda: self.banword(is_chord=True))
+
+        # Delete chord action
+        deletechord_action = self.chord_context_menu.addAction(self.translator.translate("GUI", "Delete"))
+        deletechord_action.triggered.connect(lambda: self.delete_entry(is_chord=True))
 
         # Styles
         self.default_style: str = self.app.style().name()
@@ -559,6 +567,50 @@ class GUI(object):
 
         conf_dialog = ConfirmDialog(self.tr("GUI", "Confirm ban"), confirm_text.format(len(selected_words)))
         conf_dialog.buttonBox.accepted.connect(_confirm_ban)
+        conf_dialog.exec()
+
+    def delete_entry(self, is_chord=False):
+        """Controller for right click menu/delete key delete entry"""
+        # Get word(s) from selected row(s)
+        table = self.chord_table if is_chord else self.chentry_table
+        selected_words = {table.item(row.row(), 0).text(): CaseSensitivity.INSENSITIVE for row in
+                          table.selectionModel().selectedRows()}
+        if len(selected_words) == 1:
+            # Truncate word for display if too long
+            word = list(selected_words.keys())[0]
+            display_word = word if len(word) <= 20 else word[:17] + "…" + word[-3:]
+            confirm_text = self.tr("GUI", "Delete '{}'?".format(display_word))
+        else:
+            if is_chord:
+                confirm_text = self.tr("GUI", "Delete {} chords?".format(len(selected_words)))
+            else:
+                confirm_text = self.tr("GUI", "Delete {} words?".format(len(selected_words)))
+
+        def _confirm_delete():
+            """Controller for OK button in confirm dialog"""
+            if is_chord:
+                res = self.temp_freqlog.delete_logged_chords(selected_words).count(True)
+            else:
+                res = self.temp_freqlog.delete_words(selected_words).count(True)
+            self.refresh()
+            if len(selected_words) == 1:
+                self.statusbar.showMessage(self.tr("GUI", "Deleted '{}'").format(display_word) if res else
+                                           self.tr("GUI", "'{}' not found").format(display_word))
+            elif res == 0:
+                if is_chord:
+                    self.statusbar.showMessage(self.tr("GUI", "None of the selected chords were found"))
+                else:
+                    self.statusbar.showMessage(self.tr("GUI", "None of the selected words were found"))
+            else:
+                if is_chord:
+                    self.statusbar.showMessage(
+                        self.tr("GUI", "Deleted {}/{} selected chords").format(res, len(selected_words)))
+                else:
+                    self.statusbar.showMessage(
+                        self.tr("GUI", "Deleted {}/{} selected words").format(res, len(selected_words)))
+
+        conf_dialog = ConfirmDialog(self.tr("GUI", "Confirm delete"), confirm_text.format(len(selected_words)))
+        conf_dialog.buttonBox.accepted.connect(_confirm_delete)
         conf_dialog.exec()
 
     def exec(self):

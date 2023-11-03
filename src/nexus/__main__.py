@@ -118,13 +118,24 @@ def main():
     parser_check.add_argument("word", help="Word(s) to check", nargs="+")
 
     # Ban
-    parser_ban = subparsers.add_parser("banword", help="Ban a word and delete any existing entries of it",
-                                       parents=[log_arg, path_arg, case_arg])
+    parser_ban = subparsers.add_parser("banword", parents=[log_arg, path_arg, case_arg],
+                                       help="Ban a word from being freqlogged and delete any existing entries of it")
     parser_ban.add_argument("word", help="Word(s) to ban", nargs="+")
 
     # Unban
-    parser_unban = subparsers.add_parser("unbanword", help="Unban a word", parents=[log_arg, path_arg, case_arg])
+    parser_unban = subparsers.add_parser("unbanword", help="Unban a word from being freqlogged",
+                                         parents=[log_arg, path_arg, case_arg])
     parser_unban.add_argument("word", help="Word(s) to unban", nargs="+")
+
+    # Delete word
+    parser_delete = subparsers.add_parser("delword", help="Delete a word from freqlog",
+                                          parents=[log_arg, path_arg, case_arg])
+    parser_delete.add_argument("word", help="Word(s) to delete", nargs="+")
+
+    # Delete logged chord
+    parser_delete = subparsers.add_parser("delchordentry", help="Delete a chord entry from freqlog",
+                                          parents=[log_arg, path_arg])
+    parser_delete.add_argument("chord", help="Chord entry/ies to delete", nargs="+")
 
     # Stop freqlogging
     # subparsers.add_parser("stoplog", help="Stop logging", parents=[log_arg])
@@ -243,6 +254,16 @@ def main():
             for word in args.word:
                 if not freqlog.unban_word(word, CaseSensitivity[args.case]):
                     exit_code = 6
+        case "delword":  # delete word
+            for word in args.word:
+                if not freqlog.delete_word(word, CaseSensitivity[args.case]):
+                    print(f"Word '{word}' not found")
+                    exit_code = 5
+        case "delchordentry":  # delete chord entry
+            for chord in args.chord:
+                if not freqlog.delete_logged_chord(chord):
+                    print(f"Chord '{chord}' not found")
+                    exit_code = 5
         # TODO: pretty print
         case "words":  # get words
             if args.export:  # export words
