@@ -349,12 +349,14 @@ class SQLiteBackend(Backend):
                 sql_sort_limit += f" LIMIT {limit}"
             if sort_by == WordMetadataAttr.score:  # Score is not a column in the database
                 res = self._fetchall(
-                    f"{SQL_SELECT_STAR_FROM_FREQLOG}{sql_search}{f' LIMIT {limit}' if limit > 0 else ''}")
-                return sorted([WordMetadata(row[0], row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
-                               for row in res], key=lambda x: x.score, reverse=reverse)
+                    f"{SQL_SELECT_STAR_FROM_FREQLOG}{sql_search}")
+                ret = sorted([WordMetadata(row[0], row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
+                              for row in res], key=lambda x: x.score, reverse=reverse)
+                return ret[:limit] if limit > 0 else ret
 
             # Valid sort_by column
-            res = self._fetchall(f"{SQL_SELECT_STAR_FROM_FREQLOG}{sql_search} ORDER BY {sql_sort_limit}")
+            res = self._fetchall(f"{SQL_SELECT_STAR_FROM_FREQLOG}{sql_search}{f' LIMIT {limit}' if limit > 0 else ''}"
+                                 f" ORDER BY {sql_sort_limit}")
             return [WordMetadata(row[0], row[1], datetime.fromtimestamp(row[2]), timedelta(seconds=row[3]))
                     for row in res]
 
@@ -376,7 +378,7 @@ class SQLiteBackend(Backend):
         """Get number of chords in db"""
         return self._fetchone("SELECT COUNT(*) FROM chordlog")[0]
 
-    def list_chords(self, limit: int, sort_by: ChordMetadataAttr = ChordMetadataAttr.score, reverse: bool = True,
+    def list_chords(self, limit: int = -1, sort_by: ChordMetadataAttr = ChordMetadataAttr.score, reverse: bool = True,
                     search: str = "") -> list[ChordMetadata]:
         """
         List chords in the db
@@ -393,10 +395,14 @@ class SQLiteBackend(Backend):
             sql_sort_limit += f" LIMIT {limit}"
         if sort_by == ChordMetadataAttr.score:  # Score is not a column in the database
             res = self._fetchall(
-                f"{SQL_SELECT_STAR_FROM_CHORDLOG}{sql_search}{f' LIMIT {limit}' if limit > 0 else ''}")
-            return sorted([ChordMetadata(row[0], row[1], datetime.fromtimestamp(row[2])) for row in res],
-                          key=lambda x: x.score, reverse=reverse)
-        res = self._fetchall(f"{SQL_SELECT_STAR_FROM_CHORDLOG}{sql_search} ORDER BY {sql_sort_limit}")
+                f"{SQL_SELECT_STAR_FROM_CHORDLOG}{sql_search}")
+            ret = sorted([ChordMetadata(row[0], row[1], datetime.fromtimestamp(row[2])) for row in res],
+                         key=lambda x: x.score, reverse=reverse)
+            return ret[:limit] if limit > 0 else ret
+
+        # Valid sort_by column
+        res = self._fetchall(f"{SQL_SELECT_STAR_FROM_CHORDLOG}{sql_search}{f' LIMIT {limit}' if limit > 0 else ''}"
+                             f" ORDER BY {sql_sort_limit}")
         return [ChordMetadata(row[0], row[1], datetime.fromtimestamp(row[2])) for row in res]
 
     def delete_chord(self, chord: str) -> bool:

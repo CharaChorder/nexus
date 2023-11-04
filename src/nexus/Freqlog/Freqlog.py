@@ -478,8 +478,8 @@ class Freqlog:
         logging.info("Getting number of logged chords")
         return self.backend.num_chords()
 
-    def list_logged_chords(self, limit: int, sort_by: ChordMetadataAttr = ChordMetadataAttr.score, reverse: bool = True,
-                           search: str = "") -> list[ChordMetadata]:
+    def list_logged_chords(self, limit: int = -1, sort_by: ChordMetadataAttr = ChordMetadataAttr.score,
+                           reverse: bool = True, search: str = "") -> list[ChordMetadata]:
         """
         List chords in the store
         :param limit: Maximum number of chords to return

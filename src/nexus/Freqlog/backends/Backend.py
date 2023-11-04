@@ -61,8 +61,6 @@ class Backend(ABC):
         :returns: True if word is banned, False otherwise
         """
 
-    # TODO: Support banning chords
-
     @abstractmethod
     def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> bool:
         """
@@ -109,7 +107,7 @@ class Backend(ABC):
         """Get number of chords in store"""
 
     @abstractmethod
-    def list_chords(self, limit: int, sort_by: ChordMetadataAttr = ChordMetadataAttr.score, reverse: bool = True,
+    def list_chords(self, limit: int = -1, sort_by: ChordMetadataAttr = ChordMetadataAttr.score, reverse: bool = True,
                     search: str = "") -> list[ChordMetadata]:
         """
         List chords in the store
