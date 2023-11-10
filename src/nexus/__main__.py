@@ -23,7 +23,8 @@ def main():
         4: Could not access or write to database
         5: Requested word or chord not found
         6: Tried to ban already banned word or unban already unbanned word
-        7: Merge db requirements not met
+        7: ValueError during merge db (likely requirements not met)
+        8: Upgrade cancelled
         11: Python version < 3.11
         100: Feature not yet implemented
     """
@@ -51,6 +52,8 @@ def main():
     search_arg = argparse.ArgumentParser(add_help=False)
     search_arg.add_argument("-f", "--find", metavar="search", dest="search", help="Search for (part of) a word",
                             required=False)
+    upgrade_arg = argparse.ArgumentParser(add_help=False)
+    upgrade_arg.add_argument("--upgrade", action="store_true", help="Upgrade database if necessary")
 
     # Parse command line arguments
     parser = argparse.ArgumentParser(
@@ -62,7 +65,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command", title="Commands")
 
     # Start freqlogging
-    parser_start = subparsers.add_parser("startlog", help="Start logging", parents=[log_arg, path_arg])
+    parser_start = subparsers.add_parser("startlog", help="Start logging", parents=[log_arg, path_arg, upgrade_arg])
     parser_start.add_argument("--new-word-threshold", default=Defaults.DEFAULT_NEW_WORD_THRESHOLD, type=float,
                               help="Time in seconds after which character input is considered a new word")
     parser_start.add_argument("--chord-char-threshold", default=Defaults.DEFAULT_CHORD_CHAR_THRESHOLD, type=int,
@@ -77,11 +80,12 @@ def main():
                               choices=sorted(key.name for key in Defaults.DEFAULT_MODIFIER_KEYS))
 
     # Num words
-    subparsers.add_parser("numwords", help="Get number of words in freqlog", parents=[log_arg, path_arg, case_arg])
+    subparsers.add_parser("numwords", help="Get number of words in freqlog",
+                          parents=[log_arg, path_arg, case_arg, upgrade_arg])
 
     # Get words
     parser_words = subparsers.add_parser("words", help="Get list of freqlogged words",
-                                         parents=[log_arg, path_arg, case_arg, num_arg, search_arg])
+                                         parents=[log_arg, path_arg, case_arg, num_arg, search_arg, upgrade_arg])
     parser_words.add_argument("word", help="Word(s) to get data of", nargs="*")
     parser_words.add_argument("-e", "--export", help="Export all freqlogged words as csv to file"
                                                      "(ignores word args)", required=False)
@@ -93,7 +97,7 @@ def main():
 
     # Get chords
     parser_chords = subparsers.add_parser("chords", help="Get list of stored freqlogged chords",
-                                          parents=[log_arg, path_arg, num_arg])
+                                          parents=[log_arg, path_arg, num_arg, upgrade_arg])
     parser_chords.add_argument("chord", help="Chord(s) to get data of", nargs="*")
     parser_chords.add_argument("-e", "--export", help="Export freqlogged chords as csv to file"
                                                       "(ignores chord args)", required=False)
@@ -105,7 +109,7 @@ def main():
 
     # Get banned words
     parser_banned = subparsers.add_parser("banlist", help="Get list of banned words",
-                                          parents=[log_arg, path_arg, num_arg])
+                                          parents=[log_arg, path_arg, num_arg, upgrade_arg])
     parser_banned.add_argument("-s", "--sort-by", default=BanlistAttr.date_added.name,
                                help="Sort by (default: DATE_ADDED)",
                                choices=[attr.name for attr in BanlistAttr])
@@ -114,35 +118,37 @@ def main():
 
     # Check ban
     parser_check = subparsers.add_parser("checkword", help="Check if a word is banned",
-                                         parents=[log_arg, path_arg, case_arg])
+                                         parents=[log_arg, path_arg, case_arg, upgrade_arg])
     parser_check.add_argument("word", help="Word(s) to check", nargs="+")
 
     # Ban
-    parser_ban = subparsers.add_parser("banword", parents=[log_arg, path_arg, case_arg],
+    parser_ban = subparsers.add_parser("banword", parents=[log_arg, path_arg, case_arg, upgrade_arg],
                                        help="Ban a word from being freqlogged and delete any existing entries of it")
     parser_ban.add_argument("word", help="Word(s) to ban", nargs="+")
 
     # Unban
     parser_unban = subparsers.add_parser("unbanword", help="Unban a word from being freqlogged",
-                                         parents=[log_arg, path_arg, case_arg])
+                                         parents=[log_arg, path_arg, case_arg, upgrade_arg])
     parser_unban.add_argument("word", help="Word(s) to unban", nargs="+")
 
     # Delete word
     parser_delete = subparsers.add_parser("delword", help="Delete a word from freqlog",
-                                          parents=[log_arg, path_arg, case_arg])
+                                          parents=[log_arg, path_arg, case_arg, upgrade_arg])
     parser_delete.add_argument("word", help="Word(s) to delete", nargs="+")
 
     # Delete logged chord
     parser_delete = subparsers.add_parser("delchordentry", help="Delete a chord entry from freqlog",
-                                          parents=[log_arg, path_arg])
+                                          parents=[log_arg, path_arg, upgrade_arg])
     parser_delete.add_argument("chord", help="Chord entry/ies to delete", nargs="+")
 
     # Stop freqlogging
     # subparsers.add_parser("stoplog", help="Stop logging", parents=[log_arg])
+
+    # Version
     parser.add_argument("-v", "--version", action="version", version=f"%(prog)s {__version__}")
 
     # Merge db
-    parser_merge = subparsers.add_parser("mergedb", help="Merge two Freqlog databases", parents=[log_arg])
+    parser_merge = subparsers.add_parser("mergedb", help="Merge two Freqlog databases", parents=[log_arg, upgrade_arg])
     parser_merge.add_argument("--ban-data-keep", default=Age.OLDER.name,
                               help=f"Which ban data to keep (default: {Age.OLDER.name})",
                               choices=[age.name for age in Age])
@@ -164,7 +170,11 @@ def main():
 
     # Show GUI if no command is given
     if not args.command:
-        sys.exit(GUI(args).exec())
+        try:
+            sys.exit(GUI(args).exec())
+        except PermissionError as e:
+            logging.error(e)
+            sys.exit(8)
 
     # Validate arguments before creating Freqlog object
     match args.command:
@@ -197,16 +207,33 @@ def main():
                 logging.error("Number of words must be >= 0")
                 exit_code = 3
 
+    def _prompt_for_upgrade(db_version: str) -> None:
+        """Prompt user to upgrade"""
+        nonlocal args
+        logging.warning(
+            f"You are running version {__version__} of nexus, but your database is on version {db_version}.")
+        if not args.upgrade:
+            print("Backup your database before upgrading!!! Upgrade? [y/N]:", end=" ")
+            try:
+                choice = input().lower()
+            except KeyboardInterrupt:
+                print()  # clear the input line
+                logging.error("Upgrade cancelled")
+                sys.exit(8)
+            if choice != "y":
+                logging.error("Upgrade cancelled")
+                sys.exit(8)
+
     # Parse commands
     if args.command == "mergedb":  # merge databases
         # Merge databases
         logging.warning("This feature has not been thoroughly tested and is not guaranteed to work. Manually verify"
                         f"(via an export) that the destination DB ({args.dst}) contains all your data after merging.")
         try:
-            src1: SQLiteBackend = Freqlog.Freqlog(args.src1, loggable=False)
+            src1: SQLiteBackend = Freqlog.Freqlog(args.src1, loggable=False, upgrade_callback=_prompt_for_upgrade)
             src1.merge_backends(args.src2, args.dst, Age[args.ban_data_keep])
             sys.exit(0)
-        except ValueError as e:
+        except Exception as e:
             logging.error(e)
             exit_code = 7
 
@@ -222,7 +249,11 @@ def main():
         sys.exit(exit_code)
 
     # All following commands require a freqlog object
-    freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=False)
+    try:
+        freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=False, upgrade_callback=_prompt_for_upgrade)
+    except Exception as e:
+        logging.error(e)
+        sys.exit(4)
     if args.command == "numwords":  # get number of words
         print(f"{freqlog.num_words(CaseSensitivity[args.case])} words in freqlog")
         sys.exit(0)
@@ -234,7 +265,11 @@ def main():
         num = Defaults.DEFAULT_NUM_WORDS_CLI
     match args.command:
         case "startlog":  # start freqlogging
-            freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=True)
+            try:
+                freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=True)
+            except Exception as e:
+                logging.error(e)
+                sys.exit(4)
             signal.signal(signal.SIGINT, lambda: freqlog.stop_logging())
             freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
                                   Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(

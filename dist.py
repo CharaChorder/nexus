@@ -13,7 +13,7 @@ if sys.version_info < (3, 11):
     print("Python 3.11 or higher is required")
     sys.exit(1)
 
-parser = argparse.ArgumentParser(description="Build Nexus")
+parser = argparse.ArgumentParser(description="Build nexus")
 parser.add_argument('-n', "--no-build", action="store_true", help="Skip building the executable, only setup")
 parser.add_argument('-d', "--devel", action="store_true", help="Install module locally and git hooks")
 parser.add_argument('-u', "--ui-only", action="store_true", help="Only convert ui files"

@@ -18,19 +18,19 @@ SQL_SELECT_STAR_FROM_BANLIST = "SELECT word, dateadded FROM banlist"
 class SQLiteBackend(Backend):
 
     @staticmethod
-    def decode_version(version: int) -> str:
-        return f"{version >> 16}.{version >> 8 & 0xFF}.{version & 0xFF}"
-
-    @staticmethod
     def encode_version(version: str) -> int:
         return int(version.split(".")[0]) << 16 | int(version.split(".")[1]) << 8 | int(version.split(".")[2])
+
+    @staticmethod
+    def decode_version(version: int) -> str:
+        return f"{version >> 16}.{version >> 8 & 0xFF}.{version & 0xFF}"
 
     @staticmethod
     def _init_db(cursor: Cursor, sql_version: int):
         """
         Initialize the database
         """
-        # WARNING: Remember to change _upgrade_database and merge_db when changing DDL
+        # WARNING: Remember to bump version and change _upgrade_database and merge_db when changing DDL
         cursor.execute(f"PRAGMA user_version = {sql_version}")
 
         # Freqloq table
@@ -54,15 +54,18 @@ class SQLiteBackend(Backend):
         cursor.execute("CREATE TABLE IF NOT EXISTS banlist_lower (word TEXT PRIMARY KEY COLLATE NOCASE,"
                        "dateadded timestamp NOT NULL) WITHOUT ROWID")
 
-    def __init__(self, db_path: str) -> None:
+    def __init__(self, db_path: str, upgrade_callback: callable = None) -> None:
         """
         Initialize the SQLite backend
         :param db_path: Path to the database file
+        :param upgrade_callback: Callback to call when upgrading the database.
+                Should take one argument: the new version, and call sys.exit() if an upgrade is unwanted
         :raises ValueError: If the database version is newer than the current version
         """
         self.db_path = db_path
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
+        self.upgrade_callback = upgrade_callback
 
         # Versioning
         old_version = self._fetchone("PRAGMA user_version")[0]
@@ -99,14 +102,24 @@ class SQLiteBackend(Backend):
         return self.cursor.fetchall()
 
     def _upgrade_database(self, sql_version: int) -> None:
-        """Upgrade database to current version"""
+        """
+        Upgrade database to current version
+        :param sql_version: New database version
+        """
+        if self.upgrade_callback:
+            self.upgrade_callback(self.decode_version(sql_version))
+        logging.warning(f"Upgrading database from {self.decode_version(self._fetchone('PRAGMA user_version')[0])} to "
+                        f"{self.decode_version(sql_version)}")
+
         # TODO: populate this function when changing DDL
-        # Remember to warn users to back up their database before upgrading
-        pass
 
     def get_version(self) -> str:
         """Get the version of the database"""
         return self.decode_version(self._fetchone("PRAGMA user_version")[0])
+
+    def set_version(self, version: str) -> None:
+        """Set database version to a specific version"""
+        self._execute(f"PRAGMA user_version = {self.encode_version(version)}")
 
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata | None:
         """
@@ -466,7 +479,7 @@ class SQLiteBackend(Backend):
             raise ValueError("dst_db_path must be writable") from e
 
         # DB meta
-        src_db = SQLiteBackend(src_db_path)
+        src_db = SQLiteBackend(src_db_path, self.upgrade_callback)
         dst_db = SQLiteBackend(dst_db_path)
 
         # Merge databases
