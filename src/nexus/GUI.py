@@ -139,6 +139,9 @@ class GUI(object):
             [self.tr("GUI", WordMetadataAttrLabel[col]) for col in self.chentry_columns])
         self.chentry_table.sortByColumn(1, Qt.SortOrder.DescendingOrder)
 
+        # Refresh when chentry table header clicked
+        self.chentry_table.horizontalHeader().sectionClicked.connect(self.refresh_chentry_table)
+
         # Chentry table right click menu
         self.chentry_context_menu = QMenu(self.chentry_table)
         self.chentry_table.contextMenuEvent = lambda event: self.chentry_context_menu.exec_(event.globalPos())
@@ -192,6 +195,9 @@ class GUI(object):
         self.chord_table.setHorizontalHeaderLabels(
             [self.tr("GUI", ChordMetadataAttrLabel[col]) for col in self.chord_columns])
         self.chord_table.sortByColumn(1, Qt.SortOrder.DescendingOrder)
+
+        # Refresh when chord table header clicked
+        self.chord_table.horizontalHeader().sectionClicked.connect(self.refresh_chord_table)
 
         # Chord table right click menu
         self.chord_context_menu = QMenu(self.chord_table)
