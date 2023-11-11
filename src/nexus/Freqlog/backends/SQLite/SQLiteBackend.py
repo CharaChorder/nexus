@@ -73,7 +73,7 @@ class SQLiteBackend(Backend):
         # Encode major, minor and patch version into a single 4-byte integer
         sql_version: int = self.encode_version(__version__)
         if old_version < sql_version:
-            self._upgrade_database(sql_version)
+            self._upgrade_database(self.decode_version(old_version))
         elif old_version > sql_version:
             raise ValueError(
                 f"Database version {self.decode_version(old_version)} is newer than the current version {__version__}")
@@ -101,15 +101,15 @@ class SQLiteBackend(Backend):
             self.cursor.execute(query)
         return self.cursor.fetchall()
 
-    def _upgrade_database(self, sql_version: int) -> None:
+    def _upgrade_database(self, old_version: str) -> None:
         """
         Upgrade database to current version
-        :param sql_version: New database version
+        :param old_version: Existing database version
         """
         if self.upgrade_callback:
-            self.upgrade_callback(self.decode_version(sql_version))
+            self.upgrade_callback(old_version)
         logging.warning(f"Upgrading database from {self.decode_version(self._fetchone('PRAGMA user_version')[0])} to "
-                        f"{self.decode_version(sql_version)}")
+                        f"{old_version}")
 
         # TODO: populate this function when changing DDL
 

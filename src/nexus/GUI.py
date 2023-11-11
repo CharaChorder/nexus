@@ -217,7 +217,7 @@ class GUI(object):
         except Exception as e:
             ConfirmDialog(self.tr("GUI", "Error"), self.tr("GUI", "Error opening database: {}").format(e),
                           self.graceful_quit).exec()
-            raise e
+            raise PermissionError(e)
         self.logging_thread: Thread | None = None
         self.start_stop_button_started = False
         self.args = args
@@ -252,7 +252,7 @@ class GUI(object):
             except Exception as e:
                 ConfirmDialog(self.tr("GUI", "Error"), self.tr("GUI", "Error opening database: {}").format(e),
                               self.graceful_quit).exec()
-                raise e
+                raise PermissionError(e)
         self.freqlog.start_logging()
 
     def stop_logging(self):
