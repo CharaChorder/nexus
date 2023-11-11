@@ -1,12 +1,13 @@
 import argparse
 import os
+import signal
 from threading import Thread
 from pathlib import Path
 from typing import Literal
 
 from PySide6.QtCore import Qt, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
-    QDialog, QFileDialog, QDialogButtonBox, QVBoxLayout, QLabel, QMenu, QSystemTrayIcon
+    QDialog, QFileDialog, QMenu, QSystemTrayIcon, QMessageBox
 from PySide6.QtGui import QIcon, QAction
 
 from nexus import __id__, __version__
@@ -49,19 +50,14 @@ class BanwordDialog(QDialog, Ui_BanwordDialog):
         self.setupUi(self)
 
 
-class ConfirmDialog(QDialog):
-    def __init__(self, title: str, message: str):
+class ConfirmDialog(QMessageBox):
+    def __init__(self, title: str, message: str, ok_callback: callable) -> None:
         super().__init__()
         self.setWindowTitle(title)
-        buttons = QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
-        self.buttonBox = QDialogButtonBox(buttons)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        self.layout = QVBoxLayout()
-        msg_label = QLabel(message)
-        self.layout.addWidget(msg_label)
-        self.layout.addWidget(self.buttonBox)
-        self.setLayout(self.layout)
+        self.setText(message)
+        self.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        self.buttonClicked.connect(
+            lambda btn: ok_callback() if btn == self.button(QMessageBox.StandardButton.Ok) else self.reject())
 
 
 class Translator(QTranslator):
@@ -102,7 +98,7 @@ class GUI(object):
         self.start_stop_tray_menu_action = QAction(self.tr("GUI", "Start/stop logging"))
         self.quit_tray_menu_action = QAction(self.tr("GUI", "Quit"))
         self.start_stop_tray_menu_action.triggered.connect(self.start_stop)
-        self.quit_tray_menu_action.triggered.connect(self.app.quit)
+        self.quit_tray_menu_action.triggered.connect(self.graceful_quit)
         self.tray_menu.addAction(self.start_stop_tray_menu_action)
         self.tray_menu.addAction(self.quit_tray_menu_action)
         self.tray.setContextMenu(self.tray_menu)
@@ -117,7 +113,7 @@ class GUI(object):
         self.statusbar: QStatusBar = self.window.statusbar
 
         # Menu bar
-        self.window.actionQuit.triggered.connect(self.app.quit)
+        self.window.actionQuit.triggered.connect(self.graceful_quit)
         self.window.actionNexus_Dark.triggered.connect(lambda: self.set_style('Nexus_Dark'))
         self.window.actionQt_Default.triggered.connect(lambda: self.set_style('Fusion'))
         self.window.actionPlatform_Default.triggered.connect(lambda: self.set_style('Default'))
@@ -127,6 +123,9 @@ class GUI(object):
         # Signals
         self.start_stop_button.clicked.connect(self.start_stop)
         self.window.refreshButton.clicked.connect(self.refresh)
+
+        # Window close button
+        self.window.closeEvent = lambda event: self.window.hide()  # FIXME: this is quitting instead of hiding
 
         # Set default number of entries
         self.window.chentry_entries_input.setValue(Defaults.DEFAULT_NUM_WORDS_GUI)
@@ -139,6 +138,9 @@ class GUI(object):
         self.chentry_table.setHorizontalHeaderLabels(
             [self.tr("GUI", WordMetadataAttrLabel[col]) for col in self.chentry_columns])
         self.chentry_table.sortByColumn(1, Qt.SortOrder.DescendingOrder)
+
+        # Refresh when chentry table header clicked
+        self.chentry_table.horizontalHeader().sectionClicked.connect(self.refresh_chentry_table)
 
         # Chentry table right click menu
         self.chentry_context_menu = QMenu(self.chentry_table)
@@ -194,6 +196,9 @@ class GUI(object):
             [self.tr("GUI", ChordMetadataAttrLabel[col]) for col in self.chord_columns])
         self.chord_table.sortByColumn(1, Qt.SortOrder.DescendingOrder)
 
+        # Refresh when chord table header clicked
+        self.chord_table.horizontalHeader().sectionClicked.connect(self.refresh_chord_table)
+
         # Chord table right click menu
         self.chord_context_menu = QMenu(self.chord_table)
         self.chord_table.contextMenuEvent = lambda event: self.chord_context_menu.exec_(event.globalPos())
@@ -212,7 +217,13 @@ class GUI(object):
         self.set_style('Nexus_Dark')
 
         self.freqlog: Freqlog | None = None  # for logging
-        self.temp_freqlog: Freqlog = Freqlog(args.freqlog_db_path, loggable=False)  # for other operations
+        try:
+            self.temp_freqlog: Freqlog = Freqlog(args.freqlog_db_path, loggable=False,
+                                                 upgrade_callback=self.prompt_for_upgrade)  # for other operations
+        except Exception as e:
+            ConfirmDialog(self.tr("GUI", "Error"), self.tr("GUI", "Error opening database: {}").format(e),
+                          self.graceful_quit).exec()
+            raise PermissionError(e)
         self.logging_thread: Thread | None = None
         self.start_stop_button_started = False
         self.args = args
@@ -242,11 +253,17 @@ class GUI(object):
 
     def start_logging(self):
         if not self.freqlog:
-            self.freqlog = Freqlog(self.args.freqlog_db_path, loggable=True)
+            try:
+                self.freqlog = Freqlog(self.args.freqlog_db_path, loggable=True)
+            except Exception as e:
+                ConfirmDialog(self.tr("GUI", "Error"), self.tr("GUI", "Error opening database: {}").format(e),
+                              self.graceful_quit).exec()
+                raise PermissionError(e)
         self.freqlog.start_logging()
 
     def stop_logging(self):
-        self.freqlog.stop_logging()
+        if self.freqlog:
+            self.freqlog.stop_logging()
         self.freqlog = None
 
     def start_stop(self):
@@ -263,7 +280,7 @@ class GUI(object):
             self.logging_thread.start()
 
             # Wait until logging starts
-            # TODO: Replace this with something to prevent spam-clicking the button restarting logging
+            # FIXME: Replace this with something to prevent spam-clicking the button restarting logging
             while not (self.freqlog and self.freqlog.is_logging):
                 pass
 
@@ -409,7 +426,7 @@ class GUI(object):
             self.statusbar.showMessage(self.tr("GUI", "Loaded {}/{} freqlogged words, {}/{} logged chords "
                                                       "(no CharaChorder device with chords connected)").format(
                 len(words), num_words, len(chords), num_chords))
-        else:  # TODO: this is an inaccurate count of chords, because chords on device can be modified (i.e. + shift)
+        else:  # FIXME: this is an inaccurate count of chords, because chords on device can be modified (i.e. + shift)
             self.statusbar.showMessage(self.tr("GUI", "Loaded {}/{} freqlogged words, {}/{} logged chords "
                                                       "(+ {} unused chords on device)").format(
                 len(words), num_words, len(chords), num_chords, self.temp_freqlog.num_chords - num_chords))
@@ -499,9 +516,8 @@ class GUI(object):
                     self.statusbar.showMessage(
                         self.tr("GUI", "Unbanned {}/{} selected words").format(res, len(selected_words)))
 
-            conf_dialog = ConfirmDialog(self.tr("GUI", "Confirm unban"), confirm_text.format(len(selected_words)))
-            conf_dialog.buttonBox.accepted.connect(_confirm_unban)
-            conf_dialog.exec()
+            ConfirmDialog(self.tr("GUI", "Confirm unban"), confirm_text.format(len(selected_words)),
+                          ok_callback=_confirm_unban).exec()
             _refresh_banlist()
 
         bl_dialog.addButton.clicked.connect(_banword)
@@ -565,16 +581,15 @@ class GUI(object):
                     self.statusbar.showMessage(
                         self.tr("GUI", "Banned and deleted {}/{} selected words").format(res, len(selected_words)))
 
-        conf_dialog = ConfirmDialog(self.tr("GUI", "Confirm ban"), confirm_text.format(len(selected_words)))
-        conf_dialog.buttonBox.accepted.connect(_confirm_ban)
-        conf_dialog.exec()
+        ConfirmDialog(self.tr("GUI", "Confirm ban"), confirm_text.format(len(selected_words)), _confirm_ban).exec()
 
     def delete_entry(self, is_chord=False):
         """Controller for right click menu/delete key delete entry"""
         # Get word(s) from selected row(s)
         table = self.chord_table if is_chord else self.chentry_table
-        selected_words = {table.item(row.row(), 0).text(): CaseSensitivity.INSENSITIVE for row in
-                          table.selectionModel().selectedRows()}
+        selected_words = ([table.item(row.row(), 0).text() for row in table.selectionModel().selectedRows()]
+                          if is_chord else {table.item(row.row(), 0).text(): CaseSensitivity.INSENSITIVE for row in
+                                            table.selectionModel().selectedRows()})
         if len(selected_words) == 1:
             # Truncate word for display if too long
             word = list(selected_words.keys())[0]
@@ -609,12 +624,35 @@ class GUI(object):
                     self.statusbar.showMessage(
                         self.tr("GUI", "Deleted {}/{} selected words").format(res, len(selected_words)))
 
-        conf_dialog = ConfirmDialog(self.tr("GUI", "Confirm delete"), confirm_text.format(len(selected_words)))
-        conf_dialog.buttonBox.accepted.connect(_confirm_delete)
-        conf_dialog.exec()
+        ConfirmDialog(self.tr("GUI", "Confirm delete"), confirm_text.format(len(selected_words)),
+                      _confirm_delete).exec()
+
+    def prompt_for_upgrade(self, db_version: str) -> None:
+        """Prompt user to upgrade"""
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle(self.tr("GUI", "Database Upgrade"))
+        msg_box.setText(self.tr("GUI", "You are running version {} of nexus, but your database is on version {}."
+                                       "\nBackup your database before pressing 'Yes' to upgrade your database, or press"
+                                       " 'No' to exit without upgrading.").format(__version__, db_version))
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        result = msg_box.exec()
+
+        if result != QMessageBox.StandardButton.Yes:
+            raise PermissionError("Database upgrade cancelled")
+
+    def graceful_quit(self):
+        """Quit gracefully"""
+        if self.freqlog:
+            self.freqlog.stop_logging()
+        self.freqlog = None
+        self.app.quit()
 
     def exec(self):
         """Start the GUI"""
+        # Handle SIGINT
+        signal.signal(signal.SIGINT, self.graceful_quit)
+
+        # Start GUI
         self.window.show()
         self.refresh()
         self.app.exec()

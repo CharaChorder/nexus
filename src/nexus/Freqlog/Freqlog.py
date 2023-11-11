@@ -141,7 +141,7 @@ class Freqlog:
                     if active_modifier_keys.intersection({kbd.Key.ctrl, kbd.Key.ctrl_l, kbd.Key.ctrl_r,
                                                           kbd.Key.cmd, kbd.Key.cmd_l, kbd.Key.cmd_r}):
                         # Remove last word from word
-                        # TODO: make this work - rn _log_and_reset_word() is called immediately upon ctrl/cmd keydown
+                        # FIXME: make this work - rn _log_and_reset_word() is called immediately upon ctrl/cmd keydown
                         # TODO: make this configurable (i.e. for vim, etc)
                         if " " in word:
                             word = word[:word.rfind(" ")]
@@ -232,11 +232,13 @@ class Freqlog:
         if self.dev:
             self.dev.close()
 
-    def __init__(self, path: str = Defaults.DEFAULT_DB_PATH, loggable: bool = True):
+    def __init__(self, path: str = Defaults.DEFAULT_DB_PATH, loggable: bool = True,
+                 upgrade_callback: callable = None) -> None:
         """
         Initialize Freqlog
         :param path: Path to backend (currently == SQLiteBackend)
         :param loggable: Whether to create listeners
+        :param upgrade_callback: Callback to run if database is upgraded
         :raises ValueError: If the database version is newer than the current version
         """
         logging.info("Initializing freqlog")
@@ -274,7 +276,7 @@ class Freqlog:
             if self.dev:
                 self.dev.close()
 
-        self.backend: Backend = SQLiteBackend(path)
+        self.backend: Backend = SQLiteBackend(path, upgrade_callback)
         self.q: Queue = Queue()
         self.listener: kbd.Listener | None = None
         self.mouse_listener: mouse.Listener | None = None
@@ -311,7 +313,7 @@ class Freqlog:
         logging.warning("Started freqlogging")
         self._process_queue()
 
-    def stop_logging(self) -> None:  # TODO: find out why this runs twice on one Ctrl-C (does it still?)
+    def stop_logging(self) -> None:  # FIXME: find out why this runs twice on one Ctrl-C (does it still?)
         if self.killed:  # TODO: Forcibly kill if already killed once
             exit(1)  # This doesn't work rn
         self.killed = True
