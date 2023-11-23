@@ -123,9 +123,6 @@ class GUI(object):
             [self.tr("GUI", WordMetadataAttrLabel[col]) for col in self.chentry_columns])
         self.chentry_table.sortByColumn(1, Qt.SortOrder.DescendingOrder)
 
-        # Refresh when chentry table header clicked
-        self.chentry_table.horizontalHeader().sectionClicked.connect(self.refresh_chentry_table)
-
         # Chentry table right click menu
         self.chentry_context_menu = QMenu(self.chentry_table)
         self.chentry_table.contextMenuEvent = lambda event: self.chentry_context_menu.exec_(event.globalPos())
@@ -180,8 +177,13 @@ class GUI(object):
             [self.tr("GUI", ChordMetadataAttrLabel[col]) for col in self.chord_columns])
         self.chord_table.sortByColumn(1, Qt.SortOrder.DescendingOrder)
 
-        # Refresh when chord table header clicked
+        # Auto-refresh
+        self.window.chord_entries_input.valueChanged.connect(self.refresh_chord_table)
+        self.window.chentry_entries_input.valueChanged.connect(self.refresh_chentry_table)
+        self.window.chord_search_input.textChanged.connect(self.refresh_chord_table)
+        self.window.chentry_search_input.textChanged.connect(self.refresh_chentry_table)
         self.chord_table.horizontalHeader().sectionClicked.connect(self.refresh_chord_table)
+        self.chentry_table.horizontalHeader().sectionClicked.connect(self.refresh_chentry_table)
 
         # Chord table right click menu
         self.chord_context_menu = QMenu(self.chord_table)
@@ -202,44 +204,10 @@ class GUI(object):
 
         self.freqlog: Freqlog | None = None  # for logging
         self.temp_freqlog: Freqlog | None = None  # for other operations
+        self.password = None
         self.logging_thread: Thread | None = None
         self.start_stop_button_started = False
         self.args = args
-
-        # FIXME: move this block into exec() after window.show() and before app.exec()
-        # Get password
-        while True:
-            try:
-                self.password = self.prompt_for_password(
-                    new=not Freqlog.is_backend_initialized(self.args.freqlog_db_path))
-            except ValueError as e:
-                QMessageBox.critical(self.window, self.tr("GUI", "Error"), str(e))
-                logging.error(e)
-                continue
-            except InterruptedError:
-                raise
-
-            # Initialize backend
-            try:
-                self.temp_freqlog: Freqlog = Freqlog(self.args.freqlog_db_path, self.password, loggable=False,
-                                                     upgrade_callback=self.prompt_for_upgrade)  # for other operations
-                break
-            except cryptography.InvalidToken:
-                QMessageBox.critical(self.window, self.tr("GUI", "Error"),
-                                     self.tr("GUI", "Incorrect password"))
-                logging.error("Incorrect password")
-            except Exception as e:
-                QMessageBox.critical(self.window, self.tr("GUI", "Error"),
-                                     self.tr("GUI", "Error opening database: {}").format(e))
-                raise
-        # END FIXME
-
-        # Auto-refresh - must go at the end
-        # TODO: does it?
-        self.window.chentry_entries_input.valueChanged.connect(self.refresh_chentry_table)
-        self.window.chord_entries_input.valueChanged.connect(self.refresh_chord_table)
-        self.window.chentry_search_input.textChanged.connect(self.refresh_chentry_table)
-        self.window.chord_search_input.textChanged.connect(self.refresh_chord_table)
 
     def show_hide(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
@@ -488,7 +456,9 @@ class GUI(object):
                 confirm_text = self.tr("GUI", "Unban {} words?".format(len(selected_words)))
 
             if QMessageBox.question(self.window, self.tr("GUI", "Confirm unban"),
-                                    confirm_text.format(len(selected_words))) == QMessageBox.StandardButton.Yes:
+                                    confirm_text.format(len(selected_words)),
+                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                    defaultButton=QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
                 res = self.temp_freqlog.unban_words(selected_words).count(True)
                 if len(selected_words) == 1:
                     self.statusbar.showMessage(self.tr("GUI", "Unbanned '{}'").format(display_word) if res else
@@ -542,7 +512,9 @@ class GUI(object):
                 confirm_text = self.tr("GUI", "Ban and delete {} words?".format(len(selected_words)))
 
         if QMessageBox.question(self.window, self.tr("GUI", "Confirm ban"),
-                                confirm_text.format(len(selected_words))) == QMessageBox.StandardButton.Yes:
+                                confirm_text.format(len(selected_words)),
+                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                defaultButton=QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
             res = self.temp_freqlog.ban_words(selected_words).count(True)
             self.refresh()
             if len(selected_words) == 1:
@@ -581,7 +553,9 @@ class GUI(object):
                 confirm_text = self.tr("GUI", "Delete {} words?".format(len(selected_words)))
 
         if QMessageBox.question(self.window, self.tr("GUI", "Confirm delete"),
-                                confirm_text.format(len(selected_words))) == QMessageBox.StandardButton.Yes:
+                                confirm_text.format(len(selected_words)),
+                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                defaultButton=QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
             if is_chord:
                 res = self.temp_freqlog.delete_logged_chords(selected_words).count(True)
             else:
@@ -609,7 +583,9 @@ class GUI(object):
                 self.window, self.tr("GUI", "Database Upgrade"),
                 self.tr("GUI", "You are running version {} of nexus, but your database is on version {}.\n"
                                "Backup your database before pressing 'Yes' to upgrade your database, or press 'No' "
-                               "to exit without upgrading.").format(__version__, db_version))
+                               "to exit without upgrading.").format(__version__, db_version),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                defaultButton=QMessageBox.StandardButton.No)
                 == QMessageBox.StandardButton.No):
             raise PermissionError("Database upgrade cancelled")
 
@@ -630,7 +606,8 @@ class GUI(object):
                 if (QMessageBox.warning(self.window, self.tr("GUI", "Password too short"),
                                         self.tr("GUI", "Password should be at least 8 characters long.\n"
                                                        "Continue without securely encrypting your banlist?"),
-                                        QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                        defaultButton=QMessageBox.StandardButton.No)
                         == QMessageBox.StandardButton.No):
                     raise InterruptedError("Password prompt cancelled")
             confirm_password, ok = QInputDialog.getText(self.window, self.tr("GUI", "Banlist Password"),
@@ -656,5 +633,33 @@ class GUI(object):
 
         # Start GUI
         self.window.show()
+
+        # Get password
+        while True:
+            try:
+                self.password = self.prompt_for_password(
+                    new=not Freqlog.is_backend_initialized(self.args.freqlog_db_path))
+            except ValueError as e:
+                QMessageBox.critical(self.window, self.tr("GUI", "Error"), str(e))
+                logging.error(e)
+                continue
+            except InterruptedError:
+                raise
+
+            # Initialize backend
+            try:
+                self.temp_freqlog: Freqlog = Freqlog(self.args.freqlog_db_path, self.password, loggable=False,
+                                                     upgrade_callback=self.prompt_for_upgrade)  # for other operations
+                break
+            except cryptography.InvalidToken:
+                QMessageBox.critical(self.window, self.tr("GUI", "Error"),
+                                     self.tr("GUI", "Incorrect password"))
+                logging.error("Incorrect password")
+            except Exception as e:
+                QMessageBox.critical(self.window, self.tr("GUI", "Error"),
+                                     self.tr("GUI", "Error opening database: {}").format(e))
+                raise
+
+        # Refresh and enter event loop
         self.refresh()
         self.app.exec()
