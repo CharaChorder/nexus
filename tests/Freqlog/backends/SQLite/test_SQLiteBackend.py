@@ -10,7 +10,7 @@ TIME = datetime.now()
 
 @pytest.fixture(autouse=True)
 def loaded_backend() -> SQLiteBackend:
-    backend = SQLiteBackend(":memory:")
+    backend = SQLiteBackend(":memory:", "test")
     backend.log_word("one", TIME - timedelta(seconds=0.5), TIME)
     backend.log_word("two", TIME + timedelta(minutes=1) - timedelta(seconds=2), TIME + timedelta(minutes=1))
     backend.log_word("two", TIME + timedelta(minutes=2) - timedelta(seconds=3), TIME + timedelta(minutes=2))
@@ -23,6 +23,15 @@ def loaded_backend() -> SQLiteBackend:
 
 def close_to(a: datetime | timedelta, b: datetime | timedelta) -> bool:
     return abs(a - b) < timedelta(microseconds=100)
+
+
+def test_check_password(loaded_backend):
+    backend = loaded_backend
+    assert backend.check_password("test") is True
+    assert backend.check_password("wrong") is False
+    backend.set_password("new")
+    assert backend.check_password("new") is True
+    assert backend.check_password("test") is False
 
 
 @pytest.mark.parametrize("word,case,freq,last_used,avg_speed", [
@@ -79,52 +88,48 @@ def test_list_words_limit(loaded_backend):
     assert data[1].word == "two"
 
 
-@pytest.mark.parametrize("word,case,original,remaining", [
-    ("one", CaseSensitivity.SENSITIVE, 5, 4),
-    ("two", CaseSensitivity.SENSITIVE, 5, 4),
-    ("three", CaseSensitivity.SENSITIVE, 5, 4),
-    ("three", CaseSensitivity.FIRST_CHAR, 4, 3),
-    ("three", CaseSensitivity.INSENSITIVE, 3, 2),
+@pytest.mark.parametrize("word,original,remaining", [
+    ("one", 5, 4),
+    ("two", 5, 4),
+    ("three", 5, 2),
 ])
-def test_ban_unban_word(loaded_backend, word, case, original, remaining):
+def test_ban_unban_word(loaded_backend, word, original, remaining):
     backend = loaded_backend
 
     # Pre-ban
-    assert backend.check_banned(word, case) is False
-    assert len(backend.list_words(0, WordMetadataAttr.frequency, True, case)) == original
-    assert backend.list_banned_words(0, BanlistAttr.word, True) == (set(), set())
+    assert backend.check_banned(word) is False
+    assert len(backend.list_words(sort_by=WordMetadataAttr.frequency, case=CaseSensitivity.SENSITIVE)) == original
+    assert backend.list_banned_words(0, BanlistAttr.word, True) == []
 
-    assert backend.ban_word(word, case, TIME) is True
+    assert backend.ban_word(word, TIME) is True
 
     # Post-ban, pre-unban
-    assert backend.check_banned(word, case) is True
-    assert backend.get_word_metadata(word, case) is None
+    assert backend.check_banned(word) is True
+    assert backend.get_word_metadata(word, CaseSensitivity.INSENSITIVE) is None
     assert backend.log_word(word, TIME, TIME) is False
-    res, res1 = backend.list_banned_words(0, BanlistAttr.word, True)
-    res, res1 = list(res), list(res1)
-    if case == CaseSensitivity.INSENSITIVE:
-        assert res1[0].word == word or res1[1].word == word
-        res_word = res1[0] if res1[0].word == word else res1[1]
-    else:
-        assert len(res) == 2 if case == CaseSensitivity.FIRST_CHAR else 1
-        assert res[0].word == word or res[1].word == word
-        res_word = res[0] if res[0].word == word else res[1]
+    res = backend.list_banned_words(0, BanlistAttr.word, True)
+    res_word = None
+    for w in res:
+        if w.word == word:
+            res_word = w
+            break
+    assert res_word is not None
     assert close_to(res_word.date_added, TIME)
-    assert len(backend.list_words(0, WordMetadataAttr.frequency, True, case)) == remaining
+    assert len(backend.list_words(0, WordMetadataAttr.frequency, True, CaseSensitivity.SENSITIVE)) == remaining
 
-    backend.unban_word(word, case)
+    backend.unban_word(word)
 
     # Post-unban
-    assert backend.check_banned(word, case) is False
-    assert backend.list_banned_words(0, BanlistAttr.word, False) == (set(), set())
+    assert backend.check_banned(word) is False
+    assert backend.list_banned_words(0, BanlistAttr.word, False) == []
 
 
 def test_dup_ban_unban(loaded_backend):
     backend = loaded_backend
-    assert backend.ban_word("one", CaseSensitivity.SENSITIVE, TIME) is True
-    assert backend.ban_word("one", CaseSensitivity.SENSITIVE, TIME) is False
-    assert backend.unban_word("one", CaseSensitivity.SENSITIVE) is True
-    assert backend.unban_word("one", CaseSensitivity.SENSITIVE) is False
+    assert backend.ban_word("one", TIME) is True
+    assert backend.ban_word("one", TIME) is False
+    assert backend.unban_word("one") is True
+    assert backend.unban_word("one") is False
 
 
 def test_num_words(loaded_backend):

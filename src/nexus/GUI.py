@@ -1,19 +1,20 @@
 import argparse
+import logging
 import os
 import signal
 from threading import Thread
 from pathlib import Path
 from typing import Literal
 
+from cryptography import fernet as cryptography
 from PySide6.QtCore import Qt, QTranslator, QLocale
 from PySide6.QtWidgets import QApplication, QPushButton, QStatusBar, QTableWidget, QTableWidgetItem, QMainWindow, \
-    QDialog, QFileDialog, QMenu, QSystemTrayIcon, QMessageBox
+    QDialog, QFileDialog, QMenu, QSystemTrayIcon, QMessageBox, QInputDialog, QLineEdit
 from PySide6.QtGui import QIcon, QAction
 
 from nexus import __id__, __version__
 from nexus.Freqlog import Freqlog
 from nexus.ui.BanlistDialog import Ui_BanlistDialog
-from nexus.ui.BanwordDialog import Ui_BanwordDialog
 from nexus.ui.MainWindow import Ui_MainWindow
 from nexus.style import Stylesheet, Colors
 
@@ -26,11 +27,12 @@ if os.name == 'nt':  # Needed for taskbar icon on Windows
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(f"{__id__}.{__version__}")
 
 
+# TODO: see if we need to add a parent arg to any of these classes (for their super() calls)
 class MainWindow(QMainWindow, Ui_MainWindow):
     """Set up the main window. Required because Qt is a PITA."""
 
     def __init__(self):
-        super(MainWindow, self).__init__()
+        super().__init__()
         self.setupUi(self)
 
 
@@ -38,26 +40,8 @@ class BanlistDialog(QDialog, Ui_BanlistDialog):
     """Set up the banlist dialog. Required because Qt is a PITA."""
 
     def __init__(self):
-        super(BanlistDialog, self).__init__()
-        self.setupUi(self)
-
-
-class BanwordDialog(QDialog, Ui_BanwordDialog):
-    """Set up the banword dialog. Required because Qt is a PITA."""
-
-    def __init__(self):
-        super(BanwordDialog, self).__init__()
-        self.setupUi(self)
-
-
-class ConfirmDialog(QMessageBox):
-    def __init__(self, title: str, message: str, ok_callback: callable) -> None:
         super().__init__()
-        self.setWindowTitle(title)
-        self.setText(message)
-        self.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-        self.buttonClicked.connect(
-            lambda btn: ok_callback() if btn == self.button(QMessageBox.StandardButton.Ok) else self.reject())
+        self.setupUi(self)
 
 
 class Translator(QTranslator):
@@ -217,22 +201,45 @@ class GUI(object):
         self.set_style('Nexus_Dark')
 
         self.freqlog: Freqlog | None = None  # for logging
-        try:
-            self.temp_freqlog: Freqlog = Freqlog(args.freqlog_db_path, loggable=False,
-                                                 upgrade_callback=self.prompt_for_upgrade)  # for other operations
-        except Exception as e:
-            ConfirmDialog(self.tr("GUI", "Error"), self.tr("GUI", "Error opening database: {}").format(e),
-                          self.graceful_quit).exec()
-            raise PermissionError(e)
+        self.temp_freqlog: Freqlog | None = None  # for other operations
         self.logging_thread: Thread | None = None
         self.start_stop_button_started = False
         self.args = args
 
+        # FIXME: move this block into exec() after window.show() and before app.exec()
+        # Get password
+        while True:
+            try:
+                self.password = self.prompt_for_password(
+                    new=not Freqlog.is_backend_initialized(self.args.freqlog_db_path))
+            except ValueError as e:
+                QMessageBox.critical(self.window, self.tr("GUI", "Error"), str(e))
+                logging.error(e)
+                continue
+            except InterruptedError:
+                raise
+
+            # Initialize backend
+            try:
+                self.temp_freqlog: Freqlog = Freqlog(self.args.freqlog_db_path, self.password, loggable=False,
+                                                     upgrade_callback=self.prompt_for_upgrade)  # for other operations
+                break
+            except cryptography.InvalidToken:
+                QMessageBox.critical(self.window, self.tr("GUI", "Error"),
+                                     self.tr("GUI", "Incorrect password"))
+                logging.error("Incorrect password")
+            except Exception as e:
+                QMessageBox.critical(self.window, self.tr("GUI", "Error"),
+                                     self.tr("GUI", "Error opening database: {}").format(e))
+                raise
+        # END FIXME
+
         # Auto-refresh - must go at the end
-        self.window.chentry_entries_input.valueChanged.connect(self.refresh)
-        self.window.chord_entries_input.valueChanged.connect(self.refresh)
-        self.window.chentry_search_input.textChanged.connect(self.refresh)
-        self.window.chord_search_input.textChanged.connect(self.refresh)
+        # TODO: does it?
+        self.window.chentry_entries_input.valueChanged.connect(self.refresh_chentry_table)
+        self.window.chord_entries_input.valueChanged.connect(self.refresh_chord_table)
+        self.window.chentry_search_input.textChanged.connect(self.refresh_chentry_table)
+        self.window.chord_search_input.textChanged.connect(self.refresh_chord_table)
 
     def show_hide(self, reason):
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
@@ -254,11 +261,12 @@ class GUI(object):
     def start_logging(self):
         if not self.freqlog:
             try:
-                self.freqlog = Freqlog(self.args.freqlog_db_path, loggable=True)
+                self.freqlog = Freqlog(self.args.freqlog_db_path, self.password, loggable=True)
             except Exception as e:
-                ConfirmDialog(self.tr("GUI", "Error"), self.tr("GUI", "Error opening database: {}").format(e),
-                              self.graceful_quit).exec()
-                raise PermissionError(e)
+                QMessageBox.critical(self.window, self.tr("GUI", "Error"),
+                                     self.tr("GUI", "Error opening database: {}").format(e))
+                self.graceful_quit()
+                raise
         self.freqlog.start_logging()
 
     def stop_logging(self):
@@ -437,49 +445,28 @@ class GUI(object):
 
         def _refresh_banlist():
             """Refresh banlist table"""
-            banlist_case, banlist_caseless = self.temp_freqlog.list_banned_words()
-            bl_dialog.banlistTable.setRowCount(len(banlist_case) + len(banlist_caseless))
-            for i, word in enumerate(banlist_case):
+            banlist = self.temp_freqlog.list_banned_words()
+            bl_dialog.banlistTable.setRowCount(len(banlist))
+            for i, word in enumerate(banlist):
                 bl_dialog.banlistTable.setItem(i, 0, QTableWidgetItem(word.word))
-                bl_dialog.banlistTable.setItem(i, 1,
-                                               QTableWidgetItem(
-                                                   str(word.date_added.isoformat(sep=" ", timespec="seconds"))))
-                bl_dialog.banlistTable.setItem(i, 2, QTableWidgetItem("Sensitive"))
-            for i, word in enumerate(banlist_caseless):
-                bl_dialog.banlistTable.setItem(i + len(banlist_case), 0, QTableWidgetItem(word.word))
-                bl_dialog.banlistTable.setItem(i + len(banlist_case), 1,
-                                               QTableWidgetItem(
-                                                   str(word.date_added.isoformat(sep=" ", timespec="seconds"))))
-                bl_dialog.banlistTable.setItem(i + len(banlist_case), 2, QTableWidgetItem("Insensitive"))
+                bl_dialog.banlistTable.setItem(i, 1, QTableWidgetItem(
+                    str(word.date_added.isoformat(sep=" ", timespec="seconds"))))
             bl_dialog.banlistTable.resizeColumnsToContents()
 
         _refresh_banlist()
 
         def _banword():
             """Controller for banword button"""
-            bw_dialog = BanwordDialog()
-
-            def _add_banword():
-                """Controller for add button in banword dialog"""
-                word = bw_dialog.wordInput.text()
-
+            word, ok = QInputDialog.getText(self.window, self.tr("GUI", "Ban word"), self.tr("GUI", "Word to ban:"))
+            if ok and word:
                 # Truncate word for display if too long
                 display_word = word if len(word) <= 20 else word[:17] + "…" + word[-3:]
 
-                # Ban word by selected case
-                if bw_dialog.sensitive.isChecked():
-                    res = self.temp_freqlog.ban_word(word, CaseSensitivity.SENSITIVE)
-                elif bw_dialog.firstChar.isChecked():
-                    res = self.temp_freqlog.ban_word(word, CaseSensitivity.FIRST_CHAR)
-                else:
-                    res = self.temp_freqlog.ban_word(word, CaseSensitivity.INSENSITIVE)
+                # Ban word
+                res = self.temp_freqlog.ban_word(word)
                 self.statusbar.showMessage(self.tr("GUI", "Banned '{}'").format(display_word) if res else
                                            self.tr("GUI", "'{}' already banned").format(display_word))
-
-            # Connect Ok button to add_banword
-            bw_dialog.buttonBox.accepted.connect(_add_banword)
-            bw_dialog.exec()
-            _refresh_banlist()
+                _refresh_banlist()
 
         def _remove_banword():
             """Controller for remove button in banlist dialog"""
@@ -489,14 +476,10 @@ class GUI(object):
                 return
 
             # Get word(s) from selected row(s)
-            selected_words = {}
-            for row in selected_rows:
-                selected_words[
-                    bl_dialog.banlistTable.item(row.row(), 0).text()
-                ] = (CaseSensitivity.SENSITIVE if bl_dialog.banlistTable.item(row.row(), 2).text() == "Sensitive"
-                     else CaseSensitivity.INSENSITIVE)
+            selected_words = [bl_dialog.banlistTable.item(row.row(), 0).text() for row in selected_rows]
+            display_word = None
             if len(selected_words) == 1:
-                display_word = list(selected_words.keys())[0]
+                display_word = selected_words[0]
 
                 # Truncate word for display if too long
                 display_word = display_word if len(display_word) <= 20 else display_word[:17] + "…" + display_word[-3:]
@@ -504,8 +487,8 @@ class GUI(object):
             else:
                 confirm_text = self.tr("GUI", "Unban {} words?".format(len(selected_words)))
 
-            def _confirm_unban():
-                """Controller for OK button in confirm dialog"""
+            if QMessageBox.question(self.window, self.tr("GUI", "Confirm unban"),
+                                    confirm_text.format(len(selected_words))) == QMessageBox.StandardButton.Yes:
                 res = self.temp_freqlog.unban_words(selected_words).count(True)
                 if len(selected_words) == 1:
                     self.statusbar.showMessage(self.tr("GUI", "Unbanned '{}'").format(display_word) if res else
@@ -515,10 +498,7 @@ class GUI(object):
                 else:
                     self.statusbar.showMessage(
                         self.tr("GUI", "Unbanned {}/{} selected words").format(res, len(selected_words)))
-
-            ConfirmDialog(self.tr("GUI", "Confirm unban"), confirm_text.format(len(selected_words)),
-                          ok_callback=_confirm_unban).exec()
-            _refresh_banlist()
+                _refresh_banlist()
 
         bl_dialog.addButton.clicked.connect(_banword)
         bl_dialog.removeButton.clicked.connect(_remove_banword)
@@ -548,11 +528,11 @@ class GUI(object):
         """Controller for right click menu/delete key banword"""
         # Get word(s) from selected row(s)
         table = self.chord_table if is_chord else self.chentry_table
-        selected_words = {table.item(row.row(), 0).text(): CaseSensitivity.INSENSITIVE for row in
-                          table.selectionModel().selectedRows()}
+        selected_words = [table.item(row.row(), 0).text() for row in table.selectionModel().selectedRows()]
+        display_word = None
         if len(selected_words) == 1:
             # Truncate word for display if too long
-            word = list(selected_words.keys())[0]
+            word = selected_words[0]
             display_word = word if len(word) <= 20 else word[:17] + "…" + word[-3:]
             confirm_text = self.tr("GUI", "Ban and delete '{}'?".format(display_word))
         else:
@@ -561,8 +541,8 @@ class GUI(object):
             else:
                 confirm_text = self.tr("GUI", "Ban and delete {} words?".format(len(selected_words)))
 
-        def _confirm_ban():
-            """Controller for OK button in confirm dialog"""
+        if QMessageBox.question(self.window, self.tr("GUI", "Confirm ban"),
+                                confirm_text.format(len(selected_words))) == QMessageBox.StandardButton.Yes:
             res = self.temp_freqlog.ban_words(selected_words).count(True)
             self.refresh()
             if len(selected_words) == 1:
@@ -581,8 +561,6 @@ class GUI(object):
                     self.statusbar.showMessage(
                         self.tr("GUI", "Banned and deleted {}/{} selected words").format(res, len(selected_words)))
 
-        ConfirmDialog(self.tr("GUI", "Confirm ban"), confirm_text.format(len(selected_words)), _confirm_ban).exec()
-
     def delete_entry(self, is_chord=False):
         """Controller for right click menu/delete key delete entry"""
         # Get word(s) from selected row(s)
@@ -590,6 +568,7 @@ class GUI(object):
         selected_words = ([table.item(row.row(), 0).text() for row in table.selectionModel().selectedRows()]
                           if is_chord else {table.item(row.row(), 0).text(): CaseSensitivity.INSENSITIVE for row in
                                             table.selectionModel().selectedRows()})
+        display_word = None
         if len(selected_words) == 1:
             # Truncate word for display if too long
             word = list(selected_words.keys())[0]
@@ -601,8 +580,8 @@ class GUI(object):
             else:
                 confirm_text = self.tr("GUI", "Delete {} words?".format(len(selected_words)))
 
-        def _confirm_delete():
-            """Controller for OK button in confirm dialog"""
+        if QMessageBox.question(self.window, self.tr("GUI", "Confirm delete"),
+                                confirm_text.format(len(selected_words))) == QMessageBox.StandardButton.Yes:
             if is_chord:
                 res = self.temp_freqlog.delete_logged_chords(selected_words).count(True)
             else:
@@ -624,21 +603,44 @@ class GUI(object):
                     self.statusbar.showMessage(
                         self.tr("GUI", "Deleted {}/{} selected words").format(res, len(selected_words)))
 
-        ConfirmDialog(self.tr("GUI", "Confirm delete"), confirm_text.format(len(selected_words)),
-                      _confirm_delete).exec()
-
     def prompt_for_upgrade(self, db_version: str) -> None:
         """Prompt user to upgrade"""
-        msg_box = QMessageBox()
-        msg_box.setWindowTitle(self.tr("GUI", "Database Upgrade"))
-        msg_box.setText(self.tr("GUI", "You are running version {} of nexus, but your database is on version {}."
-                                       "\nBackup your database before pressing 'Yes' to upgrade your database, or press"
-                                       " 'No' to exit without upgrading.").format(__version__, db_version))
-        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        result = msg_box.exec()
-
-        if result != QMessageBox.StandardButton.Yes:
+        if (QMessageBox.question(
+                self.window, self.tr("GUI", "Database Upgrade"),
+                self.tr("GUI", "You are running version {} of nexus, but your database is on version {}.\n"
+                               "Backup your database before pressing 'Yes' to upgrade your database, or press 'No' "
+                               "to exit without upgrading.").format(__version__, db_version))
+                == QMessageBox.StandardButton.No):
             raise PermissionError("Database upgrade cancelled")
+
+    def prompt_for_password(self, new: bool = False) -> str:
+        """
+        Prompt for password
+        :param new: Whether to ask for a new password
+        """
+        password, ok = QInputDialog.getText(self.window, self.tr("GUI", "Banlist Password"),
+                                            self.tr("GUI",
+                                                    "Choose a new password to encrypt your banlist with:") if new else
+                                            self.tr("GUI", "Enter your banlist password:"),
+                                            QLineEdit.EchoMode.Password)
+        if not ok:
+            raise InterruptedError("Password prompt cancelled")
+        if new:
+            if len(password) < 8:
+                if (QMessageBox.warning(self.window, self.tr("GUI", "Password too short"),
+                                        self.tr("GUI", "Password should be at least 8 characters long.\n"
+                                                       "Continue without securely encrypting your banlist?"),
+                                        QMessageBox.StandardButton.Yes, QMessageBox.StandardButton.No)
+                        == QMessageBox.StandardButton.No):
+                    raise InterruptedError("Password prompt cancelled")
+            confirm_password, ok = QInputDialog.getText(self.window, self.tr("GUI", "Banlist Password"),
+                                                        self.tr("GUI", "Confirm your banlist password:"),
+                                                        QLineEdit.EchoMode.Password)
+            if not ok:
+                raise InterruptedError("Password prompt cancelled")
+            if password != confirm_password:
+                raise ValueError("Passwords do not match")
+        return password
 
     def graceful_quit(self):
         """Quit gracefully"""

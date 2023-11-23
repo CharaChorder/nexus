@@ -1,6 +1,6 @@
 .idea/
 log.txt
-nexus_freqlog_db.sqlite3
+*.sqlite3
 *.sqlite3-journal
 build/
 dist/

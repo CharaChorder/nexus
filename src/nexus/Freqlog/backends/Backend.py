@@ -27,11 +27,10 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def get_banlist_entry(self, word: str, case: CaseSensitivity) -> BanlistEntry | None:
+    def get_banlist_entry(self, word: str) -> BanlistEntry | None:
         """
         Get a banlist entry
         :param word: Word to get entry for
-        :param case: Case sensitivity
         :return: BanlistEntry if word is banned for the specified case, None otherwise
         """
 
@@ -55,14 +54,14 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def check_banned(self, word: str, case: CaseSensitivity) -> bool:
+    def check_banned(self, word: str) -> bool:
         """
         Check if a word is banned
         :returns: True if word is banned, False otherwise
         """
 
     @abstractmethod
-    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> bool:
+    def ban_word(self, word: str, time: datetime) -> bool:
         """
         Delete a word/chord entry and add it to the ban list
         :returns: True if word was banned, False if it was already banned
@@ -76,7 +75,7 @@ class Backend(ABC):
         """
 
     @abstractmethod
-    def unban_word(self, word: str, case: CaseSensitivity) -> bool:
+    def unban_word(self, word: str) -> bool:
         """
         Remove a word from the ban list
         :returns: True if word was unbanned, False if it was already not banned
@@ -126,13 +125,13 @@ class Backend(ABC):
 
     @abstractmethod
     def list_banned_words(self, limit: int, sort_by: BanlistAttr,
-                          reverse: bool) -> tuple[set[BanlistEntry], set[BanlistEntry]]:
+                          reverse: bool) -> list[BanlistEntry]:
         """
         List banned words
         :param limit: Maximum number of banned words to return
         :param sort_by: Attribute to sort by: word
         :param reverse: Reverse sort order
-        :returns: Tuple of (banned words with case, banned words without case)
+        :returns: List of banned words
         """
 
     @abstractmethod
