@@ -194,6 +194,9 @@ class SQLiteBackend(Backend):
                         f"{old_version}")
 
         # TODO: update this function when changing DDL
+        if old_version < '0.4.1':
+            raise NotImplementedError("Database version <0.4.1 is not supported by newer versions of Nexus, run v0.4.1"
+                                      "to upgrade to that version first, before upgrading to a newer version.")
         if old_version < '0.5.0':
             # Merge data in banlist table into banlist_lower and drop banlist table
             self._execute("INSERT OR IGNORE INTO banlist_lower SELECT word, dateadded FROM banlist")
