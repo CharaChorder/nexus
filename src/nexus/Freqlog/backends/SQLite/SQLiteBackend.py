@@ -72,7 +72,7 @@ class SQLiteBackend(Backend):
 
         # Encode major, minor and patch version into a single 4-byte integer
         sql_version: int = self.encode_version(__version__)
-        if old_version < sql_version:
+        if old_version < sql_version and old_version != 0:
             self._upgrade_database(self.decode_version(old_version))
         elif old_version > sql_version:
             raise ValueError(
