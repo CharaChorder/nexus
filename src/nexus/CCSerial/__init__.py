@@ -1,4 +1,4 @@
-"""nexus module Freqlog: frequency logging for words and chords."""
+"""nexus module CCSerial: interfacing with cc devices using the serial api."""
 
 __all__ = ["CCSerial"]
 
