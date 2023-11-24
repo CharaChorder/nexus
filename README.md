@@ -26,8 +26,6 @@ python dist.py
 
 Running `dist.py` without any args detects your OS, sets up a virtualenv, installs reqs, converts UI files, and generates a platform-dependent executable in the `dist/` directory.
 
-Note: the CI-generated binaries (in releases) don't work at the moment (see [#6 CI doesn't work](https://github.com/CharaChorder/nexus/issues/6)).
-
 ## Usage
 
 ```
