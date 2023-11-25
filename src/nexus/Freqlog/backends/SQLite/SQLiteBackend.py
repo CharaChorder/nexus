@@ -108,8 +108,7 @@ class SQLiteBackend(Backend):
         """
         if self.upgrade_callback:
             self.upgrade_callback(old_version)
-        logging.warning(f"Upgrading database from {self.decode_version(self._fetchone('PRAGMA user_version')[0])} to "
-                        f"{old_version}")
+        logging.warning(f"Upgrading database from {old_version} to {__version__}")
 
         # TODO: populate this function when changing DDL
 
