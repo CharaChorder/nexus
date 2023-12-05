@@ -229,7 +229,7 @@ class GUI(object):
     def start_logging(self):
         if not self.freqlog:
             try:
-                self.freqlog = Freqlog(self.args.freqlog_db_path, self.password, loggable=True)
+                self.freqlog = Freqlog(self.args.freqlog_db_path, lambda _: self.password, loggable=True)
             except Exception as e:
                 QMessageBox.critical(self.window, self.tr("GUI", "Error"),
                                      self.tr("GUI", "Error opening database: {}").format(e))
@@ -594,30 +594,38 @@ class GUI(object):
         Prompt for password
         :param new: Whether to ask for a new password
         """
-        password, ok = QInputDialog.getText(self.window, self.tr("GUI", "Banlist Password"),
-                                            self.tr("GUI",
-                                                    "Choose a new password to encrypt your banlist with:") if new else
-                                            self.tr("GUI", "Enter your banlist password:"),
-                                            QLineEdit.EchoMode.Password)
-        if not ok:
-            raise InterruptedError("Password prompt cancelled")
-        if new:
-            if len(password) < 8:
-                if (QMessageBox.warning(self.window, self.tr("GUI", "Password too short"),
-                                        self.tr("GUI", "Password should be at least 8 characters long.\n"
-                                                       "Continue without securely encrypting your banlist?"),
-                                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                        defaultButton=QMessageBox.StandardButton.No)
-                        == QMessageBox.StandardButton.No):
+        while True:
+            try:
+                password, ok = QInputDialog.getText(
+                    self.window, self.tr("GUI", "Banlist Password"),
+                    self.tr("GUI", "Choose a new password to encrypt your banlist with:") if new else
+                    self.tr("GUI", "Enter your banlist password:"), QLineEdit.EchoMode.Password)
+                if not ok:
                     raise InterruptedError("Password prompt cancelled")
-            confirm_password, ok = QInputDialog.getText(self.window, self.tr("GUI", "Banlist Password"),
-                                                        self.tr("GUI", "Confirm your banlist password:"),
-                                                        QLineEdit.EchoMode.Password)
-            if not ok:
-                raise InterruptedError("Password prompt cancelled")
-            if password != confirm_password:
-                raise ValueError("Passwords do not match")
-        return password
+                if new:
+                    if len(password) < 8:
+                        if (QMessageBox.warning(self.window, self.tr("GUI", "Password too short"),
+                                                self.tr("GUI", "Password should be at least 8 characters long.\n"
+                                                               "Continue without securely encrypting your banlist?"),
+                                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                                defaultButton=QMessageBox.StandardButton.No)
+                                == QMessageBox.StandardButton.No):
+                            raise InterruptedError("Password prompt cancelled")
+                    confirm_password, ok = QInputDialog.getText(self.window, self.tr("GUI", "Banlist Password"),
+                                                                self.tr("GUI", "Confirm your banlist password:"),
+                                                                QLineEdit.EchoMode.Password)
+                    if not ok:
+                        raise InterruptedError("Password prompt cancelled")
+                    if password != confirm_password:
+                        raise ValueError("Passwords do not match")
+                self.password = password
+                return password
+            except ValueError as e:
+                QMessageBox.critical(self.window, self.tr("GUI", "Error"), str(e))
+                logging.error(e)
+                continue
+            except InterruptedError:
+                raise
 
     def graceful_quit(self):
         """Quit gracefully"""
@@ -634,22 +642,11 @@ class GUI(object):
         # Start GUI
         self.window.show()
 
-        # Get password
+        # Initialize backend
         while True:
             try:
-                self.password = self.prompt_for_password(
-                    new=not Freqlog.is_backend_initialized(self.args.freqlog_db_path))
-            except ValueError as e:
-                QMessageBox.critical(self.window, self.tr("GUI", "Error"), str(e))
-                logging.error(e)
-                continue
-            except InterruptedError:
-                raise
-
-            # Initialize backend
-            try:
-                self.temp_freqlog: Freqlog = Freqlog(self.args.freqlog_db_path, self.password, loggable=False,
-                                                     upgrade_callback=self.prompt_for_upgrade)  # for other operations
+                self.temp_freqlog = Freqlog(self.args.freqlog_db_path, self.prompt_for_password, loggable=False,
+                                            upgrade_callback=self.prompt_for_upgrade)  # for other operations
                 break
             except cryptography.InvalidToken:
                 QMessageBox.critical(self.window, self.tr("GUI", "Error"),

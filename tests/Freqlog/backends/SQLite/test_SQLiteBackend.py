@@ -10,7 +10,7 @@ TIME = datetime.now()
 
 @pytest.fixture(autouse=True)
 def loaded_backend() -> SQLiteBackend:
-    backend = SQLiteBackend(":memory:", "test")
+    backend = SQLiteBackend(":memory:", lambda _: "test")
     backend.log_word("one", TIME - timedelta(seconds=0.5), TIME)
     backend.log_word("two", TIME + timedelta(minutes=1) - timedelta(seconds=2), TIME + timedelta(minutes=1))
     backend.log_word("two", TIME + timedelta(minutes=2) - timedelta(seconds=3), TIME + timedelta(minutes=2))

@@ -104,9 +104,9 @@ class Freqlog:
             # Only log words/chords that have >= min_length characters
             if len(word) >= min_length:
                 if avg_char_time_after_last_bs and avg_char_time_after_last_bs > timedelta(
-                        milliseconds=self.chord_char_threshold):  # word, based on backspace timing
+                        milliseconds=self.chord_char_threshold):  # Word, based on backspace timing
                     self._log_word(word, word_start_time, word_end_time)
-                else:  # chord
+                else:  # Chord
                     self._log_chord(word, word_start_time, word_end_time)
 
             word = ""
@@ -149,7 +149,7 @@ class Freqlog:
                             word = word[:word.rfind("\t")]
                         elif "\n" in word:
                             word = word[:word.rfind("\n")]
-                        else:  # word is only one word
+                        else:  # Word is only one word
                             word = ""
                     else:
                         word = word[:-1]
@@ -202,7 +202,7 @@ class Freqlog:
                     word_end_time = time_pressed
                     self.q.task_done()
 
-            except EmptyException:  # queue is empty
+            except EmptyException:  # Queue is empty
                 # If word is older than NEW_WORD_THRESHOLD seconds, log and reset word
                 if word:
                     _log_and_reset_word()
@@ -242,12 +242,13 @@ class Freqlog:
         """
         return SQLiteBackend.is_db_populated(backend_path)
 
-    def __init__(self, backend_path: str, password: str, loggable: bool = True,
+    def __init__(self, backend_path: str, password_callback: callable, loggable: bool = True,
                  upgrade_callback: callable = None) -> None:
         """
         Initialize Freqlog
         :param backend_path: Path to backend (currently == SQLiteBackend)
-        :param password: Password to backend
+        :param password_callback: Callback to call to get password to encrypt/decrypt banlist entries
+                Should take one argument: whether the password is being set for the first time
         :param loggable: Whether to create listeners
         :param upgrade_callback: Callback to run if database is upgraded
         :raises ValueError: If the database version is newer than the current version
@@ -291,7 +292,7 @@ class Freqlog:
             if self.dev:
                 self.dev.close()
 
-        self.backend: Backend = SQLiteBackend(backend_path, password, upgrade_callback)
+        self.backend: Backend = SQLiteBackend(backend_path, password_callback, upgrade_callback)
         self.q: Queue = Queue()
         self.listener: kbd.Listener | None = None
         self.mouse_listener: mouse.Listener | None = None

@@ -86,8 +86,13 @@ class SQLiteBackend(Backend):
                 raise PermissionError(f"Database path {db_path} is not readable")
             if not os.access(db_path, os.W_OK):
                 raise PermissionError(f"Database path {db_path} is not writable")
-            if os.stat(db_path).st_size == 0:
+            if os.stat(db_path).st_size == 0:  # Empty file
                 return False
+            tmp_conn = sqlite3.connect(db_path)
+            if tmp_conn.cursor().execute("PRAGMA user_version").fetchone()[0] == 0:
+                tmp_conn.close()
+                return False
+            tmp_conn.close()
             return True
         else:
             parent_dir = os.path.dirname(db_path) or os.curdir
@@ -97,11 +102,12 @@ class SQLiteBackend(Backend):
                 raise PermissionError(f"Database path {db_path} is not writable")
             return False
 
-    def __init__(self, db_path: str, password: str, upgrade_callback: callable = None) -> None:
+    def __init__(self, db_path: str, password_callback: callable, upgrade_callback: callable = None) -> None:
         """
         Initialize the SQLite backend
         :param db_path: Path to the database file
-        :param password: Password to encrypt/decrypt banlist entries
+        :param password_callback: Callback to call to get password to encrypt/decrypt banlist entries
+                Should take one argument: whether the password is being set for the first time
         :param upgrade_callback: Callback to call when upgrading the database.
                 Should take one argument: the new version, and call sys.exit() if an upgrade is unwanted
         :raises ValueError: If the database version is newer than the current version
@@ -111,18 +117,19 @@ class SQLiteBackend(Backend):
         :raises cryptography.fernet.InvalidToken: If the password is incorrect
         """
         self.db_path = db_path
-        self.password = password
         db_populated = self.is_db_populated(db_path)
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
+        self.password_callback = password_callback
         self.upgrade_callback = upgrade_callback
 
         # Encode major, minor and patch version into a single 4-byte integer
         sql_version: int = self.encode_version(__version__)
 
         # Declare before upgrading database (for v<0.5.0)
-        self.salt = None
-        self.fernet = None
+        self.salt: bytes | None = None
+        self.fernet: Fernet | None = None
+        self.password: str | None = None
 
         if db_populated:  # Versioning
             old_version = self._fetchone("PRAGMA user_version")[0]
@@ -131,20 +138,30 @@ class SQLiteBackend(Backend):
             elif old_version > sql_version:
                 raise ValueError(f"Database version {self.decode_version(old_version)} is newer than the current "
                                  f"version {__version__}")
+            if self.password is None:  # Get password if not set
+                self.password = self.password_callback(False)
+        else:  # Populate database
+            try:
+                self._init_db(self.cursor, sql_version)
+                self.password = self.password_callback(True)
+            except Exception:
+                self.close()
 
-        self._init_db(self.cursor, sql_version)  # TODO: only init if db doesn't exist
+                # Delete database file as it was created
+                os.remove(self.db_path)
+                raise
 
         # Fetch salt from config table and initialize Fernet for encryption/decryption using user-supplied password
         self.salt = self._fetchconfig("salt")
         self.fernet = Fernet(base64.urlsafe_b64encode(
             PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=self.salt,
-                       iterations=480000).derive(password.encode())))
+                       iterations=480000).derive(self.password.encode())))
 
         # Initialize password check if it doesn't exist
         self._execute("INSERT OR IGNORE INTO config VALUES ('check', ?)", (self.fernet.encrypt(self.salt),))
 
         # Check password
-        if not self.check_password(password):
+        if not self.check_password(self.password):
             raise cryptography.InvalidToken("Incorrect password")
 
         # Decrypt banlist
@@ -193,11 +210,34 @@ class SQLiteBackend(Backend):
         logging.warning(f"Upgrading database from {self.decode_version(self._fetchone('PRAGMA user_version')[0])} to "
                         f"{old_version}")
 
-        # TODO: update this function when changing DDL
-        if old_version < '0.4.1':
-            raise NotImplementedError("Database version <0.4.1 is not supported by newer versions of Nexus, run v0.4.1"
-                                      "to upgrade to that version first, before upgrading to a newer version.")
+        if old_version < '0.4.1':  # Restore first 4 tables
+            # Freqloq table
+            self._execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
+                          "lastused timestamp NOT NULL, avgspeed REAL NOT NULL) WITHOUT ROWID")
+            self._execute("CREATE INDEX IF NOT EXISTS freqlog_lower ON freqlog(word COLLATE NOCASE)")
+            self._execute("CREATE INDEX IF NOT EXISTS freqlog_frequency ON freqlog(frequency)")
+            self._execute("CREATE UNIQUE INDEX IF NOT EXISTS freqlog_lastused ON freqlog(lastused)")
+            self._execute("CREATE INDEX IF NOT EXISTS freqlog_avgspeed ON freqlog(avgspeed)")
+
+            # Chordlog table
+            self._execute("CREATE TABLE IF NOT EXISTS chordlog (chord TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
+                          "lastused timestamp NOT NULL) WITHOUT ROWID")
+            self._execute("CREATE INDEX IF NOT EXISTS chordlog_frequency ON chordlog(frequency)")
+            self._execute("CREATE UNIQUE INDEX IF NOT EXISTS chordlog_lastused ON chordlog(lastused)")
+
+            # Banlist tables
+            self._execute("CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) "
+                          "WITHOUT ROWID")
+            self._execute("CREATE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
+            self._execute("CREATE TABLE IF NOT EXISTS banlist_lower (word TEXT PRIMARY KEY COLLATE NOCASE, "
+                          "dateadded timestamp NOT NULL) WITHOUT ROWID")
+
+            # Bump version
+            self._execute(f"PRAGMA user_version = {self.encode_version('0.4.1')}")
         if old_version < '0.5.0':
+            # Get password
+            self.password = self.password_callback(True)
+
             # Merge data in banlist table into banlist_lower and drop banlist table
             self._execute("INSERT OR IGNORE INTO banlist_lower SELECT word, dateadded FROM banlist")
 
@@ -225,6 +265,10 @@ class SQLiteBackend(Backend):
 
             # Drop banlist_lower table
             self._execute("DROP TABLE banlist_lower")
+
+            # Bump version
+            self._execute(f"PRAGMA user_version = {self.encode_version('0.5.0')}")
+        # TODO: update this function when changing DDL
 
     def get_version(self) -> str:
         """Get the version of the database"""
@@ -278,7 +322,7 @@ class SQLiteBackend(Backend):
                                            timedelta(seconds=res_u[3])) if res_u else None
                 word_meta_l = WordMetadata(word, res_l[1], datetime.fromtimestamp(res_l[2]),
                                            timedelta(seconds=res_l[3])) if res_l else None
-                if not word_meta_u:  # first operand in or must not be None
+                if not word_meta_u:  # First operand in or must not be None
                     return word_meta_l
                 return word_meta_u | word_meta_l
             case CaseSensitivity.SENSITIVE:
@@ -522,13 +566,15 @@ class SQLiteBackend(Backend):
         return res[:limit] if limit > 0 else res
 
     def merge_backend(self, src_db_path: str, dst_db_path: str, ban_date: Age,
-                      src_db_passwd: str, dst_db_passwd: str) -> None:
+                      src_db_passwd_callback: callable, dst_db_passwd_callback: callable) -> None:
         """
         Merge another database and this one into a new database
         :param src_db_path: Path to the source database
         :param dst_db_path: Path to the destination database
-        :param src_db_passwd: Password to decrypt the source database banlist
-        :param dst_db_passwd: Password to decrypt the destination database banlist
+        :param src_db_passwd_callback: Callback to call to get password to decrypt the source database banlist
+                Should take one argument: whether the password is being set for the first time
+        :param dst_db_passwd_callback: Callback to call to get password to decrypt the destination database banlist
+                Should take one argument: whether the password is being set for the first time
         :param ban_date: Whether to use older or newer date banned for banlist entries of the same word (OLDER or NEWER)
         :requires: src_db_path != dst_db_path != self.db_path
         :requires: src_db_path must be a valid Freqlog database and readable
@@ -544,7 +590,7 @@ class SQLiteBackend(Backend):
             raise ValueError("dst_db_path and self.db_path must be different")
         if os.path.isfile(dst_db_path):
             raise ValueError("dst_db_path must not be an existing file")
-        try:  # ensure that src is writable (WARNING: Must use 'a' instead of 'w' mode to avoid erasing file!!!)
+        try:  # Ensure that src is writable (WARNING: Must use 'a' instead of 'w' mode to avoid erasing file!!!)
             with open(src_db_path, "a"):
                 pass
         except OSError as e:
@@ -556,8 +602,8 @@ class SQLiteBackend(Backend):
             raise ValueError("dst_db_path must be writable") from e
 
         # DB meta
-        src_db = SQLiteBackend(src_db_path, src_db_passwd, self.upgrade_callback)
-        dst_db = SQLiteBackend(dst_db_path, dst_db_passwd)
+        src_db = SQLiteBackend(src_db_path, src_db_passwd_callback, self.upgrade_callback)
+        dst_db = SQLiteBackend(dst_db_path, dst_db_passwd_callback)
 
         # Merge databases
         # TODO: optimize this/add progress bars (this takes a long time)
