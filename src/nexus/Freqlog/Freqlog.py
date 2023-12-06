@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timedelta
 from queue import Empty as EmptyException, Queue
 from threading import Thread
+from typing import Optional
 
 from pynput import keyboard as kbd, mouse
 from serial import SerialException
@@ -243,7 +244,7 @@ class Freqlog:
         return SQLiteBackend.is_db_populated(backend_path)
 
     def __init__(self, backend_path: str, password_callback: callable, loggable: bool = True,
-                 upgrade_callback: callable = None) -> None:
+                 upgrade_callback: Optional[callable] = None) -> None:
         """
         Initialize Freqlog
         :param backend_path: Path to backend (currently == SQLiteBackend)

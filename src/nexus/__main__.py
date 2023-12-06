@@ -169,6 +169,8 @@ def main():
 
     exit_code = 0
 
+    # TODO: Check for updates on startup
+
     # Show GUI if no command is given
     if not args.command:
         try:

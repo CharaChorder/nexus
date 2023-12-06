@@ -642,6 +642,8 @@ class GUI(object):
         # Start GUI
         self.window.show()
 
+        # TODO: Check for updates on startup
+
         # Initialize backend
         while True:
             try:
