@@ -94,21 +94,21 @@
     <message>
         <location filename="../src/nexus/GUI.py" line="234"/>
         <location filename="../src/nexus/GUI.py" line="624"/>
-        <location filename="../src/nexus/GUI.py" line="652"/>
-        <location filename="../src/nexus/GUI.py" line="656"/>
+        <location filename="../src/nexus/GUI.py" line="654"/>
+        <location filename="../src/nexus/GUI.py" line="658"/>
         <source>GUI</source>
         <comment>Error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/nexus/GUI.py" line="653"/>
+        <location filename="../src/nexus/GUI.py" line="655"/>
         <source>GUI</source>
         <comment>Incorrect password</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/nexus/GUI.py" line="235"/>
-        <location filename="../src/nexus/GUI.py" line="657"/>
+        <location filename="../src/nexus/GUI.py" line="659"/>
         <source>GUI</source>
         <comment>Error opening database: {}</comment>
         <translation type="unfinished"></translation>
