@@ -66,7 +66,7 @@ class GUI(object):
 
         # Translation
         self.translator: Translator = Translator(self.app)
-        if self.translator.load(QLocale.system(), 'i18n', '_', os.path.join(script_parent_path, 'translations')):
+        if self.translator.load(QLocale(), 'i18n', '_', os.path.join(script_parent_path, 'translations')):
             self.app.installTranslator(self.translator)
         self.tr = self.translator.translate
 
