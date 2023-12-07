@@ -4,6 +4,7 @@ import time
 from datetime import datetime, timedelta
 from queue import Empty as EmptyException, Queue
 from threading import Thread
+from typing import Optional
 
 from pynput import keyboard as kbd, mouse
 from serial import SerialException
@@ -104,9 +105,9 @@ class Freqlog:
             # Only log words/chords that have >= min_length characters
             if len(word) >= min_length:
                 if avg_char_time_after_last_bs and avg_char_time_after_last_bs > timedelta(
-                        milliseconds=self.chord_char_threshold):  # word, based on backspace timing
+                        milliseconds=self.chord_char_threshold):  # Word, based on backspace timing
                     self._log_word(word, word_start_time, word_end_time)
-                else:  # chord
+                else:  # Chord
                     self._log_chord(word, word_start_time, word_end_time)
 
             word = ""
@@ -149,7 +150,7 @@ class Freqlog:
                             word = word[:word.rfind("\t")]
                         elif "\n" in word:
                             word = word[:word.rfind("\n")]
-                        else:  # word is only one word
+                        else:  # Word is only one word
                             word = ""
                     else:
                         word = word[:-1]
@@ -202,7 +203,7 @@ class Freqlog:
                     word_end_time = time_pressed
                     self.q.task_done()
 
-            except EmptyException:  # queue is empty
+            except EmptyException:  # Queue is empty
                 # If word is older than NEW_WORD_THRESHOLD seconds, log and reset word
                 if word:
                     _log_and_reset_word()
@@ -232,14 +233,30 @@ class Freqlog:
         if self.dev:
             self.dev.close()
 
-    def __init__(self, path: str = Defaults.DEFAULT_DB_PATH, loggable: bool = True,
-                 upgrade_callback: callable = None) -> None:
+    @staticmethod
+    def is_backend_initialized(backend_path: str) -> bool:
+        """
+        Check if backend is initialized
+        :param backend_path: Path to backend (currently == SQLiteBackend)
+        :raises the same exceptions as SQLiteBackend.does_db_exist():
+        :return: True if backend is initialized, False otherwise
+        """
+        return SQLiteBackend.is_db_populated(backend_path)
+
+    def __init__(self, backend_path: str, password_callback: callable, loggable: bool = True,
+                 upgrade_callback: Optional[callable] = None) -> None:
         """
         Initialize Freqlog
-        :param path: Path to backend (currently == SQLiteBackend)
+        :param backend_path: Path to backend (currently == SQLiteBackend)
+        :param password_callback: Callback to call to get password to encrypt/decrypt banlist entries
+                Should take one argument: whether the password is being set for the first time
         :param loggable: Whether to create listeners
         :param upgrade_callback: Callback to run if database is upgraded
         :raises ValueError: If the database version is newer than the current version
+        :raises PermissionError: If the database path is not readable or writable
+        :raises IsADirectoryError: If the database path is not a file
+        :raises FileNotFoundError: If the database path does not exist
+        :raises cryptography.fernet.InvalidToken: If the password is incorrect
         """
         logging.info("Initializing freqlog")
         self.dev: CCSerial | None = None
@@ -267,7 +284,7 @@ class Freqlog:
 
         self.is_logging: bool = False  # Used in self._get_chords, needs to be initialized here
         if loggable:
-            logging.info(f"Logging set to freqlog db at {path}")
+            logging.info(f"Logging set to freqlog db at {backend_path}")
 
             # Asynchronously get chords from device
             if self.dev:
@@ -276,7 +293,7 @@ class Freqlog:
             if self.dev:
                 self.dev.close()
 
-        self.backend: Backend = SQLiteBackend(path, upgrade_callback)
+        self.backend: Backend = SQLiteBackend(backend_path, password_callback, upgrade_callback)
         self.q: Queue = Queue()
         self.listener: kbd.Listener | None = None
         self.mouse_listener: mouse.Listener | None = None
@@ -343,35 +360,34 @@ class Freqlog:
         logging.info(f"Getting metadata for '{chord}'")
         return self.backend.get_chord_metadata(chord)
 
-    def get_banlist_entry(self, word: str, case: CaseSensitivity) -> BanlistEntry | None:
+    def get_banlist_entry(self, word: str) -> BanlistEntry | None:
         """
         Get a banlist entry
         :param word: Word to get entry for
-        :param case: Case sensitivity
         :return: BanlistEntry if word is banned for the specified case, None otherwise
         """
-        logging.info(f"Getting banlist entry for '{word}', case {case.name}")
-        return self.backend.get_banlist_entry(word, case)
+        logging.info(f"Getting banlist entry for '{word}'")
+        return self.backend.get_banlist_entry(word)
 
-    def check_banned(self, word: str, case: CaseSensitivity) -> bool:
+    def check_banned(self, word: str) -> bool:
         """
         Check if a word is banned
         :returns: True if word is banned, False otherwise
         """
-        logging.info(f"Checking if '{word}' is banned, case {case.name}")
-        return self.backend.check_banned(word, case)
+        logging.info(f"Checking if '{word}' is banned")
+        return self.backend.check_banned(word)
 
-    def ban_word(self, word: str, case: CaseSensitivity, time_added: datetime = datetime.now()) -> bool:
+    def ban_word(self, word: str, time_added: datetime = datetime.now()) -> bool:
         """
         Delete a word/chord entry and add it to the ban list
         :returns: True if word was banned, False if it was already banned
         """
-        logging.info(f"Banning '{word}', case {case.name} - {time}")
-        res = self.backend.ban_word(word, case, time_added)
+        logging.info(f"Banning '{word}' - {time}")
+        res = self.backend.ban_word(word, time_added)
         if res:
-            logging.warning(f"Banned '{word}', case {case.name}")
+            logging.warning(f"Banned '{word}'")
         else:
-            logging.warning(f"'{word}', case {case.name} already banned")
+            logging.warning(f"'{word}' is already banned")
         return res
 
     def ban_words(self, entries: dict[str: CaseSensitivity], time_added: datetime = datetime.now()) -> list[bool]:
@@ -382,7 +398,7 @@ class Freqlog:
         :return: list of bools, True if word was banned, False if it was already banned
         """
         logging.info(f"Banning {len(entries)} words - {time_added}")
-        return [self.ban_word(word, case, time_added) for word, case in entries.items()]
+        return [self.ban_word(word, time_added) for word, case in entries.items()]
 
     def delete_word(self, word: str, case: CaseSensitivity) -> bool:
         """
@@ -406,29 +422,28 @@ class Freqlog:
         logging.info(f"Deleting {len(entries)} words")
         return [self.delete_word(word, case) for word, case in entries.items()]
 
-    def unban_word(self, word: str, case: CaseSensitivity) -> bool:
+    def unban_word(self, word: str) -> bool:
         """
         Remove a banlist entry
         :param word: Word to unban
-        :param case: Case sensitivity
         :returns: True if word was unbanned, False if it was already not banned
         """
-        logging.info(f"Unbanning '{word}', case {case.name}")
-        res = self.backend.unban_word(word, case)
+        logging.info(f"Unbanning '{word}'")
+        res = self.backend.unban_word(word)
         if res:
-            logging.warning(f"Unbanned '{word}', case {case.name}")
+            logging.warning(f"Unbanned '{word}'")
         else:
-            logging.warning(f"'{word}', case {case.name} isn't banned")
+            logging.warning(f"'{word}' isn't banned")
         return res
 
-    def unban_words(self, entries: dict[str: CaseSensitivity]) -> list[bool]:
+    def unban_words(self, entries: list[str]) -> list[bool]:
         """
         Remove multiple banlist entries
         :param entries: dict of {word to ban: case sensitivity}
         :return: list of bools, True if word was unbanned, False if it was already unbanned
         """
         logging.info(f"Unbanning {len(entries)} words")
-        return [self.unban_word(word, case) for word, case in entries.items()]
+        return [self.unban_word(word) for word in entries]
 
     def num_words(self, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> int:
         """
@@ -534,13 +549,13 @@ class Freqlog:
         return [self.delete_logged_chord(chord) for chord in chords]
 
     def list_banned_words(self, limit: int = -1, sort_by: BanlistAttr = BanlistAttr.word,
-                          reverse: bool = False) -> tuple[set[BanlistEntry], set[BanlistEntry]]:
+                          reverse: bool = False) -> list[BanlistEntry]:
         """
         List banned words
         :param limit: Maximum number of banned words to return
         :param sort_by: Attribute to sort by: word
         :param reverse: Reverse sort order
-        :returns: Tuple of (banned words with case, banned words without case)
+        :returns: List of banned words
         """
         logging.info(f"Listing banned words, limit {limit}, sort_by {sort_by}, reverse {reverse}")
         return self.backend.list_banned_words(limit, sort_by, reverse)

@@ -3,12 +3,13 @@ import logging
 import signal
 import sys
 
+from getpass import getpass
 from pynput import keyboard
 
-from nexus import __doc__, __version__, Freqlog
+from nexus import __doc__, __version__
+from nexus.Freqlog import Freqlog
 from nexus.Freqlog.Definitions import Age, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, Defaults, \
     Order, WordMetadata, WordMetadataAttr
-from nexus.Freqlog.backends.SQLite import SQLiteBackend
 from nexus.GUI import GUI
 
 
@@ -20,7 +21,7 @@ def main():
         1: Forceful keyboard interrupt during startlog / checkword result contains a banned word
         2: Invalid command or argument
         3: Invalid value for argument
-        4: Could not access or write to database
+        4: Could not access database
         5: Requested word or chord not found
         6: Tried to ban already banned word or unban already unbanned word
         7: ValueError during merge db (likely requirements not met)
@@ -118,17 +119,17 @@ def main():
 
     # Check ban
     parser_check = subparsers.add_parser("checkword", help="Check if a word is banned",
-                                         parents=[log_arg, path_arg, case_arg, upgrade_arg])
+                                         parents=[log_arg, path_arg, upgrade_arg])
     parser_check.add_argument("word", help="Word(s) to check", nargs="+")
 
     # Ban
-    parser_ban = subparsers.add_parser("banword", parents=[log_arg, path_arg, case_arg, upgrade_arg],
+    parser_ban = subparsers.add_parser("banword", parents=[log_arg, path_arg, upgrade_arg],
                                        help="Ban a word from being freqlogged and delete any existing entries of it")
     parser_ban.add_argument("word", help="Word(s) to ban", nargs="+")
 
     # Unban
     parser_unban = subparsers.add_parser("unbanword", help="Unban a word from being freqlogged",
-                                         parents=[log_arg, path_arg, case_arg, upgrade_arg])
+                                         parents=[log_arg, path_arg, upgrade_arg])
     parser_unban.add_argument("word", help="Word(s) to unban", nargs="+")
 
     # Delete word
@@ -168,21 +169,22 @@ def main():
 
     exit_code = 0
 
+    # TODO: Check for updates on startup
+
     # Show GUI if no command is given
     if not args.command:
         try:
             sys.exit(GUI(args).exec())
-        except PermissionError as e:
+        except Exception as e:
             logging.error(e)
             sys.exit(8)
 
     # Validate arguments before creating Freqlog object
     match args.command:
         case "startlog":
-            try:  # ensure that path is writable (WARNING: Must use 'a' instead of 'w' mode to avoid erasing file!!!)
-                with open(args.freqlog_db_path, "a"):
-                    pass
-            except OSError as e:
+            try:  # Validate backend
+                Freqlog.is_backend_initialized(args.freqlog_db_path)
+            except (ValueError, PermissionError, IsADirectoryError) as e:
                 logging.error(e)
                 exit_code = 4
             if args.new_word_threshold <= 0:
@@ -224,20 +226,48 @@ def main():
                 logging.error("Upgrade cancelled")
                 sys.exit(8)
 
+    def _prompt_for_password(new: bool, desc: str = "") -> str:
+        """
+        Prompt user for password
+        :param new: Whether this is a new password
+        :param desc: Description of database (optional)
+        """
+        if desc:
+            desc += " "
+        if new:
+            while True:
+                password = getpass(f"Choose a new password to encrypt your {desc}banlist with: ")
+                if len(password) < 8:
+                    logging.warning("Password should be at least 8 characters long.")
+                    if input(f"Continue without securely encrypting your {desc}banlist? [y/N]: ").lower() != "y":
+                        continue
+                if getpass(f"Confirm {desc}banlist password: ") == password:
+                    return password
+                logging.error("Passwords don't match")
+        else:
+            return getpass(f"Enter your {desc}banlist password: ")
+
     # Parse commands
-    if args.command == "mergedb":  # merge databases
-        # Merge databases
-        logging.warning("This feature has not been thoroughly tested and is not guaranteed to work. Manually verify"
+    if args.command == "mergedb":  # Merge databases
+        logging.warning("This feature has yet to be thoroughly tested and is not guaranteed to work. Manually verify"
                         f"(via an export) that the destination DB ({args.dst}) contains all your data after merging.")
+        try:  # Get passwords
+            input("DANGER: Backup your databases before merging!!! Press enter to continue.")
+            src1_pass = _prompt_for_password(False, "source database 1")
+            src2_pass = _prompt_for_password(False, "source database 2")
+            dst_pass = _prompt_for_password(True, "destination database")
+        except KeyboardInterrupt:
+            logging.error("Merge cancelled")
+            sys.exit(8)
         try:
-            src1: SQLiteBackend = Freqlog.Freqlog(args.src1, loggable=False, upgrade_callback=_prompt_for_upgrade)
-            src1.merge_backends(args.src2, args.dst, Age[args.ban_data_keep])
+            src1 = Freqlog(args.src1, lambda _: src1_pass, loggable=False, upgrade_callback=_prompt_for_upgrade)
+            src1.merge_backends(args.src2, args.dst, Age[args.ban_data_keep], lambda _: src2_pass, lambda _: dst_pass)
             sys.exit(0)
         except Exception as e:
             logging.error(e)
             exit_code = 7
 
-    if args.command == "stoplog":  # stop freqlogging
+    if args.command == "stoplog":  # Stop freqlogging
         # Kill freqlogging process
         logging.warning("This feature hasn't been implemented." +
                         "To stop freqlogging gracefully, simply kill the process (Ctrl-c)")
@@ -248,13 +278,17 @@ def main():
     if exit_code != 0:
         sys.exit(exit_code)
 
-    # All following commands require a freqlog object
-    try:
-        freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=False, upgrade_callback=_prompt_for_upgrade)
-    except Exception as e:
-        logging.error(e)
-        sys.exit(4)
-    if args.command == "numwords":  # get number of words
+    # All following commands require a freqlog object (except startlog)
+    freqlog: Freqlog | None = None
+    if args.command != "startlog":
+        try:
+            freqlog = Freqlog(args.freqlog_db_path, password_callback=_prompt_for_password, loggable=False,
+                              upgrade_callback=_prompt_for_upgrade)
+        except Exception as e:
+            logging.error(e)
+            sys.exit(4)
+
+    if args.command == "numwords":  # Get number of words
         print(f"{freqlog.num_words(CaseSensitivity[args.case])} words in freqlog")
         sys.exit(0)
 
@@ -263,10 +297,11 @@ def main():
         num = args.num if args.num else Defaults.DEFAULT_NUM_WORDS_CLI
     except AttributeError:
         num = Defaults.DEFAULT_NUM_WORDS_CLI
+
     match args.command:
-        case "startlog":  # start freqlogging
+        case "startlog":  # Start freqlogging
             try:
-                freqlog = Freqlog.Freqlog(args.freqlog_db_path, loggable=True)
+                freqlog = Freqlog(args.freqlog_db_path, password_callback=_prompt_for_password, loggable=True)
             except Exception as e:
                 logging.error(e)
                 sys.exit(4)
@@ -274,37 +309,36 @@ def main():
             freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
                                   Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
                                       args.add_modifier_key))
-        case "checkword":  # check if word is banned
+        case "checkword":  # Check if word is banned
             for word in args.word:
-                if freqlog.check_banned(word, CaseSensitivity[args.case]):
+                if freqlog.check_banned(word):
                     print(f"'{word}' is banned")
                     exit_code = 1
                 else:
                     print(f"'{word}' is not banned")
-        case "banword":  # ban word
+        case "banword":  # Ban word
             for word in args.word:
-                if not freqlog.ban_word(word, CaseSensitivity[args.case]):
+                if not freqlog.ban_word(word):
                     exit_code = 6
-        case "unbanword":  # unban word
+        case "unbanword":  # Unban word
             for word in args.word:
-                if not freqlog.unban_word(word, CaseSensitivity[args.case]):
+                if not freqlog.unban_word(word):
                     exit_code = 6
-        case "delword":  # delete word
+        case "delword":  # Delete word
             for word in args.word:
                 if not freqlog.delete_word(word, CaseSensitivity[args.case]):
                     print(f"Word '{word}' not found")
                     exit_code = 5
-        case "delchordentry":  # delete chord entry
+        case "delchordentry":  # Delete chord entry
             for chord in args.chord:
                 if not freqlog.delete_logged_chord(chord):
                     print(f"Chord '{chord}' not found")
                     exit_code = 5
-        # TODO: pretty print
-        case "words":  # get words
-            if args.export:  # export words
+        case "words":  # Get words
+            if args.export:  # Export words
                 freqlog.export_words_to_csv(args.export, num, WordMetadataAttr[args.sort_by],
                                             args.order == Order.DESCENDING, CaseSensitivity[args.case])
-            elif len(args.word) == 0:  # all words
+            elif len(args.word) == 0:  # All words
                 res = freqlog.list_words(limit=num, sort_by=WordMetadataAttr[args.sort_by],
                                          reverse=args.order == Order.DESCENDING,
                                          case=CaseSensitivity[args.case], search=args.search if args.search else "")
@@ -312,8 +346,8 @@ def main():
                     print("No words in freqlog. Start typing!")
                 else:
                     for word in res:
-                        print(word)
-            else:  # specific words
+                        print(word)  # TODO: pretty print
+            else:  # Specific words
                 if num:
                     logging.warning("-n/--num argument ignored when specific words are given")
                 words: list[WordMetadata] = []
@@ -328,11 +362,11 @@ def main():
                     for word in sorted(words, key=lambda x: getattr(x, args.sort_by),
                                        reverse=(args.order == Order.DESCENDING)):
                         print(word)
-        case "chords":  # get chords
-            if args.export:  # export chords
+        case "chords":  # Get chords
+            if args.export:  # Export chords
                 freqlog.export_chords_to_csv(args.export, num, ChordMetadataAttr[args.sort_by],
                                              args.order == Order.DESCENDING)
-            elif len(args.chord) == 0:  # all chords
+            elif len(args.chord) == 0:  # All chords
                 res = freqlog.list_logged_chords(num, ChordMetadataAttr[args.sort_by],
                                                  args.order == Order.DESCENDING)
                 if len(res) == 0:
@@ -340,7 +374,7 @@ def main():
                 else:
                     for chord in res:
                         print(chord)
-            else:  # specific chords
+            else:  # Specific chords
                 if num:
                     logging.warning("-n/--num argument ignored when specific chords are given")
                 chords: list[ChordMetadata] = []
@@ -355,17 +389,14 @@ def main():
                     for chord in sorted(chords, key=lambda x: getattr(x, args.sort_by),
                                         reverse=(args.order == Order.DESCENDING)):
                         print(chord)
-        case "banlist":  # get banned words
-            banlist_case, banlist_caseless = freqlog.list_banned_words(limit=num, sort_by=BanlistAttr[args.sort_by],
-                                                                       reverse=args.order == Order.DESCENDING)
-            if len(banlist_case) == 0 and len(banlist_caseless) == 0:
+        case "banlist":  # Get banned words
+            banlist = freqlog.list_banned_words(limit=num, sort_by=BanlistAttr[args.sort_by],
+                                                reverse=args.order == Order.DESCENDING)
+            if len(banlist) == 0:
                 print("No banned words")
             else:
-                for entry in banlist_caseless:
-                    entry.word += "*"
-                print("Banned words (* denotes case-insensitive entries):")
-                for entry in sorted(banlist_case | banlist_caseless, key=lambda x: getattr(x, args.sort_by),
-                                    reverse=(args.order == Order.DESCENDING)):
+                print("Banned words:")
+                for entry in banlist:
                     print(entry)
     sys.exit(exit_code)
 

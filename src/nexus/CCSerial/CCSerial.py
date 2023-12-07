@@ -246,13 +246,13 @@ class CCSerial:
             for j, c in enumerate(chord_int):
                 if c < 32:  # 10-bit scan code
                     chord_int[j + 1] = (chord_int[j] << 8) | chord_int[j + 1]
-                elif c == 296:  # enter
+                elif c == 296:  # Enter
                     chord_utf8.append("\n")
-                elif c == 298 and len(chord_utf8) > 0:  # backspace
+                elif c == 298 and len(chord_utf8) > 0:  # Backspace
                     chord_utf8.pop()
-                elif c == 299:  # tab
+                elif c == 299:  # Tab
                     chord_utf8.append("\t")
-                elif c == 544:  # spaceright
+                elif c == 544:  # Spaceright
                     chord_utf8.append(" ")
                 elif c > 126:  # TODO: support non-ASCII characters
                     continue

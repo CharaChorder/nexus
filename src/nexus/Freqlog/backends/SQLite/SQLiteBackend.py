@@ -1,8 +1,14 @@
+import base64
 import logging
 import os
 import sqlite3
 from datetime import datetime, timedelta
 from sqlite3 import Cursor
+
+import cryptography.fernet as cryptography
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from nexus import __version__
 from nexus.Freqlog.backends.Backend import Backend
@@ -48,37 +54,119 @@ class SQLiteBackend(Backend):
         cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS chordlog_lastused ON chordlog(lastused)")
 
         # Banlist table
-        cursor.execute(
-            "CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) WITHOUT ROWID")
+        cursor.execute("CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) "
+                       "WITHOUT ROWID")
         cursor.execute("CREATE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS banlist_lower (word TEXT PRIMARY KEY COLLATE NOCASE,"
-                       "dateadded timestamp NOT NULL) WITHOUT ROWID")
 
-    def __init__(self, db_path: str, upgrade_callback: callable = None) -> None:
+        # Config table
+        cursor.execute("CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID")
+
+        # Add salt to settings table if it doesn't exist
+        cursor.execute("INSERT OR IGNORE INTO config VALUES ('salt', ?)", (os.urandom(16),))
+
+    @staticmethod
+    def is_db_populated(db_path: str) -> bool:
+        """
+        Check if the database path is valid, and if the database file exists
+        :param db_path: Path to the database file
+        :raises ValueError: If the database path is empty
+        :raises PermissionError: If the database path is not readable or writable
+        :raises IsADirectoryError: If the database path is not a file (because Python has no NotAFileError and
+                                   we don't talk about specials and sockets)
+        :returns: True if the database file exists, False otherwise
+        """
+        if not db_path:
+            raise ValueError("Database path is empty")
+        if db_path == ":memory:":
+            return False  # in-memory database, needs to be False for db to be inited
+        if os.path.exists(db_path):
+            if not os.path.isfile(db_path):
+                raise IsADirectoryError(f"Database path {db_path} is not a file")
+            if not os.access(db_path, os.R_OK):
+                raise PermissionError(f"Database path {db_path} is not readable")
+            if not os.access(db_path, os.W_OK):
+                raise PermissionError(f"Database path {db_path} is not writable")
+            if os.stat(db_path).st_size == 0:  # Empty file
+                return False
+            tmp_conn = sqlite3.connect(db_path)
+            if tmp_conn.cursor().execute("PRAGMA user_version").fetchone()[0] == 0:
+                tmp_conn.close()
+                return False
+            tmp_conn.close()
+            return True
+        else:
+            parent_dir = os.path.dirname(db_path) or os.curdir
+            if not os.path.exists(parent_dir):
+                raise FileNotFoundError(f"Database path {db_path} does not exist")
+            if not os.access(parent_dir, os.W_OK):
+                raise PermissionError(f"Database path {db_path} is not writable")
+            return False
+
+    def __init__(self, db_path: str, password_callback: callable, upgrade_callback: callable = None) -> None:
         """
         Initialize the SQLite backend
         :param db_path: Path to the database file
+        :param password_callback: Callback to call to get password to encrypt/decrypt banlist entries
+                Should take one argument: whether the password is being set for the first time
         :param upgrade_callback: Callback to call when upgrading the database.
                 Should take one argument: the new version, and call sys.exit() if an upgrade is unwanted
         :raises ValueError: If the database version is newer than the current version
+        :raises PermissionError: If the database path is not readable or writable
+        :raises IsADirectoryError: If the database path is not a file
+        :raises FileNotFoundError: If the database path does not exist
+        :raises cryptography.fernet.InvalidToken: If the password is incorrect
         """
         self.db_path = db_path
+        db_populated = self.is_db_populated(db_path)
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
+        self.password_callback = password_callback
         self.upgrade_callback = upgrade_callback
-
-        # Versioning
-        old_version = self._fetchone("PRAGMA user_version")[0]
 
         # Encode major, minor and patch version into a single 4-byte integer
         sql_version: int = self.encode_version(__version__)
-        if old_version < sql_version:
-            self._upgrade_database(self.decode_version(old_version))
-        elif old_version > sql_version:
-            raise ValueError(
-                f"Database version {self.decode_version(old_version)} is newer than the current version {__version__}")
 
-        self._init_db(self.cursor, sql_version)
+        # Declare before upgrading database (for v<0.5.0)
+        self.salt: bytes | None = None
+        self.fernet: Fernet | None = None
+        self.password: str | None = None
+
+        if db_populated:  # Versioning
+            old_version = self._fetchone("PRAGMA user_version")[0]
+            if old_version < sql_version:
+                self._upgrade_database(self.decode_version(old_version))
+            elif old_version > sql_version:
+                raise ValueError(f"Database version {self.decode_version(old_version)} is newer than the current "
+                                 f"version {__version__}")
+            if self.password is None:  # Get password if not set
+                self.password = self.password_callback(False)
+        else:  # Populate database
+            try:
+                self._init_db(self.cursor, sql_version)
+                self.password = self.password_callback(True)
+            except Exception:
+                self.close()
+
+                # Delete database file as it was created
+                os.remove(self.db_path)
+                raise
+
+        # Fetch salt from config table and initialize Fernet for encryption/decryption using user-supplied password
+        self.salt = self._fetchconfig("salt")
+        self.fernet = Fernet(base64.urlsafe_b64encode(
+            PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=self.salt,
+                       iterations=480000).derive(self.password.encode())))
+
+        # Initialize password check if it doesn't exist
+        self._execute("INSERT OR IGNORE INTO config VALUES ('check', ?)", (self.fernet.encrypt(self.salt),))
+
+        # Check password
+        if not self.check_password(self.password):
+            raise cryptography.InvalidToken("Incorrect password")
+
+        # Decrypt banlist
+        self.banlist = [BanlistEntry(self.decrypt(row[0]), datetime.fromtimestamp(row[1])) for row in
+                        self._fetchall(f"{SQL_SELECT_STAR_FROM_BANLIST}")]
 
     def _execute(self, query: str, params=None) -> None:
         if params:
@@ -101,6 +189,17 @@ class SQLiteBackend(Backend):
             self.cursor.execute(query)
         return self.cursor.fetchall()
 
+    def _fetchconfig(self, key: str) -> str | bytes:
+        return self._fetchone("SELECT value FROM config WHERE key = ?", (key,))[0]
+
+    def encrypt(self, word: str) -> str:
+        """Encrypt a word"""
+        return self.fernet.encrypt(word.encode()).decode()
+
+    def decrypt(self, word: str) -> str:
+        """Decrypt a word"""
+        return self.fernet.decrypt(word.encode()).decode()
+
     def _upgrade_database(self, old_version: str) -> None:
         """
         Upgrade database to current version
@@ -111,7 +210,65 @@ class SQLiteBackend(Backend):
         logging.warning(f"Upgrading database from {self.decode_version(self._fetchone('PRAGMA user_version')[0])} to "
                         f"{old_version}")
 
-        # TODO: populate this function when changing DDL
+        if old_version < '0.4.1':  # Restore first 4 tables
+            # Freqloq table
+            self._execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
+                          "lastused timestamp NOT NULL, avgspeed REAL NOT NULL) WITHOUT ROWID")
+            self._execute("CREATE INDEX IF NOT EXISTS freqlog_lower ON freqlog(word COLLATE NOCASE)")
+            self._execute("CREATE INDEX IF NOT EXISTS freqlog_frequency ON freqlog(frequency)")
+            self._execute("CREATE UNIQUE INDEX IF NOT EXISTS freqlog_lastused ON freqlog(lastused)")
+            self._execute("CREATE INDEX IF NOT EXISTS freqlog_avgspeed ON freqlog(avgspeed)")
+
+            # Chordlog table
+            self._execute("CREATE TABLE IF NOT EXISTS chordlog (chord TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
+                          "lastused timestamp NOT NULL) WITHOUT ROWID")
+            self._execute("CREATE INDEX IF NOT EXISTS chordlog_frequency ON chordlog(frequency)")
+            self._execute("CREATE UNIQUE INDEX IF NOT EXISTS chordlog_lastused ON chordlog(lastused)")
+
+            # Banlist tables
+            self._execute("CREATE TABLE IF NOT EXISTS banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL) "
+                          "WITHOUT ROWID")
+            self._execute("CREATE INDEX IF NOT EXISTS banlist_dateadded ON banlist(dateadded)")
+            self._execute("CREATE TABLE IF NOT EXISTS banlist_lower (word TEXT PRIMARY KEY COLLATE NOCASE, "
+                          "dateadded timestamp NOT NULL) WITHOUT ROWID")
+
+            # Bump version
+            self._execute(f"PRAGMA user_version = {self.encode_version('0.4.1')}")
+        if old_version < '0.5.0':
+            # Get password
+            self.password = self.password_callback(True)
+
+            # Merge data in banlist table into banlist_lower and drop banlist table
+            self._execute("INSERT OR IGNORE INTO banlist_lower SELECT word, dateadded FROM banlist")
+
+            # Drop old banlist table
+            self._execute("DROP TABLE banlist")
+
+            # Move banlist_lower table to banlist and encrypt entries
+            # Read from banlist_lower
+            res = self._fetchall("SELECT word, dateadded FROM banlist_lower")
+
+            # Config table
+            self._execute("CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL) WITHOUT ROWID")
+
+            # Initialize Fernet for encryption/decryption using user-supplied password
+            self.salt = os.urandom(16)
+            self._execute("INSERT INTO config VALUES ('salt', ?)", (self.salt,))
+            self.fernet = Fernet(base64.urlsafe_b64encode(
+                PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=self.salt,
+                           iterations=480000).derive(self.password.encode())))
+
+            # Encrypt and write to banlist
+            self._execute("CREATE TABLE banlist (word TEXT PRIMARY KEY, dateadded timestamp NOT NULL)")
+            for word, dateadded in res:
+                self._execute("INSERT INTO banlist VALUES (?, ?)", (self.encrypt(word.lower()), dateadded))
+
+            # Drop banlist_lower table
+            self._execute("DROP TABLE banlist_lower")
+
+            # Bump version
+            self._execute(f"PRAGMA user_version = {self.encode_version('0.5.0')}")
+        # TODO: update this function when changing DDL
 
     def get_version(self) -> str:
         """Get the version of the database"""
@@ -120,6 +277,23 @@ class SQLiteBackend(Backend):
     def set_version(self, version: str) -> None:
         """Set database version to a specific version"""
         self._execute(f"PRAGMA user_version = {self.encode_version(version)}")
+
+    def set_password(self, password: str) -> None:
+        """Set the password used to encrypt/decrypt banlist entries"""
+        self.fernet = Fernet(base64.urlsafe_b64encode(
+            PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=self.salt,
+                       iterations=480000).derive(password.encode())))
+        self._execute("UPDATE config SET value = ? WHERE key = 'check'",
+                      (self.fernet.encrypt(self.salt),))
+
+    def check_password(self, password) -> bool:
+        """Check if the password is correct"""
+        try:
+            return (Fernet(base64.urlsafe_b64encode(
+                PBKDF2HMAC(algorithm=hashes.SHA256(), length=32, salt=self.salt, iterations=480000).derive(
+                    password.encode()))).decrypt(self._fetchconfig("check")) == self.salt)
+        except cryptography.InvalidToken:
+            return False
 
     def get_word_metadata(self, word: str, case: CaseSensitivity) -> WordMetadata | None:
         """
@@ -148,7 +322,7 @@ class SQLiteBackend(Backend):
                                            timedelta(seconds=res_u[3])) if res_u else None
                 word_meta_l = WordMetadata(word, res_l[1], datetime.fromtimestamp(res_l[2]),
                                            timedelta(seconds=res_l[3])) if res_l else None
-                if not word_meta_u:  # first operand in or must not be None
+                if not word_meta_u:  # First operand in or must not be None
                     return word_meta_l
                 return word_meta_u | word_meta_l
             case CaseSensitivity.SENSITIVE:
@@ -164,29 +338,14 @@ class SQLiteBackend(Backend):
         res = self._fetchone(f"{SQL_SELECT_STAR_FROM_CHORDLOG} WHERE chord=?", (chord,))
         return ChordMetadata(res[0], res[1], datetime.fromtimestamp(res[2])) if res else None
 
-    def get_banlist_entry(self, word: str, case: CaseSensitivity) -> BanlistEntry | None:
+    def get_banlist_entry(self, word: str) -> BanlistEntry | None:
         """
         Get a banlist entry
         :param word: Word to get entry for
-        :param case: Case sensitivity
         :return: BanlistEntry if word is banned for the specified case, None otherwise
         """
-        match case:
-            case CaseSensitivity.INSENSITIVE:
-                word = word.lower()
-                res = self._fetchone(f"{SQL_SELECT_STAR_FROM_BANLIST}_lower WHERE word = ? COLLATE NOCASE", (word,))
-                return BanlistEntry(res[0], datetime.fromtimestamp(res[1])) if res else None
-            case CaseSensitivity.FIRST_CHAR:
-                word_u = word[0].upper() + word[1:]
-                word_l = word[0].lower() + word[1:]
-                res_u = self._fetchone(f"{SQL_SELECT_STAR_FROM_BANLIST} WHERE word=?", (word_u,))
-                res_l = self._fetchone(f"{SQL_SELECT_STAR_FROM_BANLIST} WHERE word=?", (word_l,))
-                if res_u and res_l:
-                    return BanlistEntry(res_l[0], datetime.fromtimestamp(res_l[1]))
-                return None  # if only one or none are banned
-            case CaseSensitivity.SENSITIVE:
-                res = self._fetchone(f"{SQL_SELECT_STAR_FROM_BANLIST} WHERE word=?", (word,))
-                return BanlistEntry(res[0], datetime.fromtimestamp(res[1])) if res else None
+        word = word.lower()
+        return next((entry for entry in self.banlist if entry.word == word), None)
 
     def log_word(self, word: str, start_time: datetime, end_time: datetime) -> bool:
         """
@@ -196,7 +355,7 @@ class SQLiteBackend(Backend):
         :param end_time: Timestamp of end of word
         :returns: True if word was logged, False if it was banned
         """
-        if self.check_banned(word, CaseSensitivity.SENSITIVE):
+        if self.check_banned(word):
             return False  # banned
         metadata = self.get_word_metadata(word, CaseSensitivity.SENSITIVE)
         if metadata:  # Use or operator to combine metadata with existing entry
@@ -225,7 +384,7 @@ class SQLiteBackend(Backend):
         :param end_time: Timestamp of end of chord
         :returns: True if chord was logged, False if it was banned
         """
-        if self.check_banned(chord, CaseSensitivity.SENSITIVE):
+        if self.check_banned(chord):
             return False  # banned
         metadata = self.get_chord_metadata(chord)
         if metadata:  # Use or operator to combine metadata with existing entry
@@ -236,55 +395,31 @@ class SQLiteBackend(Backend):
             self._execute("INSERT INTO chordlog VALUES (?, ?, ?)", (chord, 1, end_time.timestamp()))
         return True
 
-    def check_banned(self, word: str, case: CaseSensitivity) -> bool:
+    def check_banned(self, word: str) -> bool:
         """
         Check if a word is banned
         :returns: True if word is banned, False otherwise
         """
-        match case:
-            case CaseSensitivity.INSENSITIVE:  # Only banned insensitively
-                word = word.lower()
-                res = self._fetchone("SELECT word FROM banlist_lower WHERE word = ?", (word,))
-                return res is not None
-            case CaseSensitivity.FIRST_CHAR:  # Banned insensitively or by first char
-                word_u = word[0].upper() + word[1:]
-                word_l = word[0].lower() + word[1:]
-                res_u = self._fetchone("SELECT word FROM banlist WHERE word=?", (word_u,))
-                res_l = self._fetchone("SELECT word FROM banlist WHERE word=?", (word_l,))
-                res = self._fetchone("SELECT word FROM banlist_lower WHERE word = ?", (word,))
-                return res is not None or (res_u is not None and res_l is not None)
-            case CaseSensitivity.SENSITIVE:  # Banned insensitively or sensitively
-                res = self._fetchone("SELECT word FROM banlist WHERE word=?", (word,))
-                res_lower = self._fetchone("SELECT word FROM banlist_lower WHERE word = ?", (word,))
-                return res is not None or res_lower is not None
+        return self.get_banlist_entry(word) is not None
 
-    def ban_word(self, word: str, case: CaseSensitivity, time: datetime) -> bool:
+    def ban_word(self, word: str, time: datetime) -> bool:
         """
         Delete a word/chord entry and add it to the ban list
         :returns: True if word was banned, False if it was already banned
         """
-        if self.check_banned(word, case):
+        if self.check_banned(word):
             return False  # already banned
 
         # Freqlog
-        match case:
-            case CaseSensitivity.INSENSITIVE:
-                word = word.lower()
-                self._execute("DELETE FROM freqlog WHERE word = ? COLLATE NOCASE", (word,))
-                self._execute("INSERT OR IGNORE INTO banlist_lower VALUES (?, ?)", (word, time.timestamp()))
-            case CaseSensitivity.FIRST_CHAR:
-                word_u = word[0].upper() + word[1:]
-                word_l = word[0].lower() + word[1:]
-                self._execute("DELETE FROM freqlog WHERE word=?", (word_u,))
-                self._execute("DELETE FROM freqlog WHERE word=?", (word_l,))
-                self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (word_u, time.timestamp()))
-                self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (word_l, time.timestamp()))
-            case CaseSensitivity.SENSITIVE:
-                self._execute("DELETE FROM freqlog WHERE word=?", (word,))
-                self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (word, time.timestamp()))
+        word = word.lower()
+        self._execute("DELETE FROM freqlog WHERE word = ? COLLATE NOCASE", (word,))
 
         # Chordlog
         self._execute("DELETE FROM chordlog WHERE chord=?", (word,))
+
+        # Ban
+        self.banlist.append(BanlistEntry(word, time))
+        self._execute("INSERT OR IGNORE INTO banlist VALUES (?, ?)", (self.encrypt(word), time.timestamp()))
         return True
 
     def delete_word(self, word: str, case: CaseSensitivity) -> bool:
@@ -307,25 +442,15 @@ class SQLiteBackend(Backend):
                 self._execute("DELETE FROM freqlog WHERE word=?", (word,))
         return True
 
-    def unban_word(self, word: str, case: CaseSensitivity) -> bool:
+    def unban_word(self, word: str) -> bool:
         """
         Remove a word from the ban list
         :returns: True if word was unbanned, False if it was already not banned
         """
-        if not self.check_banned(word, case):
+        if not self.check_banned(word):
             return False  # not banned
-        match case:
-            case CaseSensitivity.INSENSITIVE:
-                word = word.lower()
-                self._execute("DELETE FROM banlist WHERE word = ? COLLATE NOCASE", (word,))
-                self._execute("DELETE FROM banlist_lower WHERE word = ? COLLATE NOCASE", (word,))
-            case CaseSensitivity.FIRST_CHAR:
-                word_u = word[0].upper() + word[1:]
-                word_l = word[0].lower() + word[1:]
-                self._execute("DELETE FROM banlist WHERE word=?", (word_u,))
-                self._execute("DELETE FROM banlist WHERE word=?", (word_l,))
-            case CaseSensitivity.SENSITIVE:
-                self._execute("DELETE FROM banlist WHERE word=?", (word,))
+        self._execute("DELETE FROM banlist WHERE dateadded=?", (self.get_banlist_entry(word).date_added.timestamp(),))
+        self.banlist.remove(self.get_banlist_entry(word))
         return True
 
     def num_words(self, case: CaseSensitivity = CaseSensitivity.INSENSITIVE) -> int:
@@ -429,29 +554,27 @@ class SQLiteBackend(Backend):
         return True
 
     def list_banned_words(self, limit: int, sort_by: BanlistAttr,
-                          reverse: bool) -> tuple[set[BanlistEntry], set[BanlistEntry]]:
+                          reverse: bool) -> list[BanlistEntry]:
         """
         List banned words
         :param limit: Maximum number of banned words to return
-        :param sort_by: Attribute to sort by: word
+        :param sort_by: Attribute to sort by: word, dateadded
         :param reverse: Reverse sort order
-        :returns: Tuple of (banned words with case, banned words without case)
+        :returns: List of banned words
         """
-        sql_sort_limit = sort_by.value
-        if reverse:
-            sql_sort_limit += " DESC"
-        if limit > 0:
-            sql_sort_limit += f" LIMIT {limit}"
-        res = self._fetchall(f"{SQL_SELECT_STAR_FROM_BANLIST} ORDER BY {sql_sort_limit}")
-        res_lower = self._fetchall(f"{SQL_SELECT_STAR_FROM_BANLIST}_lower ORDER BY {sql_sort_limit}")
-        return {BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res}, \
-            {BanlistEntry(row[0], datetime.fromtimestamp(row[1])) for row in res_lower}
+        res = sorted(self.banlist, key=lambda x: getattr(x, sort_by.name), reverse=reverse)
+        return res[:limit] if limit > 0 else res
 
-    def merge_backend(self, src_db_path: str, dst_db_path: str, ban_date: Age) -> None:
+    def merge_backend(self, src_db_path: str, dst_db_path: str, ban_date: Age,
+                      src_db_passwd_callback: callable, dst_db_passwd_callback: callable) -> None:
         """
         Merge another database and this one into a new database
         :param src_db_path: Path to the source database
         :param dst_db_path: Path to the destination database
+        :param src_db_passwd_callback: Callback to call to get password to decrypt the source database banlist
+                Should take one argument: whether the password is being set for the first time
+        :param dst_db_passwd_callback: Callback to call to get password to decrypt the destination database banlist
+                Should take one argument: whether the password is being set for the first time
         :param ban_date: Whether to use older or newer date banned for banlist entries of the same word (OLDER or NEWER)
         :requires: src_db_path != dst_db_path != self.db_path
         :requires: src_db_path must be a valid Freqlog database and readable
@@ -467,7 +590,7 @@ class SQLiteBackend(Backend):
             raise ValueError("dst_db_path and self.db_path must be different")
         if os.path.isfile(dst_db_path):
             raise ValueError("dst_db_path must not be an existing file")
-        try:  # ensure that src is writable (WARNING: Must use 'a' instead of 'w' mode to avoid erasing file!!!)
+        try:  # Ensure that src is writable (WARNING: Must use 'a' instead of 'w' mode to avoid erasing file!!!)
             with open(src_db_path, "a"):
                 pass
         except OSError as e:
@@ -479,40 +602,30 @@ class SQLiteBackend(Backend):
             raise ValueError("dst_db_path must be writable") from e
 
         # DB meta
-        src_db = SQLiteBackend(src_db_path, self.upgrade_callback)
-        dst_db = SQLiteBackend(dst_db_path)
+        src_db = SQLiteBackend(src_db_path, src_db_passwd_callback, self.upgrade_callback)
+        dst_db = SQLiteBackend(dst_db_path, dst_db_passwd_callback)
 
         # Merge databases
         # TODO: optimize this/add progress bars (this takes a long time)
         try:
             # Merge banlist
             logging.info("Merging banlist")
-            src_banned_words_cased, src_banned_words_uncased = src_db.list_banned_words(0, BanlistAttr.word, False)
-            banned_words_cased, banned_words_uncased = self.list_banned_words(0, BanlistAttr.word, False)
+            src_banned_words = src_db.list_banned_words(0, BanlistAttr.word, False)
+            banned_words = self.list_banned_words(0, BanlistAttr.word, False)
 
             # Ban words from self banlist in dst db
-            for entry in banned_words_cased:
-                dst_db.ban_word(entry.word, CaseSensitivity.SENSITIVE, entry.date_added)
-            for entry in banned_words_uncased:
-                dst_db.ban_word(entry.word, CaseSensitivity.INSENSITIVE, entry.date_added)
+            for entry in banned_words:
+                dst_db.ban_word(entry.word, entry.date_added)
 
             # Ban words from src banlist in dst db
-            for entry in src_banned_words_cased:
-                dst_entry = dst_db.get_banlist_entry(entry.word, CaseSensitivity.SENSITIVE)
+            for entry in src_banned_words:
+                dst_entry = dst_db.get_banlist_entry(entry.word)
                 if dst_entry and ((ban_date == Age.OLDER and entry.date_added < dst_entry.date_added) or
                                   (ban_date == Age.NEWER and entry.date_added > dst_entry.date_added)):
-                    dst_db.unban_word(entry.word, CaseSensitivity.SENSITIVE)
-                    dst_db.ban_word(entry.word, CaseSensitivity.SENSITIVE, entry.date_added)
+                    dst_db.unban_word(entry.word)
+                    dst_db.ban_word(entry.word, entry.date_added)
                 else:
-                    dst_db.ban_word(entry.word, CaseSensitivity.SENSITIVE, entry.date_added)
-            for entry in src_banned_words_uncased:
-                dst_entry = dst_db.get_banlist_entry(entry.word, CaseSensitivity.INSENSITIVE)
-                if dst_entry and ((ban_date == Age.OLDER and entry.date_added < dst_entry.date_added) or
-                                  (ban_date == Age.NEWER and entry.date_added > dst_entry.date_added)):
-                    dst_db.unban_word(entry.word, CaseSensitivity.INSENSITIVE)
-                    dst_db.ban_word(entry.word, CaseSensitivity.INSENSITIVE, entry.date_added)
-                else:
-                    dst_db.ban_word(entry.word, CaseSensitivity.INSENSITIVE, entry.date_added)
+                    dst_db.ban_word(entry.word, entry.date_added)
 
             # Merge freqlog
             logging.info("Merging freqlog")
