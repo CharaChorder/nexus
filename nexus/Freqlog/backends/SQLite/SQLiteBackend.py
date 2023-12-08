@@ -198,7 +198,7 @@ class SQLiteBackend(Backend):
         """
         if self.upgrade_callback:
             self.upgrade_callback(old_version)
-        logging.warning(f"Upgrading database from {self.get_version()} to {old_version}")
+        logging.warning(f"Upgrading database from {old_version} to {Version(__version__)}")
 
         if old_version < '0.4.1':  # Restore first 4 tables
             # Freqloq table
