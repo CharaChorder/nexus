@@ -16,7 +16,7 @@ if sys.version_info < (3, 11):
 parser = argparse.ArgumentParser(description="Build nexus")
 parser.add_argument('-n', "--no-build", action="store_true", help="Skip building the executable, only setup")
 parser.add_argument('-d', "--devel", action="store_true", help="Install module locally and git hooks")
-parser.add_argument('-u', "--ui-only", action="store_true", help="Only convert ui files"
+parser.add_argument('-u', "--ui-only", action="store_true", help="Only convert ui-related files"
                                                                  "(you must first have set up a venv and installed the"
                                                                  "requirements to run this)")
 parser.add_argument("--no-venv", action="store_true", help="Don't use a virtual environment")
@@ -59,25 +59,25 @@ if not args.ui_only:
 # Convert ui files to python
 print("Converting ui files to python...")
 for f in glob.glob('ui/*.ui'):
-    run_command(f"{venv_path}pyside6-uic {f} -o src/nexus/ui/{Path(f).stem}.py")
+    run_command(f"{venv_path}pyside6-uic {f} -o nexus/ui/{Path(f).stem}.py")
 
 # Generate resources
 print("Generating resources...")
-run_command(f"{venv_path}pyside6-rcc ui/resources.qrc -o src/resources_rc.py")
+run_command(f"{venv_path}pyside6-rcc ui/resources.qrc -o resources_rc.py")
 
 # Generate translations
 print("Generating TS templates...")
 run_command(f"{venv_path}pyside6-lupdate " +
-            ' '.join(glob.glob('ui/*.ui') + ["src/nexus/GUI.py"]) +
+            ' '.join(glob.glob('ui/*.ui') + ["nexus/GUI.py"]) +
             " -ts translations/i18n_en.ts")
 print("Generating QM files...")
-os.makedirs('src/nexus/translations', exist_ok=True)
+os.makedirs('nexus/translations', exist_ok=True)
 for f in glob.glob('translations/*.ts'):
-    run_command(f"{venv_path}pyside6-lrelease {f} -qm src/nexus/translations/{Path(f).stem}.qm")
+    run_command(f"{venv_path}pyside6-lrelease {f} -qm nexus/translations/{Path(f).stem}.qm")
 
 if not (args.no_build or args.ui_only):
     # Pyinstaller command
-    build_cmd = "pyinstaller --onefile --name nexus src/nexus/__main__.py --icon ui/images/icon.ico"
+    build_cmd = "pyinstaller --onefile --name nexus nexus/__main__.py --icon ui/images/icon.ico"
     if os_name == "notwin":  # Add hidden imports for Linux
         build_cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
 

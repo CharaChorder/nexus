@@ -76,7 +76,7 @@ jobs:
       - name: Lint with flake8
         run: |
           flake8 --count --show-source --statistics --max-line-length=120 \
-            --per-file-ignores=src/nexus/Freqlog/backends/__init__.py:F401 --exclude=venv
+            --per-file-ignores=nexus/Freqlog/backends/__init__.py:F401 --exclude=venv
       - name: Build package
         run: python -m build
       - name: Check and install package
