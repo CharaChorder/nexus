@@ -14,7 +14,7 @@ from nexus import __version__
 from nexus.Freqlog.backends.Backend import Backend
 from nexus.Freqlog.Definitions import Age, BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, \
     ChordMetadataAttr, WordMetadata, WordMetadataAttr
-from nexus.version import Version
+from nexus.Version import Version
 
 # WARNING: Directly loaded into SQL query, do not use unsanitized user input
 SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM freqlog"
