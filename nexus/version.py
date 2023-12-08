@@ -1,4 +1,8 @@
+import json
+import urllib.request
 from typing import Self
+
+from nexus import __version__
 
 
 class Version:
@@ -37,3 +41,18 @@ class Version:
         if isinstance(other, str):
             other = Version(other)
         return int(self) < int(other)
+
+    @classmethod
+    def fetch_latest_nexus_version(cls) -> tuple[bool, Self]:
+        """
+        Fetch the latest release of Nexus from GitHub
+        :returns: Tuple of an "outdated" boolean and the fetched version
+        """
+        with urllib.request.urlopen(
+            "https://api.github.com/repos/CharaChorder/nexus/releases/latest"
+        ) as response:
+            response_dict = json.loads(response.read())
+
+        current_version = cls(__version__)
+        upstream_version = cls(response_dict["tag_name"][1:])
+        return current_version < upstream_version, upstream_version

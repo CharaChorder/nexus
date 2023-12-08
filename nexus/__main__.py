@@ -170,7 +170,10 @@ def main():
 
     exit_code = 0
 
-    # TODO: Check for updates on startup
+    outdated, latest_version = Version.fetch_latest_nexus_version()
+    if outdated is True:
+        # TODO: Do something if the current version is outdated
+        logging.info('A newer version of Nexus is available!')
 
     # Show GUI if no command is given
     if not args.command:
