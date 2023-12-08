@@ -25,12 +25,12 @@ SQL_SELECT_STAR_FROM_BANLIST = "SELECT word, dateadded FROM banlist"
 class SQLiteBackend(Backend):
 
     @staticmethod
-    def _init_db(cursor: Cursor, sql_version: Version):
+    def _init_db(cursor: Cursor, version: Version):
         """
         Initialize the database
         """
         # WARNING: Remember to bump version and change _upgrade_database and merge_db when changing DDL
-        cursor.execute(f"PRAGMA user_version = {int(sql_version)}")
+        cursor.execute(f"PRAGMA user_version = {int(version)}")
 
         # Freqloq table
         cursor.execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
@@ -116,7 +116,7 @@ class SQLiteBackend(Backend):
         self.password_callback = password_callback
         self.upgrade_callback = upgrade_callback
 
-        sql_version = Version(__version__)
+        version = Version(__version__)
 
         # Declare before upgrading database (for v<0.5.0)
         self.salt: bytes | None = None
@@ -125,15 +125,15 @@ class SQLiteBackend(Backend):
 
         if db_populated:  # Versioning
             old_version = self.get_version()
-            if old_version < sql_version:
+            if old_version < version:
                 self._upgrade_database(old_version)
-            elif old_version > sql_version:
-                raise ValueError(f"Database version {old_version} is newer than the current version {sql_version}")
+            elif old_version > version:
+                raise ValueError(f"Database version {old_version} is newer than the current version {version}")
             if self.password is None:  # Get password if not set
                 self.password = self.password_callback(False)
         else:  # Populate database
             try:
-                self._init_db(self.cursor, sql_version)
+                self._init_db(self.cursor, version)
                 self.password = self.password_callback(True)
             except Exception:
                 self.close()
