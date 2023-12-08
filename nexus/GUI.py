@@ -5,6 +5,7 @@ import signal
 from threading import Thread
 from pathlib import Path
 from typing import Literal
+import webbrowser
 
 from cryptography import fernet as cryptography
 from PySide6.QtCore import Qt, QTranslator, QLocale
@@ -20,11 +21,14 @@ from nexus.style import Stylesheet, Colors
 
 from nexus.Freqlog.Definitions import CaseSensitivity, WordMetadataAttr, WordMetadataAttrLabel, WordMetadata, \
     Defaults, ChordMetadataAttr, ChordMetadataAttrLabel, ChordMetadata
+from nexus.Version import Version
 
 if os.name == 'nt':  # Needed for taskbar icon on Windows
     import ctypes
 
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(f"{__id__}.{__version__}")
+
+StandardButton = QMessageBox.StandardButton
 
 
 # TODO: see if we need to add a parent arg to any of these classes (for their super() calls)
@@ -456,9 +460,8 @@ class GUI(object):
                 confirm_text = self.tr("GUI", "Unban {} words?".format(len(selected_words)))
 
             if QMessageBox.question(self.window, self.tr("GUI", "Confirm unban"),
-                                    confirm_text.format(len(selected_words)),
-                                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                    defaultButton=QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
+                                    confirm_text.format(len(selected_words)), StandardButton.Yes | StandardButton.No,
+                                    defaultButton=StandardButton.No) == StandardButton.Yes:
                 res = self.temp_freqlog.unban_words(selected_words).count(True)
                 if len(selected_words) == 1:
                     self.statusbar.showMessage(self.tr("GUI", "Unbanned '{}'").format(display_word) if res else
@@ -512,9 +515,8 @@ class GUI(object):
                 confirm_text = self.tr("GUI", "Ban and delete {} words?".format(len(selected_words)))
 
         if QMessageBox.question(self.window, self.tr("GUI", "Confirm ban"),
-                                confirm_text.format(len(selected_words)),
-                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                defaultButton=QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
+                                confirm_text.format(len(selected_words)), StandardButton.Yes | StandardButton.No,
+                                defaultButton=StandardButton.No) == StandardButton.Yes:
             res = self.temp_freqlog.ban_words(selected_words).count(True)
             self.refresh()
             if len(selected_words) == 1:
@@ -553,9 +555,8 @@ class GUI(object):
                 confirm_text = self.tr("GUI", "Delete {} words?".format(len(selected_words)))
 
         if QMessageBox.question(self.window, self.tr("GUI", "Confirm delete"),
-                                confirm_text.format(len(selected_words)),
-                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                defaultButton=QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes:
+                                confirm_text.format(len(selected_words)), StandardButton.Yes | StandardButton.No,
+                                defaultButton=StandardButton.No) == StandardButton.Yes:
             if is_chord:
                 res = self.temp_freqlog.delete_logged_chords(selected_words).count(True)
             else:
@@ -577,16 +578,14 @@ class GUI(object):
                     self.statusbar.showMessage(
                         self.tr("GUI", "Deleted {}/{} selected words").format(res, len(selected_words)))
 
-    def prompt_for_upgrade(self, db_version: str) -> None:
+    def prompt_for_upgrade(self, db_version: Version) -> None:
         """Prompt user to upgrade"""
-        if (QMessageBox.question(
+        if QMessageBox.question(
                 self.window, self.tr("GUI", "Database Upgrade"),
                 self.tr("GUI", "You are running version {} of nexus, but your database is on version {}.\n"
                                "Backup your database before pressing 'Yes' to upgrade your database, or press 'No' "
                                "to exit without upgrading.").format(__version__, db_version),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                defaultButton=QMessageBox.StandardButton.No)
-                == QMessageBox.StandardButton.No):
+                StandardButton.Yes | StandardButton.No, defaultButton=StandardButton.No) == StandardButton.No:
             raise PermissionError("Database upgrade cancelled")
 
     def prompt_for_password(self, new: bool = False) -> str:
@@ -607,9 +606,8 @@ class GUI(object):
                         if (QMessageBox.warning(self.window, self.tr("GUI", "Password too short"),
                                                 self.tr("GUI", "Password should be at least 8 characters long.\n"
                                                                "Continue without securely encrypting your banlist?"),
-                                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                                                defaultButton=QMessageBox.StandardButton.No)
-                                == QMessageBox.StandardButton.No):
+                                                StandardButton.Yes | StandardButton.No, defaultButton=StandardButton.No)
+                                == StandardButton.No):
                             raise InterruptedError("Password prompt cancelled")
                     confirm_password, ok = QInputDialog.getText(self.window, self.tr("GUI", "Banlist Password"),
                                                                 self.tr("GUI", "Confirm your banlist password:"),
@@ -642,7 +640,24 @@ class GUI(object):
         # Start GUI
         self.window.show()
 
-        # TODO: Check for updates on startup
+        # Check for updates
+        outdated, latest_version = Version.fetch_latest_nexus_version()
+        if outdated is True:
+            # TODO: Update automatically if the current version is outdated
+            if latest_version is None:
+                QMessageBox.warning(
+                    self.window, self.tr("GUI", "Update check failed"),
+                    self.tr("GUI",
+                            "Update check failed, there may be a new version of Nexus available. The latest version "
+                            "can be found at https://github.com/CharaChorder/nexus/releases/latest"))
+            else:
+                if QMessageBox.information(
+                        self.window, self.tr("GUI", "Update available"),
+                        self.tr("GUI", "Version {} of Nexus is available!\n(You are running v{})").format(
+                            latest_version, __version__),
+                        buttons=StandardButton.Ok | StandardButton.Open) == StandardButton.Open:
+                    webbrowser.open("https://github.com/CharaChorder/nexus/releases/latest")
+                    return  # Don't start Nexus if the user opens the release page
 
         # Initialize backend
         while True:

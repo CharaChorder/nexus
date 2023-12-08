@@ -11,6 +11,7 @@ from nexus.Freqlog import Freqlog
 from nexus.Freqlog.Definitions import Age, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, Defaults, \
     Order, WordMetadata, WordMetadataAttr
 from nexus.GUI import GUI
+from nexus.Version import Version
 
 
 def main():
@@ -169,7 +170,16 @@ def main():
 
     exit_code = 0
 
-    # TODO: Check for updates on startup
+    # Check for updates
+    outdated, latest_version = Version.fetch_latest_nexus_version()
+    if outdated is True:
+        # TODO: Update automatically if the current version is outdated
+        if latest_version is None:
+            logging.warning("Update check failed, there may be a new version of Nexus available. The latest version "
+                            "can be found at https://github.com/CharaChorder/nexus/releases/latest")
+        else:
+            logging.info(f"Version {latest_version} of Nexus is available! (You are running v{__version__}) "
+                         "The latest version can be found at https://github.com/CharaChorder/nexus/releases/latest")
 
     # Show GUI if no command is given
     if not args.command:
@@ -209,7 +219,7 @@ def main():
                 logging.error("Number of words must be >= 0")
                 exit_code = 3
 
-    def _prompt_for_upgrade(db_version: str) -> None:
+    def _prompt_for_upgrade(db_version: Version) -> None:
         """Prompt user to upgrade"""
         nonlocal args
         logging.warning(

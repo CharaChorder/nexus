@@ -14,6 +14,7 @@ from nexus import __version__
 from nexus.Freqlog.backends.Backend import Backend
 from nexus.Freqlog.Definitions import Age, BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, \
     ChordMetadataAttr, WordMetadata, WordMetadataAttr
+from nexus.Version import Version
 
 # WARNING: Directly loaded into SQL query, do not use unsanitized user input
 SQL_SELECT_STAR_FROM_FREQLOG = "SELECT word, frequency, lastused, avgspeed FROM freqlog"
@@ -24,20 +25,12 @@ SQL_SELECT_STAR_FROM_BANLIST = "SELECT word, dateadded FROM banlist"
 class SQLiteBackend(Backend):
 
     @staticmethod
-    def encode_version(version: str) -> int:
-        return int(version.split(".")[0]) << 16 | int(version.split(".")[1]) << 8 | int(version.split(".")[2])
-
-    @staticmethod
-    def decode_version(version: int) -> str:
-        return f"{version >> 16}.{version >> 8 & 0xFF}.{version & 0xFF}"
-
-    @staticmethod
-    def _init_db(cursor: Cursor, sql_version: int):
+    def _init_db(cursor: Cursor, version: Version):
         """
         Initialize the database
         """
         # WARNING: Remember to bump version and change _upgrade_database and merge_db when changing DDL
-        cursor.execute(f"PRAGMA user_version = {sql_version}")
+        cursor.execute(f"PRAGMA user_version = {int(version)}")
 
         # Freqloq table
         cursor.execute("CREATE TABLE IF NOT EXISTS freqlog (word TEXT NOT NULL PRIMARY KEY, frequency INTEGER, "
@@ -123,8 +116,7 @@ class SQLiteBackend(Backend):
         self.password_callback = password_callback
         self.upgrade_callback = upgrade_callback
 
-        # Encode major, minor and patch version into a single 4-byte integer
-        sql_version: int = self.encode_version(__version__)
+        version = Version(__version__)
 
         # Declare before upgrading database (for v<0.5.0)
         self.salt: bytes | None = None
@@ -132,17 +124,16 @@ class SQLiteBackend(Backend):
         self.password: str | None = None
 
         if db_populated:  # Versioning
-            old_version = self._fetchone("PRAGMA user_version")[0]
-            if old_version < sql_version:
-                self._upgrade_database(self.decode_version(old_version))
-            elif old_version > sql_version:
-                raise ValueError(f"Database version {self.decode_version(old_version)} is newer than the current "
-                                 f"version {__version__}")
+            old_version = self.get_version()
+            if old_version < version:
+                self._upgrade_database(old_version)
+            elif old_version > version:
+                raise ValueError(f"Database version {old_version} is newer than the current version {version}")
             if self.password is None:  # Get password if not set
                 self.password = self.password_callback(False)
         else:  # Populate database
             try:
-                self._init_db(self.cursor, sql_version)
+                self._init_db(self.cursor, version)
                 self.password = self.password_callback(True)
             except Exception:
                 self.close()
@@ -200,15 +191,14 @@ class SQLiteBackend(Backend):
         """Decrypt a word"""
         return self.fernet.decrypt(word.encode()).decode()
 
-    def _upgrade_database(self, old_version: str) -> None:
+    def _upgrade_database(self, old_version: Version) -> None:
         """
         Upgrade database to current version
         :param old_version: Existing database version
         """
         if self.upgrade_callback:
             self.upgrade_callback(old_version)
-        logging.warning(f"Upgrading database from {self.decode_version(self._fetchone('PRAGMA user_version')[0])} to "
-                        f"{old_version}")
+        logging.warning(f"Upgrading database from {old_version} to {Version(__version__)}")
 
         if old_version < '0.4.1':  # Restore first 4 tables
             # Freqloq table
@@ -233,7 +223,7 @@ class SQLiteBackend(Backend):
                           "dateadded timestamp NOT NULL) WITHOUT ROWID")
 
             # Bump version
-            self._execute(f"PRAGMA user_version = {self.encode_version('0.4.1')}")
+            self.set_version(Version('0.4.1'))
         if old_version < '0.5.0':
             # Get password
             self.password = self.password_callback(True)
@@ -267,16 +257,16 @@ class SQLiteBackend(Backend):
             self._execute("DROP TABLE banlist_lower")
 
             # Bump version
-            self._execute(f"PRAGMA user_version = {self.encode_version('0.5.0')}")
+            self.set_version(Version('0.5.0'))
         # TODO: update this function when changing DDL
 
-    def get_version(self) -> str:
+    def get_version(self) -> Version:
         """Get the version of the database"""
-        return self.decode_version(self._fetchone("PRAGMA user_version")[0])
+        return Version(self._fetchone("PRAGMA user_version")[0])
 
-    def set_version(self, version: str) -> None:
+    def set_version(self, version: Version) -> None:
         """Set database version to a specific version"""
-        self._execute(f"PRAGMA user_version = {self.encode_version(version)}")
+        self._execute(f"PRAGMA user_version = {int(version)}")
 
     def set_password(self, password: str) -> None:
         """Set the password used to encrypt/decrypt banlist entries"""
