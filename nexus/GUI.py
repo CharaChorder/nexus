@@ -20,6 +20,7 @@ from nexus.style import Stylesheet, Colors
 
 from nexus.Freqlog.Definitions import CaseSensitivity, WordMetadataAttr, WordMetadataAttrLabel, WordMetadata, \
     Defaults, ChordMetadataAttr, ChordMetadataAttrLabel, ChordMetadata
+from nexus.version import Version
 
 if os.name == 'nt':  # Needed for taskbar icon on Windows
     import ctypes
@@ -577,7 +578,7 @@ class GUI(object):
                     self.statusbar.showMessage(
                         self.tr("GUI", "Deleted {}/{} selected words").format(res, len(selected_words)))
 
-    def prompt_for_upgrade(self, db_version: str) -> None:
+    def prompt_for_upgrade(self, db_version: Version) -> None:
         """Prompt user to upgrade"""
         if (QMessageBox.question(
                 self.window, self.tr("GUI", "Database Upgrade"),

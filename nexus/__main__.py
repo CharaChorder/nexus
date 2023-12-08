@@ -11,6 +11,7 @@ from nexus.Freqlog import Freqlog
 from nexus.Freqlog.Definitions import Age, BanlistAttr, CaseSensitivity, ChordMetadata, ChordMetadataAttr, Defaults, \
     Order, WordMetadata, WordMetadataAttr
 from nexus.GUI import GUI
+from nexus.version import Version
 
 
 def main():
@@ -209,7 +210,7 @@ def main():
                 logging.error("Number of words must be >= 0")
                 exit_code = 3
 
-    def _prompt_for_upgrade(db_version: str) -> None:
+    def _prompt_for_upgrade(db_version: Version) -> None:
         """Prompt user to upgrade"""
         nonlocal args
         logging.warning(
