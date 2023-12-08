@@ -16,7 +16,7 @@ if sys.version_info < (3, 11):
 parser = argparse.ArgumentParser(description="Build nexus")
 parser.add_argument('-n', "--no-build", action="store_true", help="Skip building the executable, only setup")
 parser.add_argument('-d', "--devel", action="store_true", help="Install module locally and git hooks")
-parser.add_argument('-u', "--ui-only", action="store_true", help="Only convert ui files"
+parser.add_argument('-u', "--ui-only", action="store_true", help="Only convert ui-related files"
                                                                  "(you must first have set up a venv and installed the"
                                                                  "requirements to run this)")
 parser.add_argument("--no-venv", action="store_true", help="Don't use a virtual environment")

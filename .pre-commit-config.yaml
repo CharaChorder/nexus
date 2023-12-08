@@ -35,6 +35,14 @@ repos:
       - id: text-unicode-replacement-char
   - repo: local
     hooks:
+      - id: update-ui
+        name: update-ui
+        entry: ./dist.py
+        language: python
+        types: [python]
+        pass_filenames: false
+        args:
+          - --ui-only
       - id: flakes
         name: flake8
         entry: flake8
