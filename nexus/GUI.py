@@ -648,16 +648,33 @@ class GUI(object):
                 QMessageBox.warning(
                     self.window, self.tr("GUI", "Update check failed"),
                     self.tr("GUI",
-                            "Update check failed, there may be a new version of Nexus available. The latest version "
+                            "Update check failed, there may be a new version of nexus available. The latest version "
                             "can be found at https://github.com/CharaChorder/nexus/releases/latest"))
             else:
                 if QMessageBox.information(
                         self.window, self.tr("GUI", "Update available"),
-                        self.tr("GUI", "Version {} of Nexus is available!\n(You are running v{})").format(
+                        self.tr("GUI", "Version {} of nexus is available!\n(You are running v{})").format(
                             latest_version, __version__),
                         buttons=StandardButton.Ok | StandardButton.Open) == StandardButton.Open:
                     webbrowser.open("https://github.com/CharaChorder/nexus/releases/latest")
-                    return  # Don't start Nexus if the user opens the release page
+                    return  # Don't start nexus if the user opens the release page
+
+        # GUI upgrade
+        # DB path not manually specified and DB exists in current directory and no file is at default path
+        if (self.args.freqlog_db_path == Defaults.DEFAULT_DB_PATH
+                and Freqlog.is_backend_initialized(Defaults.DEFAULT_DB_FILE)
+                and not os.path.isfile(Defaults.DEFAULT_DB_PATH)):
+            if QMessageBox.question(
+                    self.window, self.tr("GUI", "Database Move"),
+                    self.tr("GUI", "Freqlog now defaults to '{}' for your database. "
+                                   "Move your database from the current directory ({})?").format(
+                        Defaults.DEFAULT_DB_PATH, os.getcwd()),
+                    StandardButton.Yes | StandardButton.No, defaultButton=StandardButton.No) == StandardButton.Yes:
+                try:
+                    os.rename(Defaults.DEFAULT_DB_FILE, Defaults.DEFAULT_DB_PATH)
+                except OSError as e:
+                    logging.error(e)
+                    raise
 
         # Initialize backend
         while True:

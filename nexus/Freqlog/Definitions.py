@@ -1,8 +1,12 @@
+import os
+import sys
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Self
 
 from pynput.keyboard import Key
+
+from nexus import __author__
 
 
 class Defaults:
@@ -14,9 +18,27 @@ class Defaults:
                                   Key.cmd_l, Key.cmd_r}
     DEFAULT_NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
     DEFAULT_CHORD_CHAR_THRESHOLD: int = 5  # milliseconds between characters in a chord to be considered a chord
-    DEFAULT_DB_PATH: str = "nexus_freqlog_db.sqlite3"
+    DEFAULT_DB_FILE: str = "nexus_freqlog_db.sqlite3"
     DEFAULT_NUM_WORDS_CLI: int = 10
     DEFAULT_NUM_WORDS_GUI: int = 100
+
+    # Set per platform
+    DEFAULT_DB_PATH: str
+    if sys.platform.startswith("win"):
+        DEFAULT_DB_PATH = os.path.join(os.getenv("APPDATA"), "CharaChorder", "nexus", DEFAULT_DB_FILE)
+    elif sys.platform.startswith("darwin"):
+        DEFAULT_DB_PATH = os.path.join(os.getenv("HOME"), "Library", "Application Support", __author__, "nexus",
+                                       DEFAULT_DB_FILE)
+    elif sys.platform.startswith("linux") or sys.platform.startswith("freebsd") or sys.platform.startswith("openbsd"):
+        xdg_data_home = os.getenv("XDG_DATA_HOME")
+        if xdg_data_home is None:
+            xdg_data_home = os.path.join(os.getenv("HOME"), ".local", "share")
+        DEFAULT_DB_PATH = os.path.join(xdg_data_home, "nexus", DEFAULT_DB_FILE)
+    else:  # Fallback (unknown platform)
+        DEFAULT_DB_PATH = DEFAULT_DB_FILE
+
+    # Create directory if it doesn't exist
+    os.makedirs(os.path.dirname(DEFAULT_DB_PATH), exist_ok=True)
 
 
 class ActionType(Enum):

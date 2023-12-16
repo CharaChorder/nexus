@@ -52,7 +52,7 @@ class Version:
     @classmethod
     def fetch_latest_nexus_version(cls) -> tuple[bool, Self | None]:
         """
-        Fetch the latest release of Nexus from GitHub
+        Fetch the latest release of nexus from GitHub
         :returns: Tuple of an "outdated" boolean and the fetched version or None if the request failed
         """
         try:

@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os.path
 import signal
 import sys
 
@@ -175,10 +176,10 @@ def main():
     if outdated is True:
         # TODO: Update automatically if the current version is outdated
         if latest_version is None:
-            logging.warning("Update check failed, there may be a new version of Nexus available. The latest version "
+            logging.warning("Update check failed, there may be a new version of nexus available. The latest version "
                             "can be found at https://github.com/CharaChorder/nexus/releases/latest")
         else:
-            logging.info(f"Version {latest_version} of Nexus is available! (You are running v{__version__}) "
+            logging.info(f"Version {latest_version} of nexus is available! (You are running v{__version__}) "
                          "The latest version can be found at https://github.com/CharaChorder/nexus/releases/latest")
 
     # Show GUI if no command is given
@@ -188,6 +189,27 @@ def main():
         except Exception as e:
             logging.error(e)
             sys.exit(8)
+
+    # CLI upgrade
+    # DB path not manually specified and DB exists in current directory and no file is at default path
+    if (args.freqlog_db_path == Defaults.DEFAULT_DB_PATH and Freqlog.is_backend_initialized(Defaults.DEFAULT_DB_FILE)
+            and not os.path.isfile(Defaults.DEFAULT_DB_PATH)):
+        choice = ""
+        if not args.upgrade:
+            print(f"[Upgrade]: Freqlog now defaults to '{Defaults.DEFAULT_DB_PATH}' for database location. "
+                  f"Move your database from the current directory ({os.getcwd()})? [Y/n]:", end=" ")
+            try:
+                choice = input().lower()
+            except KeyboardInterrupt:
+                print()
+                logging.error("DB move cancelled")
+                sys.exit(8)
+        if choice != "n":
+            try:
+                os.rename(Defaults.DEFAULT_DB_FILE, Defaults.DEFAULT_DB_PATH)
+            except OSError as e:
+                logging.error(e)
+                sys.exit(8)
 
     # Validate arguments before creating Freqlog object
     match args.command:
@@ -315,7 +337,7 @@ def main():
             except Exception as e:
                 logging.error(e)
                 sys.exit(4)
-            signal.signal(signal.SIGINT, lambda: freqlog.stop_logging())
+            signal.signal(signal.SIGINT, lambda _: freqlog.stop_logging())
             freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
                                   Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
                                       args.add_modifier_key))
