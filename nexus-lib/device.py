@@ -1,7 +1,8 @@
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Literal
 
 from serial.tools import list_ports
+from serial.tools.list_ports_common import ListPortInfo
 
 from .errors import UnknownDevice
 
@@ -24,9 +25,9 @@ class CCDevice:
         12346,  # Espressif (S2)
     ]
 
-    port: Any
+    port: str
 
-    def __init__(self, device):
+    def __init__(self, device: ListPortInfo):
         self.company = "CharaChorder"
 
         if device.pid == 32783:
@@ -39,7 +40,7 @@ class CCDevice:
             # FIXME: This would also be raised if a user has their own device
             # with the CC Engine with an unknown pid.
             raise UnknownDevice(device)
-        self.product_id = device.pid
+        self.product_id = device.pid  # type: ignore
 
         if device.vid == 9114:
             self.chipset = "M0"
