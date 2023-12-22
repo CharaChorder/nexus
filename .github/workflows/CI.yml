@@ -28,6 +28,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Package for ${{ matrix.os }}
         run: python dist.py -d
+      - name: Build WiX on Windows
+        run: wix build .\nexus.wxs
+        if: runner.os == 'Windows'
       - name: Add generated binary to artifact
         uses: actions/upload-artifact@v3
         with:
