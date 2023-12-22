@@ -6,7 +6,7 @@ CharaChorder's all-in-one desktop app, supporting Linux, Windows, and macOS.
 
 ## Build
 
-1. Get Python >=3.11 (using [pyenv](https://github.com/pyenv/pyenv) recommended on Linux/macOS, Microsoft store has 3.11 for Windows)
+1. Get Python >=3.11 (using [pyenv](https://github.com/pyenv/pyenv) recommended)
 2. Clone and build
     ```sh
     git clone https://github.com/CharaChorder/nexus
@@ -36,6 +36,10 @@ cd dist/ # if following the steps above
 Use the `-h` flag to access CLI options
 
 ## Platform-specific quirks
+
+### Windows
+
+- Running with Microsoft-store-installed Python will cause a shadow copy of `%APPDATA%` (where the DB defaults to) to be used. The full exe from Python should be installed instead. Read [this](https://docs.python.org/3/using/windows.html#redirection-of-local-data-registry-and-temporary-paths) for more details.
 
 ### Wayland
 

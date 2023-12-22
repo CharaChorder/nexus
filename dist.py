@@ -48,7 +48,7 @@ if not args.ui_only:
         print("Skipping virtual environment setup")
     elif not os.path.isdir("venv"):
         print("Existing virtual environment not found, creating new one...")
-        run_command("python3 -m venv venv")
+        run_command(f"{python_name} -m venv venv")
     else:
         print("Found existing virtual environment")
 
