@@ -10,11 +10,11 @@ CharaChorder's all-in-one desktop app, supporting Linux, Windows, and macOS.
 
    | OS                                                                                | Executable                                                                                |
    |-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-   | Windows (Installer)                                                               | [nexus.msi](https://github.com/CharaChorder/nexus/releases/download/latest/nexus.msi)     |
-   | Windows (Portable GUI-only)                                                       | [nexusw.exe](https://github.com/CharaChorder/nexus/releases/download/latest/nexusw.exe)   |
-   | Windows (Portable with CLI)                                                       | [nexus.exe](https://github.com/CharaChorder/nexus/releases/download/latest/nexus.exe)     |
-   | Linux                                                                             | [nexus](https://github.com/CharaChorder/nexus/releases/download/latest/nexus)             |
-   | macOS (Currently CLI-only ([#7](https://github.com/CharaChorder/nexus/issues/7))) | [nexus-macos](https://github.com/CharaChorder/nexus/releases/download/latest/nexus-macos) |
+   | Windows (Installer)                                                               | [nexus.msi](https://github.com/CharaChorder/nexus/releases/latest/download/nexus.msi)     |
+   | Windows (Portable GUI-only)                                                       | [nexusw.exe](https://github.com/CharaChorder/nexus/releases/latest/download/nexusw.exe)   |
+   | Windows (Portable with CLI)                                                       | [nexus.exe](https://github.com/CharaChorder/nexus/releases/latest/download/nexus.exe)     |
+   | Linux                                                                             | [nexus](https://github.com/CharaChorder/nexus/releases/latest/download/nexus)             |
+   | macOS (Currently CLI-only ([#7](https://github.com/CharaChorder/nexus/issues/7))) | [nexus-macos](https://github.com/CharaChorder/nexus/releases/latest/download/nexus-macos) |
 
 2. For the MSI, run the installer. If Windows Defender/Smart Screen asks, choose `More info`, then `Run Anyway`. The MSI
    will install `nexusw.exe` to `%LOCALAPPDATA%\Programs\nexus\nexus.exe`, and add Desktop and
@@ -42,6 +42,13 @@ CharaChorder's all-in-one desktop app, supporting Linux, Windows, and macOS.
 ```
 
 Use the `-h` flag to access CLI options.
+
+## Data location
+
+Your data will be stored platform-dependently in:
+- `%APPDATA%\CharaChorder\nexus\` on Windows
+- `~/Library/CharaChorder/nexus/` on MacOS
+- `$XDG_CONFIG_HOME/nexus/` on *nix
 
 ## Development
 
