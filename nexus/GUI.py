@@ -59,7 +59,7 @@ class Translator(QTranslator):
 
 
 class GUI(object):
-    """Nexus GUI"""
+    """nexus GUI"""
 
     def __init__(self, args: argparse.Namespace):
         """Initialize GUI"""
@@ -102,7 +102,7 @@ class GUI(object):
 
         # Menu bar
         self.window.actionQuit.triggered.connect(self.graceful_quit)
-        self.window.actionNexus_Dark.triggered.connect(lambda: self.set_style('Nexus_Dark'))
+        self.window.actionNexus_Dark.triggered.connect(lambda: self.set_style('nexus_Dark'))
         self.window.actionQt_Default.triggered.connect(lambda: self.set_style('Fusion'))
         self.window.actionPlatform_Default.triggered.connect(lambda: self.set_style('Default'))
         self.window.actionBanlist.triggered.connect(self.show_banlist)
@@ -204,7 +204,7 @@ class GUI(object):
 
         # Styles
         self.default_style: str = self.app.style().name()
-        self.set_style('Nexus_Dark')
+        self.set_style('nexus_Dark')
 
         self.freqlog: Freqlog | None = None  # for logging
         self.temp_freqlog: Freqlog | None = None  # for other operations
@@ -220,13 +220,13 @@ class GUI(object):
             else:
                 self.window.hide()
 
-    def set_style(self, style: Literal['Nexus_Dark', 'Fusion', 'Default']):
+    def set_style(self, style: Literal['nexus_Dark', 'Fusion', 'Default']):
         self.app.setStyleSheet('')
         if style == 'Default':
             self.app.setStyle(self.default_style)
         else:
             self.app.setStyle('Fusion')
-        if style == 'Nexus_Dark':
+        if style == 'nexus_Dark':
             self.app.setStyleSheet(Stylesheet.dark)
         self.window.update()
 

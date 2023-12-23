@@ -424,11 +424,6 @@ Backup your database before pressing &apos;Yes&apos; to upgrade your database, o
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../ui/MainWindow.ui" line="14"/>
-        <source>Nexus</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../ui/MainWindow.ui" line="238"/>
         <source>Start logging</source>
         <translation type="unfinished"></translation>
@@ -479,6 +474,11 @@ Backup your database before pressing &apos;Yes&apos; to upgrade your database, o
         <location filename="../ui/MainWindow.ui" line="282"/>
         <location filename="../ui/MainWindow.ui" line="415"/>
         <source>Enter 0 to show all entries</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.ui" line="14"/>
+        <source>Nexus</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -549,6 +549,11 @@ Backup your database before pressing &apos;Yes&apos; to upgrade your database, o
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../ui/MainWindow.ui" line="589"/>
+        <source>Nexus Dark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../ui/MainWindow.ui" line="594"/>
         <source>Qt Default</source>
         <translation type="unfinished"></translation>
@@ -556,11 +561,6 @@ Backup your database before pressing &apos;Yes&apos; to upgrade your database, o
     <message>
         <location filename="../ui/MainWindow.ui" line="599"/>
         <source>Platform Default</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/MainWindow.ui" line="589"/>
-        <source>Nexus Dark</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
