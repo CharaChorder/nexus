@@ -49,7 +49,7 @@ Use the `-h` flag to access CLI options.
 Your data will be stored platform-dependently in:
 - `%APPDATA%\CharaChorder\nexus\` on Windows
 - `~/Library/CharaChorder/nexus/` on MacOS
-- `$XDG_CONFIG_HOME/nexus/` on *nix
+- `$XDG_DATA_HOME/nexus/` on *nix
 
 ## Development
 
