@@ -59,7 +59,7 @@ class Translator(QTranslator):
 
 
 class GUI(object):
-    """Nexus GUI"""
+    """nexus GUI"""
 
     def __init__(self, args: argparse.Namespace):
         """Initialize GUI"""
@@ -102,7 +102,7 @@ class GUI(object):
 
         # Menu bar
         self.window.actionQuit.triggered.connect(self.graceful_quit)
-        self.window.actionNexus_Dark.triggered.connect(lambda: self.set_style('Nexus_Dark'))
+        self.window.actionNexus_Dark.triggered.connect(lambda: self.set_style('nexus_Dark'))
         self.window.actionQt_Default.triggered.connect(lambda: self.set_style('Fusion'))
         self.window.actionPlatform_Default.triggered.connect(lambda: self.set_style('Default'))
         self.window.actionBanlist.triggered.connect(self.show_banlist)
@@ -204,7 +204,7 @@ class GUI(object):
 
         # Styles
         self.default_style: str = self.app.style().name()
-        self.set_style('Nexus_Dark')
+        self.set_style('nexus_Dark')
 
         self.freqlog: Freqlog | None = None  # for logging
         self.temp_freqlog: Freqlog | None = None  # for other operations
@@ -220,13 +220,13 @@ class GUI(object):
             else:
                 self.window.hide()
 
-    def set_style(self, style: Literal['Nexus_Dark', 'Fusion', 'Default']):
+    def set_style(self, style: Literal['nexus_Dark', 'Fusion', 'Default']):
         self.app.setStyleSheet('')
         if style == 'Default':
             self.app.setStyle(self.default_style)
         else:
             self.app.setStyle('Fusion')
-        if style == 'Nexus_Dark':
+        if style == 'nexus_Dark':
             self.app.setStyleSheet(Stylesheet.dark)
         self.window.update()
 
@@ -648,16 +648,33 @@ class GUI(object):
                 QMessageBox.warning(
                     self.window, self.tr("GUI", "Update check failed"),
                     self.tr("GUI",
-                            "Update check failed, there may be a new version of Nexus available. The latest version "
+                            "Update check failed, there may be a new version of nexus available. The latest version "
                             "can be found at https://github.com/CharaChorder/nexus/releases/latest"))
             else:
                 if QMessageBox.information(
                         self.window, self.tr("GUI", "Update available"),
-                        self.tr("GUI", "Version {} of Nexus is available!\n(You are running v{})").format(
+                        self.tr("GUI", "Version {} of nexus is available!\n(You are running v{})").format(
                             latest_version, __version__),
                         buttons=StandardButton.Ok | StandardButton.Open) == StandardButton.Open:
                     webbrowser.open("https://github.com/CharaChorder/nexus/releases/latest")
-                    return  # Don't start Nexus if the user opens the release page
+                    return  # Don't start nexus if the user opens the release page
+
+        # GUI upgrade
+        # DB path not manually specified and DB exists in current directory and no file is at default path
+        if (self.args.freqlog_db_path == Defaults.DEFAULT_DB_PATH
+                and Freqlog.is_backend_initialized(Defaults.DEFAULT_DB_FILE)
+                and not os.path.isfile(Defaults.DEFAULT_DB_PATH)):
+            if QMessageBox.question(
+                    self.window, self.tr("GUI", "Database Move"),
+                    self.tr("GUI", "Freqlog now defaults to '{}' for your database. "
+                                   "Move your database from the current directory ({})?").format(
+                        Defaults.DEFAULT_DB_PATH, os.getcwd()),
+                    StandardButton.Yes | StandardButton.No, defaultButton=StandardButton.No) == StandardButton.Yes:
+                try:
+                    os.rename(Defaults.DEFAULT_DB_FILE, Defaults.DEFAULT_DB_PATH)
+                except OSError as e:
+                    logging.error(e)
+                    raise
 
         # Initialize backend
         while True:

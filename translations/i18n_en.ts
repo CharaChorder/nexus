@@ -94,8 +94,8 @@
     <message>
         <location filename="../nexus/GUI.py" line="238"/>
         <location filename="../nexus/GUI.py" line="622"/>
-        <location filename="../nexus/GUI.py" line="669"/>
-        <location filename="../nexus/GUI.py" line="673"/>
+        <location filename="../nexus/GUI.py" line="686"/>
+        <location filename="../nexus/GUI.py" line="690"/>
         <source>GUI</source>
         <comment>Error</comment>
         <translation type="unfinished"></translation>
@@ -109,7 +109,7 @@
     <message>
         <location filename="../nexus/GUI.py" line="652"/>
         <source>GUI</source>
-        <comment>Update check failed, there may be a new version of Nexus available. The latest version can be found at https://github.com/CharaChorder/nexus/releases/latest</comment>
+        <comment>Update check failed, there may be a new version of nexus available. The latest version can be found at https://github.com/CharaChorder/nexus/releases/latest</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -121,19 +121,31 @@
     <message>
         <location filename="../nexus/GUI.py" line="656"/>
         <source>GUI</source>
-        <comment>Version {} of Nexus is available!
+        <comment>Version {} of nexus is available!
 (You are running v{})</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../nexus/GUI.py" line="668"/>
+        <source>GUI</source>
+        <comment>Database Move</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../nexus/GUI.py" line="670"/>
+        <source>GUI</source>
+        <comment>Freqlog now defaults to &apos;{}&apos; for your database. Move your database from the current directory ({})?</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../nexus/GUI.py" line="687"/>
         <source>GUI</source>
         <comment>Incorrect password</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../nexus/GUI.py" line="239"/>
-        <location filename="../nexus/GUI.py" line="674"/>
+        <location filename="../nexus/GUI.py" line="691"/>
         <source>GUI</source>
         <comment>Error opening database: {}</comment>
         <translation type="unfinished"></translation>
@@ -412,11 +424,6 @@ Backup your database before pressing &apos;Yes&apos; to upgrade your database, o
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../ui/MainWindow.ui" line="14"/>
-        <source>Nexus</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../ui/MainWindow.ui" line="238"/>
         <source>Start logging</source>
         <translation type="unfinished"></translation>
@@ -467,6 +474,11 @@ Backup your database before pressing &apos;Yes&apos; to upgrade your database, o
         <location filename="../ui/MainWindow.ui" line="282"/>
         <location filename="../ui/MainWindow.ui" line="415"/>
         <source>Enter 0 to show all entries</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../ui/MainWindow.ui" line="14"/>
+        <source>Nexus</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -537,6 +549,11 @@ Backup your database before pressing &apos;Yes&apos; to upgrade your database, o
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../ui/MainWindow.ui" line="589"/>
+        <source>Nexus Dark</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../ui/MainWindow.ui" line="594"/>
         <source>Qt Default</source>
         <translation type="unfinished"></translation>
@@ -544,11 +561,6 @@ Backup your database before pressing &apos;Yes&apos; to upgrade your database, o
     <message>
         <location filename="../ui/MainWindow.ui" line="599"/>
         <source>Platform Default</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ui/MainWindow.ui" line="589"/>
-        <source>Nexus Dark</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

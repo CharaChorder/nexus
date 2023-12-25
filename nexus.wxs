@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Package Language="1033"
+             Manufacturer="CharaChorder"
+             Name="nexus"
+             Scope="perUserOrMachine"
+             UpgradeCode="C4A2AC40-2DE2-5241-594D-4F4E45585553"
+             Version="0.5.1">
+        <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
+        <MediaTemplate EmbedCab="yes" />
+        <Icon Id="icon.ico" SourceFile="ui\images\icon.ico"/>
+        <Property Id="ARPPRODUCTICON" Value="icon.ico" />
+        <StandardDirectory Id="TARGETDIR">
+            <Directory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLFOLDER" Name="nexus">
+                    <Component Id="ProductComponent">
+                        <File KeyPath="yes" Source="dist\nexusw.exe" Name="nexus.exe"></File>
+                        <Shortcut Id="startmenuShortcut"
+                                  Directory="ProgramMenuDir"
+                                  Name="nexus"
+                                  WorkingDirectory='INSTALLFOLDER'
+                                  Icon="icon.ico"
+                                  IconIndex="0"
+                                  Advertise="yes" />
+                        <Shortcut Id="desktopShortcut"
+                                  Directory="DesktopFolder"
+                                  Name="nexus"
+                                  WorkingDirectory='INSTALLFOLDER'
+                                  Icon="icon.ico"
+                                  IconIndex="0"
+                                  Advertise="yes" />
+                    </Component>
+                </Directory>
+            </Directory>
+        </StandardDirectory>
+        <Directory Id="ProgramMenuFolder" Name="Programs">
+            <Directory Id="ProgramMenuDir" Name="nexus"/>
+        </Directory>
+        <StandardDirectory Id="DesktopFolder"/>
+        <Feature Id="nexus">
+            <ComponentRef Id="ProductComponent" />
+        </Feature></Package>
+</Wix>

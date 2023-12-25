@@ -12,3 +12,5 @@ nexus.egg-info/
 /nexus/ui/*.py
 /nexus/translations/
 /resources_rc.py
+nexus.wixpdb
+nexus.msi

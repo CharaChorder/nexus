@@ -71,8 +71,8 @@
     <name>MainWindow</name>
     <message>
         <location filename="../ui/MainWindow.ui" line="14"/>
-        <source>Nexus</source>
-        <translation>Nexus</translation>
+        <source>nexus</source>
+        <translation>nexus</translation>
     </message>
     <message>
         <location filename="../ui/MainWindow.ui" line="32"/>

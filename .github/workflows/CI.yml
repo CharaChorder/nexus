@@ -28,6 +28,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Package for ${{ matrix.os }}
         run: python dist.py -d
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+        if: runner.os == 'Windows'
+      - name: Install WiX
+        run: dotnet tool install --global wix
+        if: runner.os == 'Windows'
+      - name: Build WiX on Windows
+        run: wix build .\nexus.wxs
+        if: runner.os == 'Windows'
       - name: Add generated binary to artifact
         uses: actions/upload-artifact@v3
         with:
@@ -37,6 +46,7 @@ jobs:
             ./dist/nexus-macos
             ./dist/nexus.exe
             ./dist/nexusw.exe
+            ./nexus.msi
           if-no-files-found: error
         if: always()
 
@@ -104,6 +114,7 @@ jobs:
             nexus
             nexus.exe
             nexusw.exe
+            nexus.msi
             nexus-macos
             README.md
             LICENSE
