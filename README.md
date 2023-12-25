@@ -18,8 +18,8 @@ CharaChorder's all-in-one desktop app, supporting Linux, Windows, and macOS.
 
 2. For the MSI, run the installer. If Windows Defender/Smart Screen asks, choose `More info`, then `Run Anyway`. The MSI
    will install `nexusw.exe` to `%LOCALAPPDATA%\Programs\nexus\nexus.exe`, and add Desktop and
-   Start Menu shortcuts. (If you don't like this, sorry, why not contribute a PR to
-   implement [#114](https://github.com/CharaChorder/nexus/issues/114)?). You can now launch nexus from the Start Menu
+   Start Menu shortcuts. (If you don't like this, sorry; consider contributing a PR to
+   implement [#114](https://github.com/CharaChorder/nexus/issues/114)). You can now launch nexus from the Start Menu
    like any other program.
 
    For the portable versions, save the executable to a folder of your choice. On MacOS and Linux, you may need to
