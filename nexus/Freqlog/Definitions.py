@@ -25,7 +25,7 @@ class Defaults:
     # Set per platform
     DEFAULT_DB_PATH: str
     if sys.platform.startswith("win"):
-        DEFAULT_DB_PATH = os.path.join(os.getenv("APPDATA"), "CharaChorder", "nexus", DEFAULT_DB_FILE)
+        DEFAULT_DB_PATH = os.path.join(os.getenv("APPDATA"), __author__, "nexus", DEFAULT_DB_FILE)
     elif sys.platform.startswith("darwin"):
         DEFAULT_DB_PATH = os.path.join(os.getenv("HOME"), "Library", "Application Support", __author__, "nexus",
                                        DEFAULT_DB_FILE)
