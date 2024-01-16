@@ -635,7 +635,7 @@ class GUI(object):
     def exec(self):
         """Start the GUI"""
         # Handle SIGINT
-        signal.signal(signal.SIGINT, self.graceful_quit)
+        signal.signal(signal.SIGINT, lambda *_: self.graceful_quit())
 
         # Start GUI
         self.window.show()
