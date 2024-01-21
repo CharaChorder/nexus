@@ -390,7 +390,7 @@ class Freqlog:
             logging.warning(f"'{word}' is already banned")
         return res
 
-    def ban_words(self, entries: dict[str: CaseSensitivity], time_added: datetime = datetime.now()) -> list[bool]:
+    def ban_words(self, entries: list[str], time_added: datetime = datetime.now()) -> list[bool]:
         """
         Delete multiple word entries and add them to the ban list
         :param entries: dict of {word to ban: case sensitivity}
@@ -398,7 +398,7 @@ class Freqlog:
         :return: list of bools, True if word was banned, False if it was already banned
         """
         logging.info(f"Banning {len(entries)} words - {time_added}")
-        return [self.ban_word(word, time_added) for word, case in entries.items()]
+        return [self.ban_word(word, time_added) for word in entries]
 
     def delete_word(self, word: str, case: CaseSensitivity) -> bool:
         """
