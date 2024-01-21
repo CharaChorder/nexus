@@ -10,10 +10,12 @@ from nexus import __author__
 
 
 class Defaults:
-    # Allowed keys in chord output: a-z, A-Z, 0-9, apostrophe, dash, underscore, slash, backslash, tilde
-    DEFAULT_ALLOWED_KEYS_IN_CHORD: set = \
-        {chr(i) for i in range(ord('a'), ord('z') + 1)} | {chr(i) for i in range(ord('A'), ord('Z') + 1)} | \
-        {chr(i) for i in range(ord('0'), ord('9') + 1)} | {"'", "-", "_", "/", "\\", "~"}
+    # Default allowed [first] chars: [a-z, A-Z], 0-9, apostrophe, dash, underscore, slash, tilde
+    DEFAULT_ALLOWED_FIRST_CHARS: set = \
+        {chr(i) for i in range(ord('a'), ord('z') + 1)} | {chr(i) for i in range(ord('A'), ord('Z') + 1)}
+    DEFAULT_ALLOWED_CHARS: set = \
+        DEFAULT_ALLOWED_FIRST_CHARS  # | {"'", "-", "_", "/", "~"} | {chr(i) for i in range(ord('0'), ord('9') + 1)}
+    # TODO: uncomment above line when first char detection is implemented
     DEFAULT_MODIFIER_KEYS: set = {Key.ctrl, Key.ctrl_l, Key.ctrl_r, Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr, Key.cmd,
                                   Key.cmd_l, Key.cmd_r}
     DEFAULT_NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
