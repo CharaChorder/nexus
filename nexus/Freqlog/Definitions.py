@@ -14,7 +14,7 @@ class Defaults:
     DEFAULT_ALLOWED_FIRST_CHARS: set = \
         {chr(i) for i in range(ord('a'), ord('z') + 1)} | {chr(i) for i in range(ord('A'), ord('Z') + 1)}
     DEFAULT_ALLOWED_CHARS: set = \
-        DEFAULT_ALLOWED_FIRST_CHARS  # | {"'", "-", "_", "/", "~"} | {chr(i) for i in range(ord('0'), ord('9') + 1)}
+        DEFAULT_ALLOWED_FIRST_CHARS | {"'", "-", "_", "/", "~"}  # | {chr(i) for i in range(ord('0'), ord('9') + 1)}
     # TODO: uncomment above line when first char detection is implemented
     DEFAULT_MODIFIER_KEYS: set = {Key.ctrl, Key.ctrl_l, Key.ctrl_r, Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr, Key.cmd,
                                   Key.cmd_l, Key.cmd_r}
