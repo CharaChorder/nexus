@@ -68,7 +68,7 @@ class Freqlog:
         word_end_time: datetime | None = None
         chars_since_last_bs: int = 0
         avg_char_time_after_last_bs: timedelta | None = None
-        last_key_was_whitespace: bool = False
+        last_key_was_disallowed: bool = False
         active_modifier_keys: set = set()
 
         def _get_timed_interruptable(q, timeout):
@@ -95,12 +95,14 @@ class Freqlog:
         def _log_and_reset_word(min_length: int = 2) -> None:
             """Log word to file and reset word metadata"""
             nonlocal word, word_start_time, word_end_time, chars_since_last_bs, avg_char_time_after_last_bs, \
-                last_key_was_whitespace
+                last_key_was_disallowed
             if not word:  # Don't log if word is empty
                 return
 
-            # Trim whitespace from start and end of word
+            # Strip whitespace from start and end of word
             word = word.strip()
+
+            # TODO: Do we need to trim word to only substring that is in allowed_chars?
 
             # Only log words/chords that have >= min_length characters
             if len(word) >= min_length:
@@ -115,7 +117,7 @@ class Freqlog:
             word_end_time = None
             chars_since_last_bs = 0
             avg_char_time_after_last_bs = None
-            last_key_was_whitespace = False
+            last_key_was_disallowed = False
 
         while self.is_logging:
             try:
@@ -153,19 +155,22 @@ class Freqlog:
                         else:  # Word is only one word
                             word = ""
                     else:
+                        logging.debug(f"Backspace: {word} -> {word[:-1]}")
                         word = word[:-1]
                     chars_since_last_bs = 0
                     avg_char_time_after_last_bs = None
                     self.q.task_done()
                     continue
 
-                # Handle whitespace
-                if isinstance(key, kbd.Key) and key in {kbd.Key.space, kbd.Key.tab, kbd.Key.enter}:
-                    # If key is whitespace and timing is more than chord_char_threshold, log and reset word
+                # Handle whitespace/disallowed keys
+                if ((isinstance(key, kbd.Key) and key in {kbd.Key.space, kbd.Key.tab, kbd.Key.enter}) or
+                        (isinstance(key, kbd.KeyCode) and (not key.char or key.char not in self.allowed_chars))):
+                    # If key is whitespace/disallowed and timing is more than chord_char_threshold, log and reset word
                     if (word and avg_char_time_after_last_bs and
                             avg_char_time_after_last_bs > timedelta(milliseconds=self.chord_char_threshold)):
+                        logging.debug(f"Whitespace/disallowed, log+reset: {word}")
                         _log_and_reset_word()
-                    else:  # Add whitespace to word
+                    else:  # Add key to chord
                         match key:
                             case kbd.Key.space:
                                 word += " "
@@ -173,13 +178,18 @@ class Freqlog:
                                 word += "\t"
                             case kbd.Key.enter:
                                 word += "\n"
-                        last_key_was_whitespace = True
+                            case _:
+                                if isinstance(key, kbd.KeyCode) and key.char:
+                                    word += key.char
+                        last_key_was_disallowed = True
                     self.q.task_done()
                     continue
 
                 # On non-chord key, log and reset word if it exists
                 #   Non-chord key = key in modifier keys or non-key
+                # FIXME: support modifier keys in chords
                 if key in self.modifier_keys or not (isinstance(key, kbd.Key) or isinstance(key, kbd.KeyCode)):
+                    logging.debug(f"Non-chord key: {key}")
                     if word:
                         _log_and_reset_word()
                     self.q.task_done()
@@ -187,11 +197,16 @@ class Freqlog:
 
                 # Add new char to word and update word timing if no modifier keys are pressed
                 if isinstance(key, kbd.KeyCode) and not active_modifier_keys and key.char:
-                    if (last_key_was_whitespace and word and word_end_time and
+                    # I think this is for chords that end in space
+                    # If last key was disallowed and timing of this key is more than chord_char_threshold, log+reset
+                    if (last_key_was_disallowed and word and word_end_time and
                             (time_pressed - word_end_time) > timedelta(milliseconds=self.chord_char_threshold)):
+                        logging.debug(f"Disallowed and timing, log+reset: {word}")
                         _log_and_reset_word()
                     word += key.char
                     chars_since_last_bs += 1
+
+                    # TODO: code below potentially needs to be copied to edge cases above
                     if not word_start_time:
                         word_start_time = time_pressed
                     elif chars_since_last_bs > 1 and avg_char_time_after_last_bs:
@@ -302,16 +317,22 @@ class Freqlog:
             self.mouse_listener = mouse.Listener(on_click=self._on_click, name="Mouse Listener")
         self.new_word_threshold: float = Defaults.DEFAULT_NEW_WORD_THRESHOLD
         self.chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD
-        self.allowed_keys_in_chord: set = Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD
+        self.allowed_chars: set = Defaults.DEFAULT_ALLOWED_CHARS
+        self.allowed_first_chars: set = Defaults.DEFAULT_ALLOWED_FIRST_CHARS
         self.modifier_keys: set = Defaults.DEFAULT_MODIFIER_KEYS
         self.killed: bool = False
 
     def start_logging(self, new_word_threshold: float | None = None, chord_char_threshold: int | None = None,
-                      allowed_keys_in_chord: set | str | None = None, modifier_keys: set = None) -> None:
-        if isinstance(allowed_keys_in_chord, set):
-            self.allowed_keys_in_chord = allowed_keys_in_chord
-        elif isinstance(allowed_keys_in_chord, str):
-            self.allowed_keys_in_chord = set(allowed_keys_in_chord)
+                      allowed_chars: set | str | None = None, allowed_first_chars: set | str | None = None,
+                      modifier_keys: set = None) -> None:
+        if isinstance(allowed_chars, set):
+            self.allowed_chars = allowed_chars
+        elif isinstance(allowed_chars, str):
+            self.allowed_chars = set(allowed_chars)
+        if isinstance(allowed_first_chars, set):
+            self.allowed_first_chars = allowed_first_chars
+        elif isinstance(allowed_first_chars, str):
+            self.allowed_first_chars = set(allowed_first_chars)
         if modifier_keys is not None:
             self.modifier_keys = modifier_keys
         if new_word_threshold is not None:
@@ -322,7 +343,8 @@ class Freqlog:
         logging.info("Starting freqlogging")
         logging.debug(f"new_word_threshold={self.new_word_threshold}, "
                       f"chord_char_threshold={self.chord_char_threshold}, "
-                      f"allowed_keys_in_chord={self.allowed_keys_in_chord}, "
+                      f"allowed_chars={self.allowed_chars}, "
+                      f"allowed_first_chars={self.allowed_first_chars}, "
                       f"modifier_keys={self.modifier_keys}")
         self.listener.start()
         self.mouse_listener.start()
@@ -390,7 +412,7 @@ class Freqlog:
             logging.warning(f"'{word}' is already banned")
         return res
 
-    def ban_words(self, entries: dict[str: CaseSensitivity], time_added: datetime = datetime.now()) -> list[bool]:
+    def ban_words(self, entries: list[str], time_added: datetime = datetime.now()) -> list[bool]:
         """
         Delete multiple word entries and add them to the ban list
         :param entries: dict of {word to ban: case sensitivity}
@@ -398,7 +420,7 @@ class Freqlog:
         :return: list of bools, True if word was banned, False if it was already banned
         """
         logging.info(f"Banning {len(entries)} words - {time_added}")
-        return [self.ban_word(word, time_added) for word, case in entries.items()]
+        return [self.ban_word(word, time_added) for word in entries]
 
     def delete_word(self, word: str, case: CaseSensitivity) -> bool:
         """

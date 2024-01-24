@@ -73,8 +73,11 @@ def main():
                               help="Time in seconds after which character input is considered a new word")
     parser_start.add_argument("--chord-char-threshold", default=Defaults.DEFAULT_CHORD_CHAR_THRESHOLD, type=int,
                               help="Time in milliseconds between characters in a chord to be considered a chord")
-    parser_start.add_argument("--allowed-keys-in-chord", default=Defaults.DEFAULT_ALLOWED_KEYS_IN_CHORD,
-                              help="Allowed keys in chord output")
+    parser_start.add_argument("--allowed-chars", default=Defaults.DEFAULT_ALLOWED_CHARS,
+                              help="Chars to be considered as part of words")
+    parser_start.add_argument("--allowed-first-chars",
+                              default=Defaults.DEFAULT_ALLOWED_FIRST_CHARS,
+                              help="Chars to be considered as the first char in words")
     parser_start.add_argument("--add-modifier-key", action="append", default=[],
                               help="Add a modifier key to the default set",
                               choices=sorted(key.name for key in set(keyboard.Key) - Defaults.DEFAULT_MODIFIER_KEYS))
@@ -225,8 +228,14 @@ def main():
             if args.chord_char_threshold <= 0:
                 logging.error("Chord character threshold must be greater than 0")
                 exit_code = 3
-            if len(args.allowed_keys_in_chord) == 0:
-                logging.error("Must allow at least one key in chord")
+            if len(args.allowed_chars) == 0:
+                logging.error("Must allow at least one char")
+                exit_code = 3
+            if len(args.allowed_first_chars) == 0:
+                logging.error("Must allow at least one first char")
+                exit_code = 3
+            if args.allowed_first_chars - args.allowed_chars:
+                logging.error("Allowed first chars must be a subset of allowed chars")
                 exit_code = 3
         case "words":
             if args.num and args.num < 0:
@@ -338,9 +347,9 @@ def main():
                 logging.error(e)
                 sys.exit(4)
             signal.signal(signal.SIGINT, lambda _: freqlog.stop_logging())
-            freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_keys_in_chord,
-                                  Defaults.DEFAULT_MODIFIER_KEYS - set(args.remove_modifier_key) | set(
-                                      args.add_modifier_key))
+            freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_chars,
+                                  args.allowed_first_chars, Defaults.DEFAULT_MODIFIER_KEYS -
+                                  set(args.remove_modifier_key) | set(args.add_modifier_key))
         case "checkword":  # Check if word is banned
             for word in args.word:
                 if freqlog.check_banned(word):

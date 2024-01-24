@@ -259,6 +259,9 @@ class SQLiteBackend(Backend):
             # Bump version
             self.set_version(Version('0.5.0'))
         # TODO: update this function when changing DDL
+        if old_version < Version(__version__):
+            # Bump version
+            self.set_version(Version(__version__))
 
     def get_version(self) -> Version:
         """Get the version of the database"""
