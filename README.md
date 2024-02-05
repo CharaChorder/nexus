@@ -16,14 +16,15 @@ CharaChorder's all-in-one desktop app, supporting Linux, Windows, and macOS.
    | Linux                                                                             | [nexus](https://github.com/CharaChorder/nexus/releases/latest/download/nexus)             |
    | macOS (Currently CLI-only ([#7](https://github.com/CharaChorder/nexus/issues/7))) | [nexus-macos](https://github.com/CharaChorder/nexus/releases/latest/download/nexus-macos) |
 
-2. For the MSI, run the installer. If Windows Defender/Smart Screen asks, choose `More info`, then `Run Anyway`. The MSI
-   will install `nexusw.exe` to `%LOCALAPPDATA%\Programs\nexus\nexus.exe`, and add Desktop and
-   Start Menu shortcuts. (If you don't like this, sorry, why not contribute a PR to
-   implement [#114](https://github.com/CharaChorder/nexus/issues/114)?). You can now launch nexus from the Start Menu
-   like any other program.
+2.
+   - **For the MSI**, run the installer. If Windows Defender/Smart Screen asks, choose `More info`, then `Run Anyway`. The MSI
+     will install `nexusw.exe` to `%LOCALAPPDATA%\Programs\nexus\nexus.exe`, and add Desktop and
+     Start Menu shortcuts. (If you don't like this, sorry; consider contributing a PR to
+     implement [#114](https://github.com/CharaChorder/nexus/issues/114)). You can now launch nexus from the Start Menu
+     like any other program.
 
-   For the portable versions, save the executable to a folder of your choice. On MacOS and Linux, you may need to
-   run `chmod +x nexus{,-macos}` from the directory you saved it to to make it executable.
+   - **For the portable versions**, save the executable to a folder of your choice. On MacOS and Linux, you may need to
+     run `chmod +x nexus{,-macos}` from the directory you saved it in to make it executable.
 
 ## Usage
 
@@ -48,7 +49,7 @@ Use the `-h` flag to access CLI options.
 Your data will be stored platform-dependently in:
 - `%APPDATA%\CharaChorder\nexus\` on Windows
 - `~/Library/CharaChorder/nexus/` on MacOS
-- `$XDG_CONFIG_HOME/nexus/` on *nix
+- `$XDG_DATA_HOME/nexus/` on *nix
 
 ## Development
 
