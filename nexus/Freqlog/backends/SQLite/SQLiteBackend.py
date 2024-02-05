@@ -138,8 +138,9 @@ class SQLiteBackend(Backend):
             except Exception:
                 self.close()
 
-                # Delete database file as it was created
-                os.remove(self.db_path)
+                if self.db_path != ":memory:" and os.path.exists(self.db_path):
+                    # Delete database file as it was created
+                    os.remove(self.db_path)
                 raise
 
         # Fetch salt from config table and initialize Fernet for encryption/decryption using user-supplied password
