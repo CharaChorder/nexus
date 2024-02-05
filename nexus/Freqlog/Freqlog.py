@@ -6,13 +6,13 @@ from queue import Empty as EmptyException, Queue
 from threading import Thread
 from typing import Optional
 
+from charachorder import CharaChorder
 from pynput import keyboard as kbd, mouse
 from serial import SerialException
 
 from .backends import Backend, SQLiteBackend
 from .Definitions import ActionType, BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
     Defaults, WordMetadata, WordMetadataAttr
-from ..CCSerial import CCSerial
 
 
 class Freqlog:
@@ -232,21 +232,23 @@ class Freqlog:
         """
         Get chords from device
         """
-        logging.info(f"Getting {self.dev.get_chordmap_count()} chords from device")
-        self.chords = []
-        started_logging = False  # prevent early short-circuit
-        for chord in self.dev.list_device_chords():
-            self.chords.append(chord.strip())
-            if not self.is_logging:  # Short circuit if logging is stopped
-                if started_logging:
-                    logging.info("Stopped getting chords from device")
-                    break
+        if self.device is None:
+            return
+
+        with self.device:
+            logging.info(f"Getting {self.device.get_chordmap_count()} chords from device")
+            self.chords = []
+            started_logging = False  # prevent early short-circuit
+            for chord, phrase in self.device.get_chordmaps():
+                self.chords.append(str(phrase).strip())
+                if not self.is_logging:  # Short circuit if logging is stopped
+                    if started_logging:
+                        logging.info("Stopped getting chords from device")
+                        break
+                else:
+                    started_logging = True
             else:
-                started_logging = True
-        else:
-            logging.info(f"Got {len(self.chords)} chords from device")
-        if self.dev:
-            self.dev.close()
+                logging.info(f"Got {len(self.chords)} chords from device")
 
     @staticmethod
     def is_backend_initialized(backend_path: str) -> bool:
@@ -274,12 +276,12 @@ class Freqlog:
         :raises cryptography.fernet.InvalidToken: If the password is incorrect
         """
         logging.info("Initializing freqlog")
-        self.dev: CCSerial | None = None
+        self.device: CharaChorder | None = None
         self.chords: list[str] | None = None
         self.num_chords: int | None = None
 
         # Get serial device
-        devices = CCSerial.list_devices()
+        devices = CharaChorder.list_devices()
         if len(devices) == 0:
             logging.warning("No CharaChorder devices found")
         else:
@@ -288,8 +290,9 @@ class Freqlog:
                 logging.debug(f"Other devices: {devices[1:]}")
             logging.info(f"Connecting to CharaChorder device at {devices[0]}")
             try:
-                self.dev = CCSerial(devices[0])
-                self.num_chords = self.dev.get_chordmap_count()
+                self.device = devices[0]
+                with self.device:
+                    self.num_chords = self.device.get_chordmap_count()
             except SerialException as e:
                 logging.error(f"Failed to connect to CharaChorder device: {devices[0]}")
                 logging.error(e)
@@ -302,11 +305,7 @@ class Freqlog:
             logging.info(f"Logging set to freqlog db at {backend_path}")
 
             # Asynchronously get chords from device
-            if self.dev:
-                Thread(target=self._get_chords).start()
-        else:  # We're done with device, close it
-            if self.dev:
-                self.dev.close()
+            Thread(target=self._get_chords).start()
 
         self.backend: Backend = SQLiteBackend(backend_path, password_callback, upgrade_callback)
         self.q: Queue = Queue()
