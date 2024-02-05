@@ -138,7 +138,7 @@ class SQLiteBackend(Backend):
             except Exception:
                 self.close()
 
-                if self.db_path != ":memory:" and os.path.exists(self.db_path) is True:
+                if self.db_path != ":memory:" and os.path.exists(self.db_path):
                     # Delete database file as it was created
                     os.remove(self.db_path)
                 raise
