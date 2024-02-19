@@ -5,7 +5,7 @@
              Name="nexus"
              Scope="perUserOrMachine"
              UpgradeCode="C4A2AC40-2DE2-5241-594D-4F4E45585553"
-             Version="0.5.1">
+             Version="0.5.2">
         <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
         <MediaTemplate EmbedCab="yes" />
         <Icon Id="icon.ico" SourceFile="ui\images\icon.ico"/>

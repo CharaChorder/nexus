@@ -2,7 +2,7 @@
 
 # nexus
 
-CharaChorder's all-in-one desktop app, supporting Linux, Windows, and macOS.
+CharaChorder's logging and analysis desktop app, supporting Linux, Windows, and macOS.
 
 ## User Installation
 
