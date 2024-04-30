@@ -37,32 +37,20 @@ jobs:
       - name: Build WiX on Windows
         run: wix build .\nexus.wxs
         if: runner.os == 'Windows'
-      - name: Add generated binary to artifact
+      - name: Add generated binaries to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nexus-build
+          name: nexus-${{ matrix.os }}
           path: |
-            ./dist/nexus
-            ./dist/nexus-macos
-            ./dist/nexus.exe
-            ./dist/nexusw.exe
-            ./nexus.msi
-          if-no-files-found: error
-        if: always()
-
-  docs:
-    runs-on: ubuntu-latest
-#    runs-on: [self-hosted, Linux]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Add README.md and LICENSE to artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: nexus-build
-          path: |
+            dist/nexus
+            dist/nexus-macos
+            dist/nexus.exe
+            dist/nexusw.exe
+            nexus.msi
             LICENSE
             README.md
           if-no-files-found: error
+        if: always()
 
   build-test:
     runs-on: ubuntu-latest
@@ -97,7 +85,7 @@ jobs:
         run: xvfb-run -a pytest --cov=nexus
 
   release:
-    needs: [ package, docs, build-test ]
+    needs: [ package, build-test ]
     runs-on: ubuntu-latest
 #    runs-on: [self-hosted, Linux]
     if: |
@@ -105,8 +93,6 @@ jobs:
       github.event_name != 'pull_request'
     steps:
       - uses: actions/download-artifact@v4
-        with:
-          name: nexus-build
       - uses: pyTooling/Actions/releaser@r0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
