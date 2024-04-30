@@ -21,9 +21,9 @@ jobs:
         python-version: [ 3.11 ]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Package for ${{ matrix.os }}
@@ -38,7 +38,7 @@ jobs:
         run: wix build .\nexus.wxs
         if: runner.os == 'Windows'
       - name: Add generated binary to artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nexus-build
           path: |
@@ -54,9 +54,9 @@ jobs:
     runs-on: ubuntu-latest
 #    runs-on: [self-hosted, Linux]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Add README.md and LICENSE to artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: nexus-build
           path: |
@@ -71,9 +71,9 @@ jobs:
       matrix:
         python-version: [ 3.11 ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -94,7 +94,7 @@ jobs:
           twine check dist/*
           pip install .
       - name: Test with pytest over Xvfb
-        run: xvfb-run -a pytest --cov=nexus --import-mode=prepend
+        run: xvfb-run -a pytest --cov=nexus
 
   release:
     needs: [ package, docs, build-test ]
@@ -104,7 +104,7 @@ jobs:
       github.repository_owner == 'CharaChorder' &&
       github.event_name != 'pull_request'
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: nexus-build
       - uses: pyTooling/Actions/releaser@r0
