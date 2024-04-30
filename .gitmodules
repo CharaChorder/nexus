@@ -1,0 +1,6 @@
+[submodule "keyboard"]
+	path = keyboard
+	url = https://github.com/boppreh/keyboard
+[submodule "mouse"]
+	path = mouse
+	url = https://github.com/boppreh/mouse

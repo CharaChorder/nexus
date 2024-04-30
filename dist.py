@@ -78,8 +78,6 @@ for f in glob.glob('translations/*.ts'):
 if not (args.no_build or args.ui_only):
     # Pyinstaller command
     build_cmd = "pyinstaller --onefile --name nexus nexus/__main__.py --icon ui/images/icon.ico"
-    if os_name == "notwin":  # Add hidden imports for Linux
-        build_cmd += " --hidden-import pynput.keyboard._xorg --hidden-import pynput.mouse._xorg"
 
     if os_name == "win":
         print("Building windowed executable...")

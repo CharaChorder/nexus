@@ -4,8 +4,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Self
 
-from pynput.keyboard import Key
-
 from nexus import __author__
 
 
@@ -16,8 +14,8 @@ class Defaults:
     DEFAULT_ALLOWED_CHARS: set = \
         DEFAULT_ALLOWED_FIRST_CHARS | {"'", "-", "_", "/", "~"}  # | {chr(i) for i in range(ord('0'), ord('9') + 1)}
     # TODO: uncomment above line when first char detection is implemented
-    DEFAULT_MODIFIER_KEYS: set = {Key.ctrl, Key.ctrl_l, Key.ctrl_r, Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr, Key.cmd,
-                                  Key.cmd_l, Key.cmd_r}
+    DEFAULT_MODIFIER_KEYS: set = {'alt', 'alt gr', 'ctrl', 'left alt', 'left ctrl', 'left windows',
+                                  'right alt', 'right ctrl', 'right windows', 'windows'}
     DEFAULT_NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
     DEFAULT_CHORD_CHAR_THRESHOLD: int = 5  # milliseconds between characters in a chord to be considered a chord
     DEFAULT_DB_FILE: str = "nexus_freqlog_db.sqlite3"
@@ -25,13 +23,17 @@ class Defaults:
     DEFAULT_NUM_WORDS_GUI: int = 100
 
     # Set per platform
+    PLATFORM: str
     DEFAULT_DB_PATH: str
     if sys.platform.startswith("win"):
+        PLATFORM = "win"
         DEFAULT_DB_PATH = os.path.join(os.getenv("APPDATA"), __author__, "nexus", DEFAULT_DB_FILE)
     elif sys.platform.startswith("darwin"):
+        PLATFORM = "darwin"
         DEFAULT_DB_PATH = os.path.join(os.getenv("HOME"), "Library", "Application Support", __author__, "nexus",
                                        DEFAULT_DB_FILE)
     elif sys.platform.startswith("linux") or sys.platform.startswith("freebsd") or sys.platform.startswith("openbsd"):
+        PLATFORM = "linux"
         xdg_data_home = os.getenv("XDG_DATA_HOME")
         if xdg_data_home is None:
             xdg_data_home = os.path.join(os.getenv("HOME"), ".local", "share")

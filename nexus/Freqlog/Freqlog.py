@@ -4,9 +4,10 @@ import time
 from datetime import datetime, timedelta
 from queue import Empty as EmptyException, Queue
 from threading import Thread
-from typing import Optional
+from typing import Optional, Callable
 
-from pynput import keyboard as kbd, mouse
+import keyboard.keyboard as keyboard
+import mouse.mouse as mouse
 from serial import SerialException
 
 from .backends import Backend, SQLiteBackend
@@ -17,18 +18,42 @@ from ..CCSerial import CCSerial
 
 class Freqlog:
 
-    def _on_press(self, key: kbd.Key | kbd.KeyCode) -> None:
-        """Store PRESS, key and current time in queue"""
-        self.q.put((ActionType.PRESS, key, datetime.now()))
+    def _kbd_callback(self, event) -> None:
+        """
+        Callback for keyboard events
+        :param event: Event to process
+        """
+        if event.event_type == keyboard.KEY_DOWN:
+            self._on_press(event.name, event.time)
+        elif event.event_type == keyboard.KEY_UP:
+            self._on_release(event.name, event.time)
+        else:
+            logging.warning(f"Unhandled event: {event}")
 
-    def _on_release(self, key: kbd.Key | kbd.KeyCode) -> None:
+    def _mouse_callback(self, event) -> None:
+        """
+        Callback for mouse events
+        :param event: Event to process
+        """
+        if event.event_type == "down":
+            self._on_click(event.button, event.time)
+        elif event.event_type == "up":
+            pass
+        else:
+            logging.warning(f"Unhandled event: {event}")
+
+    def _on_press(self, key: str, event_time: time) -> None:
+        """Store PRESS, key and current time in queue"""
+        self.q.put((ActionType.PRESS, key, datetime.fromtimestamp(event_time)))
+
+    def _on_release(self, key: str, event_time: time) -> None:
         """"Store RELEASE, key and current time in queue"""
         if key in self.modifier_keys:
-            self.q.put((ActionType.RELEASE, key, datetime.now()))
+            self.q.put((ActionType.RELEASE, key, datetime.fromtimestamp(event_time)))
 
-    def _on_click(self, _x, _y, button: mouse.Button, _pressed) -> None:
+    def _on_click(self, button: str, event_time: time) -> None:
         """Store PRESS, key and current time in queue"""
-        self.q.put((ActionType.PRESS, button, datetime.now()))
+        self.q.put((ActionType.PRESS, button, datetime.fromtimestamp(event_time)))
 
     def _log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """
@@ -122,14 +147,14 @@ class Freqlog:
         while self.is_logging:
             try:
                 action: ActionType
-                key: kbd.Key | kbd.KeyCode | mouse.Button
+                key: str | str
                 time_pressed: datetime
 
                 # Blocking here makes the while-True non-blocking
                 action, key, time_pressed = _get_timed_interruptable(self.q, self.new_word_threshold)
 
                 # Debug keystrokes
-                if isinstance(key, kbd.Key) or isinstance(key, kbd.KeyCode):
+                if isinstance(key, str):
                     logging.debug(f"{action}: {key} - {time_pressed}")
                     logging.debug(f"word: '{word}', active_modifier_keys: {active_modifier_keys}")
 
@@ -140,9 +165,11 @@ class Freqlog:
                     active_modifier_keys.discard(key)
 
                 # On backspace, remove last char from word if word is not empty
-                if key == kbd.Key.backspace and word:
-                    if active_modifier_keys.intersection({kbd.Key.ctrl, kbd.Key.ctrl_l, kbd.Key.ctrl_r,
-                                                          kbd.Key.cmd, kbd.Key.cmd_l, kbd.Key.cmd_r}):
+                if key == "backspace" and word:
+                    if (Defaults.PLATFORM != "darwin" and
+                            active_modifier_keys.intersection({"ctrl", "left ctrl", "right ctrl"}) or
+                        Defaults.PLATFORM == "darwin" and
+                            active_modifier_keys.intersection({"windows", "left windows", "right windows"})):
                         # Remove last word from word
                         # FIXME: make this work - rn _log_and_reset_word() is called immediately upon ctrl/cmd keydown
                         # TODO: make this configurable (i.e. for vim, etc)
@@ -163,8 +190,7 @@ class Freqlog:
                     continue
 
                 # Handle whitespace/disallowed keys
-                if ((isinstance(key, kbd.Key) and key in {kbd.Key.space, kbd.Key.tab, kbd.Key.enter}) or
-                        (isinstance(key, kbd.KeyCode) and (not key.char or key.char not in self.allowed_chars))):
+                if key not in self.allowed_chars:
                     # If key is whitespace/disallowed and timing is more than chord_char_threshold, log and reset word
                     if (word and avg_char_time_after_last_bs and
                             avg_char_time_after_last_bs > timedelta(milliseconds=self.chord_char_threshold)):
@@ -172,15 +198,15 @@ class Freqlog:
                         _log_and_reset_word()
                     else:  # Add key to chord
                         match key:
-                            case kbd.Key.space:
+                            case "space":
                                 word += " "
-                            case kbd.Key.tab:
+                            case "tab":
                                 word += "\t"
-                            case kbd.Key.enter:
+                            case "enter":
                                 word += "\n"
                             case _:
-                                if isinstance(key, kbd.KeyCode) and key.char:
-                                    word += key.char
+                                # FIXME: deal with scancodes
+                                word += key
                         last_key_was_disallowed = True
                     self.q.task_done()
                     continue
@@ -188,7 +214,7 @@ class Freqlog:
                 # On non-chord key, log and reset word if it exists
                 #   Non-chord key = key in modifier keys or non-key
                 # FIXME: support modifier keys in chords
-                if key in self.modifier_keys or not (isinstance(key, kbd.Key) or isinstance(key, kbd.KeyCode)):
+                if key in self.modifier_keys:
                     logging.debug(f"Non-chord key: {key}")
                     if word:
                         _log_and_reset_word()
@@ -196,14 +222,14 @@ class Freqlog:
                     continue
 
                 # Add new char to word and update word timing if no modifier keys are pressed
-                if isinstance(key, kbd.KeyCode) and not active_modifier_keys and key.char:
+                if not active_modifier_keys:
                     # I think this is for chords that end in space
                     # If last key was disallowed and timing of this key is more than chord_char_threshold, log+reset
                     if (last_key_was_disallowed and word and word_end_time and
                             (time_pressed - word_end_time) > timedelta(milliseconds=self.chord_char_threshold)):
                         logging.debug(f"Disallowed and timing, log+reset: {word}")
                         _log_and_reset_word()
-                    word += key.char
+                    word += key
                     chars_since_last_bs += 1
 
                     # TODO: code below potentially needs to be copied to edge cases above
@@ -310,11 +336,8 @@ class Freqlog:
 
         self.backend: Backend = SQLiteBackend(backend_path, password_callback, upgrade_callback)
         self.q: Queue = Queue()
-        self.listener: kbd.Listener | None = None
-        self.mouse_listener: mouse.Listener | None = None
-        if loggable:
-            self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release, name="Keyboard Listener")
-            self.mouse_listener = mouse.Listener(on_click=self._on_click, name="Mouse Listener")
+        self.listener: Callable or None = None
+        self.mouse_listener: Callable or None = None
         self.new_word_threshold: float = Defaults.DEFAULT_NEW_WORD_THRESHOLD
         self.chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD
         self.allowed_chars: set = Defaults.DEFAULT_ALLOWED_CHARS
@@ -346,8 +369,8 @@ class Freqlog:
                       f"allowed_chars={self.allowed_chars}, "
                       f"allowed_first_chars={self.allowed_first_chars}, "
                       f"modifier_keys={self.modifier_keys}")
-        self.listener.start()
-        self.mouse_listener.start()
+        self.listener = keyboard.hook(callback=self._kbd_callback)
+        self.mouse_listener = mouse.hook(self._mouse_callback)
         self.is_logging = True
         logging.warning("Started freqlogging")
         self._process_queue()
@@ -358,9 +381,9 @@ class Freqlog:
         self.killed = True
         logging.warning("Stopping freqlog")
         if self.listener:
-            self.listener.stop()
+            keyboard.unhook(self.listener)
         if self.mouse_listener:
-            self.mouse_listener.stop()
+            mouse.unhook(self.mouse_listener)
         self.is_logging = False
         logging.info("Stopped listeners")
 
