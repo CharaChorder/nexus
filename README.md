@@ -89,12 +89,18 @@ generates a platform-dependent executable in the `dist/` directory.
   Read [this](https://docs.python.org/3/using/windows.html#redirection-of-local-data-registry-and-temporary-paths) for
   more details.
 
-### Wayland
+### Linux
 
-- You need to have XWayland enabled, and allow X11 apps to read keystrokes in all apps (on KDE this is
-  in `Settings > Applications > Legacy X11 App Support`).
-- Move the `com.charachorder.nexus.desktop` file into either your `~/.local/share/applications/`
-  or `/usr/share/applications/` directory, and edit the path to point to the nexus icon.
+- Because nexus depends on the python libraries `keyboard` and `mouse`, which do not depend on X and instead hook
+  directly onto input device files, you need to add the user you run nexus as to the `input` and `tty` groups and
+  make `/dev/uinput` read-writable. This can be done with the following commands:
+  ```sh
+  sudo usermod -a -G input $(whoami)
+  sudo usermod -a -G tty $(whoami)
+  sudo chgrp input /dev/uinput
+  sudo chmod g+rw /dev/uinput
+  ```
+  Upon re-login/reboot after running these commands, you should be able to run nexus without root privileges.
 
 ## Contributing
 

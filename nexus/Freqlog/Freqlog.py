@@ -6,8 +6,8 @@ from queue import Empty as EmptyException, Queue
 from threading import Thread
 from typing import Optional, Callable
 
-import keyboard.keyboard as keyboard
-import mouse.mouse as mouse
+from keyboard import keyboard
+from mouse import mouse
 from serial import SerialException
 
 from .backends import Backend, SQLiteBackend

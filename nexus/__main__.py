@@ -5,7 +5,7 @@ import signal
 import sys
 
 from getpass import getpass
-import keyboard.keyboard as keyboard
+from keyboard import keyboard
 
 from nexus import __doc__, __version__
 from nexus.Freqlog import Freqlog

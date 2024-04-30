@@ -94,7 +94,7 @@ jobs:
           twine check dist/*
           pip install .
       - name: Test with pytest over Xvfb
-        run: xvfb-run -a pytest --cov=nexus
+        run: xvfb-run -a pytest --cov=nexus --import-mode=prepend
 
   release:
     needs: [ package, docs, build-test ]
