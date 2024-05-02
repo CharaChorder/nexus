@@ -77,7 +77,7 @@ for f in glob.glob('translations/*.ts'):
 
 if not (args.no_build or args.ui_only):
     # Pyinstaller command
-    build_cmd = "pyinstaller --onefile --name nexus nexus/__main__.py --icon ui/images/icon.ico"
+    build_cmd = "pyinstaller --onefile --name nexus nexus/__main__.py --icon ui/images/icon.ico --paths=.:nexus"
 
     if os_name == "win":
         print("Building windowed executable...")
