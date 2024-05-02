@@ -49,6 +49,7 @@ class ActionType(Enum):
     """Enum for key action type"""
     PRESS = 1
     RELEASE = 2
+    CLICK = 3
 
 
 class CaseSensitivity(Enum):

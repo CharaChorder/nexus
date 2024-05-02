@@ -29,7 +29,7 @@ jobs:
       - name: Package for ${{ matrix.os }}
         run: python dist.py -d
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
         if: runner.os == 'Windows'
       - name: Install WiX
         run: dotnet tool install --global wix

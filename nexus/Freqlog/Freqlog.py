@@ -53,7 +53,7 @@ class Freqlog:
 
     def _on_click(self, button: str, event_time: time) -> None:
         """Store PRESS, key and current time in queue"""
-        self.q.put((ActionType.PRESS, button, datetime.fromtimestamp(event_time)))
+        self.q.put((ActionType.CLICK, button, datetime.fromtimestamp(event_time)))
 
     def _log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """
@@ -147,7 +147,7 @@ class Freqlog:
         while self.is_logging:
             try:
                 action: ActionType
-                key: str | str
+                key: str
                 time_pressed: datetime
 
                 # Blocking here makes the while-True non-blocking
@@ -190,7 +190,7 @@ class Freqlog:
                     continue
 
                 # Handle whitespace/disallowed keys
-                if key not in self.allowed_chars:
+                if key not in self.allowed_chars | self.modifier_keys and not active_modifier_keys:
                     # If key is whitespace/disallowed and timing is more than chord_char_threshold, log and reset word
                     if (word and avg_char_time_after_last_bs and
                             avg_char_time_after_last_bs > timedelta(milliseconds=self.chord_char_threshold)):
@@ -206,7 +206,7 @@ class Freqlog:
                                 word += "\n"
                             case _:
                                 # FIXME: deal with scancodes
-                                word += key
+                                pass
                         last_key_was_disallowed = True
                     self.q.task_done()
                     continue
@@ -214,7 +214,7 @@ class Freqlog:
                 # On non-chord key, log and reset word if it exists
                 #   Non-chord key = key in modifier keys or non-key
                 # FIXME: support modifier keys in chords
-                if key in self.modifier_keys:
+                if action == ActionType.CLICK or key in self.modifier_keys:
                     logging.debug(f"Non-chord key: {key}")
                     if word:
                         _log_and_reset_word()
