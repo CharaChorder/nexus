@@ -54,7 +54,7 @@ repos:
           - --statistics
           - --max-line-length=120
           - --per-file-ignores=nexus/Freqlog/backends/__init__.py:F401
-          - --exclude=venv,nexus/ui,resources_rc.py,keyboard,mouse
+          - --exclude=venv,nexus/ui,resources_rc.py,nexus/keyboard,nexus/mouse
         additional_dependencies: [flake8]
       - id: pytest
         name: pytest
