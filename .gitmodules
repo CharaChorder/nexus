@@ -1,6 +1,6 @@
-[submodule "keyboard"]
+[submodule "nexus/keyboard"]
 	path = nexus/keyboard
 	url = https://github.com/boppreh/keyboard
-[submodule "mouse"]
+[submodule "nexus/mouse"]
 	path = nexus/mouse
-	url = https://github.com/boppreh/mouse
+	url = https://github.com/CharaChorder/mouse

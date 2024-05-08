@@ -35,10 +35,10 @@ class Freqlog:
         Callback for mouse events
         :param event: Event to process
         """
-        if event.event_type == "down":
-            self._on_click(event.button, event.time)
-        elif event.event_type == "up":
+        if isinstance(event, (mouse.MoveEvent, mouse.WheelEvent)) or event.event_type == "up":
             pass
+        elif event.event_type == "down":
+            self._on_click(event.button, event.time)
         else:
             logging.warning(f"Unhandled event: {event}")
 
