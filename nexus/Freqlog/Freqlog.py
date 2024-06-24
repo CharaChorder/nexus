@@ -6,7 +6,7 @@ from queue import Empty as EmptyException, Queue
 from threading import Thread
 from typing import Optional
 
-from pynput import keyboard as kbd, mouse
+import vinput
 from serial import SerialException
 
 from .backends import Backend, SQLiteBackend
@@ -17,18 +17,20 @@ from ..CCSerial import CCSerial
 
 class Freqlog:
 
-    def _on_press(self, key: kbd.Key | kbd.KeyCode) -> None:
-        """Store PRESS, key and current time in queue"""
-        self.q.put((ActionType.PRESS, key, datetime.now()))
+    def _on_key(self, key: vinput.KeyboardEvent) -> None:
+        type = ActionType.PRESS
+        if not key.pressed:
+            type = ActionType.RELEASE
+        if key.keychar == '' or key.keychar == '\0':
+            return
+        self.q.put((type, key.keychar.lower(), key.modifiers, datetime.now()))
 
-    def _on_release(self, key: kbd.Key | kbd.KeyCode) -> None:
-        """"Store RELEASE, key and current time in queue"""
-        if key in self.modifier_keys:
-            self.q.put((ActionType.RELEASE, key, datetime.now()))
-
-    def _on_click(self, _x, _y, button: mouse.Button, _pressed) -> None:
+    def _on_mouse_button(self, button: vinput.MouseButtonEvent) -> None:
         """Store PRESS, key and current time in queue"""
-        self.q.put((ActionType.PRESS, button, datetime.now()))
+        self.q.put((ActionType.PRESS, button, None, datetime.now()))
+
+    def _on_mouse_move(self, move: vinput.MouseMoveEvent) -> None:
+        pass
 
     def _log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
         """
@@ -69,7 +71,6 @@ class Freqlog:
         chars_since_last_bs: int = 0
         avg_char_time_after_last_bs: timedelta | None = None
         last_key_was_disallowed: bool = False
-        active_modifier_keys: set = set()
 
         def _get_timed_interruptable(q, timeout):
             # Based on https://stackoverflow.com/a/37016663/9206488
@@ -122,27 +123,26 @@ class Freqlog:
         while self.is_logging:
             try:
                 action: ActionType
-                key: kbd.Key | kbd.KeyCode | mouse.Button
+                modifiers: vinput.KeyboardModifiers
                 time_pressed: datetime
 
                 # Blocking here makes the while-True non-blocking
-                action, key, time_pressed = _get_timed_interruptable(self.q, self.new_word_threshold)
+                action, key, modifiers, time_pressed = _get_timed_interruptable(self.q, self.new_word_threshold)
+
+                if isinstance(key, bytes):
+                    key = key.decode('utf-8')
 
                 # Debug keystrokes
-                if isinstance(key, kbd.Key) or isinstance(key, kbd.KeyCode):
+                if key != '' and key != '\0':
                     logging.debug(f"{action}: {key} - {time_pressed}")
-                    logging.debug(f"word: '{word}', active_modifier_keys: {active_modifier_keys}")
+                    logging.debug(f"word: '{word}', modifiers: {modifiers}")
 
-                # Update modifier keys
-                if action == ActionType.PRESS and key in self.modifier_keys:
-                    active_modifier_keys.add(key)
-                elif action == ActionType.RELEASE:
-                    active_modifier_keys.discard(key)
+                if action == ActionType.RELEASE:
+                    continue
 
                 # On backspace, remove last char from word if word is not empty
-                if key == kbd.Key.backspace and word:
-                    if active_modifier_keys.intersection({kbd.Key.ctrl, kbd.Key.ctrl_l, kbd.Key.ctrl_r,
-                                                          kbd.Key.cmd, kbd.Key.cmd_l, kbd.Key.cmd_r}):
+                if key == '\b' and word:
+                    if modifiers.left_control or modifiers.right_control:
                         # Remove last word from word
                         # FIXME: make this work - rn _log_and_reset_word() is called immediately upon ctrl/cmd keydown
                         # TODO: make this configurable (i.e. for vim, etc)
@@ -163,24 +163,15 @@ class Freqlog:
                     continue
 
                 # Handle whitespace/disallowed keys
-                if ((isinstance(key, kbd.Key) and key in {kbd.Key.space, kbd.Key.tab, kbd.Key.enter}) or
-                        (isinstance(key, kbd.KeyCode) and (not key.char or key.char not in self.allowed_chars))):
+                if (key != '' and key != '\0') and (key in " \t\n\r" or not key or key not in self.allowed_chars):
                     # If key is whitespace/disallowed and timing is more than chord_char_threshold, log and reset word
                     if (word and avg_char_time_after_last_bs and
                             avg_char_time_after_last_bs > timedelta(milliseconds=self.chord_char_threshold)):
                         logging.debug(f"Whitespace/disallowed, log+reset: {word}")
                         _log_and_reset_word()
                     else:  # Add key to chord
-                        match key:
-                            case kbd.Key.space:
-                                word += " "
-                            case kbd.Key.tab:
-                                word += "\t"
-                            case kbd.Key.enter:
-                                word += "\n"
-                            case _:
-                                if isinstance(key, kbd.KeyCode) and key.char:
-                                    word += key.char
+                        if (key != '' and key != '\0'):
+                            word += key
                         last_key_was_disallowed = True
                     self.q.task_done()
                     continue
@@ -188,22 +179,36 @@ class Freqlog:
                 # On non-chord key, log and reset word if it exists
                 #   Non-chord key = key in modifier keys or non-key
                 # FIXME: support modifier keys in chords
-                if key in self.modifier_keys or not (isinstance(key, kbd.Key) or isinstance(key, kbd.KeyCode)):
+                if not (key != '' and key != '\0'):
                     logging.debug(f"Non-chord key: {key}")
                     if word:
                         _log_and_reset_word()
                     self.q.task_done()
                     continue
 
+                attributes_mods = [
+                        a for a in dir(vinput.KeyboardModifiers)
+                        if not a.startswith('_') and type(getattr(vinput.KeyboardModifiers, a)).__name__ == "CField"
+                    ]
+                banned_modifier_active = False
+                for attr in attributes_mods:
+                    should_check: bool = getattr(self.modifier_keys, attr)
+                    if not should_check:
+                        continue
+
+                    if getattr(modifiers, attr):
+                        banned_modifier_active = True
+                        break
+
                 # Add new char to word and update word timing if no modifier keys are pressed
-                if isinstance(key, kbd.KeyCode) and not active_modifier_keys and key.char:
+                if (key != '' and key != '\0') and key and not banned_modifier_active:
                     # I think this is for chords that end in space
                     # If last key was disallowed and timing of this key is more than chord_char_threshold, log+reset
                     if (last_key_was_disallowed and word and word_end_time and
                             (time_pressed - word_end_time) > timedelta(milliseconds=self.chord_char_threshold)):
                         logging.debug(f"Disallowed and timing, log+reset: {word}")
                         _log_and_reset_word()
-                    word += key.char
+                    word += key
                     chars_since_last_bs += 1
 
                     # TODO: code below potentially needs to be copied to edge cases above
@@ -298,6 +303,7 @@ class Freqlog:
                 logging.error(e)
 
         self.is_logging: bool = False  # Used in self._get_chords, needs to be initialized here
+        self.loggable = loggable
         if loggable:
             logging.info(f"Logging set to freqlog db at {backend_path}")
 
@@ -310,21 +316,19 @@ class Freqlog:
 
         self.backend: Backend = SQLiteBackend(backend_path, password_callback, upgrade_callback)
         self.q: Queue = Queue()
-        self.listener: kbd.Listener | None = None
-        self.mouse_listener: mouse.Listener | None = None
-        if loggable:
-            self.listener = kbd.Listener(on_press=self._on_press, on_release=self._on_release, name="Keyboard Listener")
-            self.mouse_listener = mouse.Listener(on_click=self._on_click, name="Mouse Listener")
+        self.listener = None
         self.new_word_threshold: float = Defaults.DEFAULT_NEW_WORD_THRESHOLD
         self.chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD
         self.allowed_chars: set = Defaults.DEFAULT_ALLOWED_CHARS
         self.allowed_first_chars: set = Defaults.DEFAULT_ALLOWED_FIRST_CHARS
-        self.modifier_keys: set = Defaults.DEFAULT_MODIFIER_KEYS
+        self.modifier_keys: vinput.KeyboardModifiers = vinput.KeyboardModifiers()
+        for attr in Defaults.DEFAULT_MODIFIERS:
+            setattr(self.modifier_keys, attr, True)
         self.killed: bool = False
 
     def start_logging(self, new_word_threshold: float | None = None, chord_char_threshold: int | None = None,
                       allowed_chars: set | str | None = None, allowed_first_chars: set | str | None = None,
-                      modifier_keys: set = None) -> None:
+                      modifier_keys: vinput.KeyboardModifiers = vinput.KeyboardModifiers()) -> None:
         if isinstance(allowed_chars, set):
             self.allowed_chars = allowed_chars
         elif isinstance(allowed_chars, str):
@@ -346,8 +350,21 @@ class Freqlog:
                       f"allowed_chars={self.allowed_chars}, "
                       f"allowed_first_chars={self.allowed_first_chars}, "
                       f"modifier_keys={self.modifier_keys}")
-        self.listener.start()
-        self.mouse_listener.start()
+
+        def log_start():
+            if self.loggable:
+                self.listener = vinput.EventListener(True, True, True)
+
+            try:
+                self.listener.start(
+                    lambda x: self._on_key(x),
+                    lambda x: self._on_mouse_button(x),
+                    lambda x: self._on_mouse_move(x))
+            except vinput.VInputException as e:
+                logging.error("Failed to start listeners: " + str(e))
+
+        self.listener_thread = Thread(target=log_start)
+        self.listener_thread.start()
         self.is_logging = True
         logging.warning("Started freqlogging")
         self._process_queue()
@@ -358,9 +375,8 @@ class Freqlog:
         self.killed = True
         logging.warning("Stopping freqlog")
         if self.listener:
-            self.listener.stop()
-        if self.mouse_listener:
-            self.mouse_listener.stop()
+            del self.listener
+            self.listener = None
         self.is_logging = False
         logging.info("Stopped listeners")
 

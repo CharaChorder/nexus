@@ -4,8 +4,6 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Self
 
-from pynput.keyboard import Key
-
 from nexus import __author__
 
 
@@ -15,9 +13,10 @@ class Defaults:
         {chr(i) for i in range(ord('a'), ord('z') + 1)} | {chr(i) for i in range(ord('A'), ord('Z') + 1)}
     DEFAULT_ALLOWED_CHARS: set = \
         DEFAULT_ALLOWED_FIRST_CHARS | {"'", "-", "_", "/", "~"}  # | {chr(i) for i in range(ord('0'), ord('9') + 1)}
+    DEFAULT_MODIFIERS: set = [
+            'left_control',  'left_alt',  'left_meta',  'left_super',  'left_hyper',
+            'right_control', 'right_alt', 'right_meta', 'right_super', 'right_hyper']
     # TODO: uncomment above line when first char detection is implemented
-    DEFAULT_MODIFIER_KEYS: set = {Key.ctrl, Key.ctrl_l, Key.ctrl_r, Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr, Key.cmd,
-                                  Key.cmd_l, Key.cmd_r}
     DEFAULT_NEW_WORD_THRESHOLD: float = 5  # seconds after which character input is considered a new word
     DEFAULT_CHORD_CHAR_THRESHOLD: int = 5  # milliseconds between characters in a chord to be considered a chord
     DEFAULT_DB_FILE: str = "nexus_freqlog_db.sqlite3"
