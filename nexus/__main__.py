@@ -5,7 +5,6 @@ import signal
 import sys
 
 from getpass import getpass
-from pynput import keyboard
 
 from nexus import __doc__, __version__
 from nexus.Freqlog import Freqlog
@@ -78,9 +77,6 @@ def main():
     parser_start.add_argument("--allowed-first-chars",
                               default=Defaults.DEFAULT_ALLOWED_FIRST_CHARS,
                               help="Chars to be considered as the first char in words")
-    parser_start.add_argument("--add-modifier-key", action="append", default=[],
-                              help="Add a modifier key to the default set",
-                              choices=sorted(key.name for key in set(keyboard.Key) - Defaults.DEFAULT_MODIFIER_KEYS))
     parser_start.add_argument("--remove-modifier-key", action="append", default=[],
                               help="Remove a modifier key from the default set",
                               choices=sorted(key.name for key in Defaults.DEFAULT_MODIFIER_KEYS))
