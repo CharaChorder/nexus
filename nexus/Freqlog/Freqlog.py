@@ -6,9 +6,8 @@ from queue import Empty as EmptyException, Queue
 from threading import Thread
 from typing import Optional
 
-from charachorder import CharaChorder
+from charachorder import CharaChorder, SerialException
 from pynput import keyboard as kbd, mouse
-from serial import SerialException
 
 from .backends import Backend, SQLiteBackend
 from .Definitions import ActionType, BanlistAttr, BanlistEntry, CaseSensitivity, ChordMetadata, ChordMetadataAttr, \
