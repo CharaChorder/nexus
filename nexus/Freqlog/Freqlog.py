@@ -23,11 +23,11 @@ class Freqlog:
             type = ActionType.RELEASE
         self.q.put((type, key.keychar, key.modifiers, datetime.now()))
 
-    def _on_mouse_button(self, button) -> None:
+    def _on_mouse_button(self, button: libvinput.MouseButtonEvent) -> None:
         """Store PRESS, key and current time in queue"""
         self.q.put((ActionType.PRESS, button, None, datetime.now()))
 
-    def _on_mouse_move(self, move) -> None:
+    def _on_mouse_move(self, move: libvinput.MouseMoveEvent) -> None:
         pass
 
     def _log_word(self, word: str, start_time: datetime, end_time: datetime) -> None:
