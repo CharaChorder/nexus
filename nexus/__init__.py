@@ -3,4 +3,4 @@
 __author__ = "CharaChorder"
 __name__ = "nexus"
 __id__ = "com.charachorder.nexus"
-__version__ = "0.5.2"
+__version__ = "0.5.3"

@@ -1,0 +1,6 @@
+[submodule "nexus/keyboard"]
+	path = nexus/keyboard
+	url = https://github.com/boppreh/keyboard
+[submodule "nexus/mouse"]
+	path = nexus/mouse
+	url = https://github.com/CharaChorder/mouse
