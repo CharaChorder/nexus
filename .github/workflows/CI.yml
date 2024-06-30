@@ -64,11 +64,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Setup and activate venv
-        run: |
-          python -m venv venv
-          . venv/bin/activate
-          echo PATH=$PATH >> $GITHUB_ENV
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -88,7 +83,7 @@ jobs:
           twine check dist/*
           pip install .
       - name: Test with pytest over Xvfb
-        run: xvfb-run -a venv/bin/pytest --cov=nexus
+        run: xvfb-run -a pytest --cov=nexus
 
   release:
     needs: [ package, build-test ]
