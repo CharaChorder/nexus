@@ -94,8 +94,10 @@ jobs:
       github.event_name != 'pull_request'
     steps:
       - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
       - name: Move downloaded artifacts to root
-        run: mv nexus-{windows-latest,macos-12,ubuntu-latest}/* .
+        run: mv dist/* .
       - uses: pyTooling/Actions/releaser@r0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
