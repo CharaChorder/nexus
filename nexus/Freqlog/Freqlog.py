@@ -27,7 +27,14 @@ class Freqlog:
 
     def _on_mouse_button(self, button: vinput.MouseButtonEvent) -> None:
         """Store PRESS, key and current time in queue"""
-        self.q.put((ActionType.PRESS, button, None, datetime.now()))
+        mods = vinput.KeyboardModifiers()
+        attributes_mods = [
+                a for a in dir(vinput.KeyboardModifiers)
+                if not a.startswith('_') and type(getattr(vinput.KeyboardModifiers, a)).__name__ == "CField"
+            ]
+        for attr in attributes_mods:
+            setattr(self.modifier_keys, attr, True)
+        self.q.put((ActionType.PRESS, '', mods, datetime.now()))
 
     def _on_mouse_move(self, move: vinput.MouseMoveEvent) -> None:
         pass
