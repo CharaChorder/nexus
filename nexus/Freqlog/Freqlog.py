@@ -52,11 +52,9 @@ class Freqlog:
         :param end_time: Timestamp of end of chord
         :returns: True if chord was logged, False if it was banned
         """
-        if not self.chords:
-            logging.warning("Chords not loaded, not logging chord")
-        elif chord not in self.chords:  # TODO: handle chord modifications (i.e. tense, plural, case)
+        if self.chords and chord not in self.chords:  # TODO: handle chord modifications (i.e. tense, plural, case)
             logging.warning(f"Chord '{chord}' not found in device chords, timing: {start_time} - {end_time}")
-        elif self.backend.log_chord(chord, end_time):
+        if self.backend.log_chord(chord, end_time):
             logging.info(f"Chord: {chord} - {end_time}")
         else:
             logging.info(f"Banned chord, {end_time}")
