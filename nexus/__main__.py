@@ -83,9 +83,10 @@ def main():
     parser_start.add_argument("--allowed-first-chars",
                               default=Defaults.DEFAULT_ALLOWED_FIRST_CHARS,
                               help="Chars to be considered as the first char in words")
-    parser_start.add_argument("--modifier-keys", action="append", default=Defaults.DEFAULT_MODIFIERS,
+    parser_start.add_argument("--modifier-keys", default=Defaults.DEFAULT_MODIFIERS,
                               help="Specify which modifier keys to use",
-                              choices=attributes_mods)
+                              choices=attributes_mods,
+                              nargs='+')
     # Num words
     subparsers.add_parser("numwords", help="Get number of words in freqlog",
                           parents=[log_arg, path_arg, case_arg, upgrade_arg])
