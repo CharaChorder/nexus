@@ -38,11 +38,6 @@ def main():
 
     log_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "NONE"]
 
-    attributes_mods = [
-            a for a in dir(vinput.KeyboardModifiers)
-            if not a.startswith('_') and type(getattr(vinput.KeyboardModifiers, a)).__name__ == "CField"
-        ]
-
     # Common arguments
     # Log and path must be SUPPRESS for placement before and after command to work
     #   (see https://stackoverflow.com/a/62906328/9206488)
@@ -85,7 +80,7 @@ def main():
                               help="Chars to be considered as the first char in words")
     parser_start.add_argument("--modifier-keys", default=Defaults.DEFAULT_MODIFIERS,
                               help="Specify which modifier keys to use",
-                              choices=attributes_mods,
+                              choices=Defaults.MODIFIER_NAMES,
                               nargs='+')
     # Num words
     subparsers.add_parser("numwords", help="Get number of words in freqlog",

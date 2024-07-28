@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any, Self
 
 from nexus import __author__
+import vinput
 
 
 class Defaults:
@@ -37,6 +38,11 @@ class Defaults:
         DEFAULT_DB_PATH = os.path.join(xdg_data_home, "nexus", DEFAULT_DB_FILE)
     else:  # Fallback (unknown platform)
         DEFAULT_DB_PATH = DEFAULT_DB_FILE
+
+    # The names of all available modifiers in libvinput.
+    MODIFIER_NAMES = [
+        a for a in dir(vinput.KeyboardModifiers)
+        if not a.startswith('_') and type(getattr(vinput.KeyboardModifiers, a)).__name__ == "CField"]
 
     # Create directory if it doesn't exist
     os.makedirs(os.path.dirname(DEFAULT_DB_PATH), exist_ok=True)
