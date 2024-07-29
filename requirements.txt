@@ -1,4 +1,4 @@
-charachorder.py~=0.5.1
+charachorder.py~=0.5.2
 pynput~=1.7.6
 pyinstaller~=5.13
 setuptools~=70.3
