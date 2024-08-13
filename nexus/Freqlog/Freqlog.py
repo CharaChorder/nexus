@@ -19,19 +19,16 @@ from ..CCSerial import CCSerial
 class Freqlog:
 
     def _on_key(self, key: vinput.KeyboardEvent) -> None:
-        type = ActionType.PRESS
+        kind = ActionType.PRESS
         if not key.pressed:
-            type = ActionType.RELEASE
+            kind = ActionType.RELEASE
         if key.keychar == '' or key.keychar == '\0':
             return
-        self.q.put((type, key.keychar.lower(), key.modifiers, datetime.now()))
+        self.q.put((kind, key.keychar.lower(), key.modifiers, datetime.now()))
 
     def _on_mouse_button(self, button: vinput.MouseButtonEvent) -> None:
         """Store PRESS, key and current time in queue"""
-        mods = vinput.KeyboardModifiers()
-        for attr in Defaults.MODIFIER_NAMES:
-            setattr(self.modifier_keys, attr, True)
-        self.q.put((ActionType.PRESS, '', mods, datetime.now()))
+        self.q.put((ActionType.PRESS, button, None, datetime.now()))
 
     def _on_mouse_move(self, move: vinput.MouseMoveEvent) -> None:
         pass
@@ -68,8 +65,10 @@ class Freqlog:
             logging.info(f"Banned chord, {end_time}")
             logging.debug(f"(Banned chord was '{chord}')")
 
-    # This checks if the event is either a valid key or if it should be treated as mouse input.
-    def _is_key(self, x: str) -> bool:
+    # This checks if the event is either a valid key or if it should be treated as mouse input/modifier key press.
+    def _is_key(self, x: str | vinput.MouseButtonEvent) -> bool:
+        if isinstance(x, vinput.MouseButtonEvent):
+            return False
         return x != '' and x != '\0'
 
     def _process_queue(self):
@@ -131,9 +130,9 @@ class Freqlog:
         while self.is_logging:
             try:
                 action: ActionType
-                modifiers: vinput.KeyboardModifiers
+                key: str | vinput.MouseButtonEvent
+                modifiers: vinput.KeyboardModifiers | None
                 time_pressed: datetime
-                key: str
 
                 # Blocking here makes the while-True non-blocking
                 action, key, modifiers, time_pressed = _get_timed_interruptable(self.q, self.new_word_threshold)
@@ -177,7 +176,7 @@ class Freqlog:
                     continue
 
                 # Handle whitespace/disallowed keys
-                if self._is_key(key) and (not key or key in " \t\n\r" or key not in self.allowed_chars):
+                if self._is_key(key) and (key in " \t\n\r" or key not in self.allowed_chars):
                     # If key is whitespace/disallowed and timing is more than chord_char_threshold, log and reset word
                     if (word and avg_char_time_after_last_bs and
                             avg_char_time_after_last_bs > timedelta(milliseconds=self.chord_char_threshold)):
@@ -339,6 +338,9 @@ class Freqlog:
     def start_logging(self, new_word_threshold: float | None = None, chord_char_threshold: int | None = None,
                       allowed_chars: set | str | None = None, allowed_first_chars: set | str | None = None,
                       modifier_keys: vinput.KeyboardModifiers | None = None) -> None:
+        if not self.loggable:
+            return
+
         if isinstance(allowed_chars, set):
             self.allowed_chars = allowed_chars
         elif isinstance(allowed_chars, str):
@@ -361,23 +363,22 @@ class Freqlog:
                       f"allowed_first_chars={self.allowed_first_chars}, "
                       f"modifier_keys={self.modifier_keys}")
 
-        def log_start():
-            if self.loggable:
-                self.listener = vinput.EventListener(True, True, True)
-
-            try:
-                self.listener.start(
-                    lambda x: self._on_key(x),
-                    lambda x: self._on_mouse_button(x),
-                    lambda x: self._on_mouse_move(x))
-            except vinput.VInputException as e:
-                logging.error("Failed to start listeners: " + str(e))
-
-        self.listener_thread = Thread(target=log_start)
+        self.listener_thread = Thread(target=lambda: self._log_start())
         self.listener_thread.start()
         self.is_logging = True
         logging.warning("Started freqlogging")
         self._process_queue()
+
+    def _log_start(self):
+        self.listener = vinput.EventListener(True, True, True)
+
+        try:
+            self.listener.start(
+                lambda x: self._on_key(x),
+                lambda x: self._on_mouse_button(x),
+                lambda x: self._on_mouse_move(x))
+        except vinput.VInputException as e:
+            logging.error("Failed to start listeners: " + str(e))
 
     def stop_logging(self) -> None:  # FIXME: find out why this runs twice on one Ctrl-C (does it still?)
         if self.killed:  # TODO: Forcibly kill if already killed once
