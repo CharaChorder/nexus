@@ -1,4 +1,4 @@
-vinput~=0.1.9
+vinput~=0.2.0
 pyinstaller~=5.13
 setuptools~=68.1
 PySide6~=6.5
