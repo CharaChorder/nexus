@@ -66,7 +66,8 @@ class Freqlog:
             logging.debug(f"(Banned chord was '{chord}')")
 
     # This checks if the event is either a valid key or if it should be treated as mouse input/modifier key press.
-    def _is_key(self, x: str | vinput.MouseButtonEvent) -> bool:
+    @staticmethod
+    def _is_key(x: str | vinput.MouseButtonEvent) -> bool:
         if isinstance(x, vinput.MouseButtonEvent):
             return False
         return x != '' and x != '\0'
