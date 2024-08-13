@@ -326,6 +326,7 @@ class Freqlog:
         self.backend: Backend = SQLiteBackend(backend_path, password_callback, upgrade_callback)
         self.q: Queue = Queue()
         self.listener: vinput.EventListener | None = None
+        self.listener_thread = Thread(target=lambda: self._log_start())
         self.new_word_threshold: float = Defaults.DEFAULT_NEW_WORD_THRESHOLD
         self.chord_char_threshold: int = Defaults.DEFAULT_CHORD_CHAR_THRESHOLD
         self.allowed_chars: set = Defaults.DEFAULT_ALLOWED_CHARS
@@ -363,7 +364,6 @@ class Freqlog:
                       f"allowed_first_chars={self.allowed_first_chars}, "
                       f"modifier_keys={self.modifier_keys}")
 
-        self.listener_thread = Thread(target=lambda: self._log_start())
         self.listener_thread.start()
         self.is_logging = True
         logging.warning("Started freqlogging")
