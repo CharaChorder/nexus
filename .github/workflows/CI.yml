@@ -16,20 +16,20 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ 'ubuntu-latest', 'windows-latest', 'macos-11' ]
+        os: [ 'ubuntu-latest', 'windows-latest', 'macos-12' ]
 #        os: [[self-hosted, Linux], [self-hosted, Windows]]
         python-version: [ 3.11 ]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Package for ${{ matrix.os }}
         run: python dist.py -d
       - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
         if: runner.os == 'Windows'
       - name: Install WiX
         run: dotnet tool install --global wix
@@ -37,32 +37,20 @@ jobs:
       - name: Build WiX on Windows
         run: wix build .\nexus.wxs
         if: runner.os == 'Windows'
-      - name: Add generated binary to artifact
-        uses: actions/upload-artifact@v3
+      - name: Add generated binaries to artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: nexus-build
+          name: nexus-${{ matrix.os }}
           path: |
-            ./dist/nexus
-            ./dist/nexus-macos
-            ./dist/nexus.exe
-            ./dist/nexusw.exe
-            ./nexus.msi
-          if-no-files-found: error
-        if: always()
-
-  docs:
-    runs-on: ubuntu-latest
-#    runs-on: [self-hosted, Linux]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Add README.md and LICENSE to artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: nexus-build
-          path: |
+            dist/nexus
+            dist/nexus-macos
+            dist/nexus.exe
+            dist/nexusw.exe
+            nexus.msi
             LICENSE
             README.md
           if-no-files-found: error
+        if: always()
 
   build-test:
     runs-on: ubuntu-latest
@@ -71,9 +59,9 @@ jobs:
       matrix:
         python-version: [ 3.11 ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
@@ -86,7 +74,8 @@ jobs:
       - name: Lint with flake8
         run: |
           flake8 --count --show-source --statistics --max-line-length=120 \
-            --per-file-ignores=nexus/Freqlog/backends/__init__.py:F401 --exclude=venv
+          --per-file-ignores=nexus/Freqlog/backends/__init__.py:F401 \
+          --exclude=venv,nexus/ui,resources_rc.py
       - name: Build package
         run: python -m build
       - name: Check and install package
@@ -97,16 +86,18 @@ jobs:
         run: xvfb-run -a pytest --cov=nexus
 
   release:
-    needs: [ package, docs, build-test ]
+    needs: [ package, build-test ]
     runs-on: ubuntu-latest
 #    runs-on: [self-hosted, Linux]
     if: |
       github.repository_owner == 'CharaChorder' &&
       github.event_name != 'pull_request'
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: nexus-build
+          merge-multiple: true
+      - name: Move downloaded artifacts to root
+        run: mv dist/* .
       - uses: pyTooling/Actions/releaser@r0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
