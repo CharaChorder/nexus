@@ -125,6 +125,20 @@ class Freqlog:
             avg_char_time_after_last_bs = None
             last_key_was_disallowed = False
 
+        def _update_timing():
+            """Must be called after adding a key to word and before self.q.task_done()"""
+            nonlocal word_start_time, word_end_time, last_key_was_disallowed, chars_since_last_bs, \
+                avg_char_time_after_last_bs
+            if not word_start_time:
+                word_start_time = time_pressed
+            elif chars_since_last_bs > 1 and avg_char_time_after_last_bs:
+                # Should only get here if chars_since_last_bs > 2
+                avg_char_time_after_last_bs = (avg_char_time_after_last_bs * (chars_since_last_bs - 1) +
+                                               (time_pressed - word_end_time)) / chars_since_last_bs
+            elif chars_since_last_bs > 1:
+                avg_char_time_after_last_bs = time_pressed - word_end_time
+            word_end_time = time_pressed
+
         while self.is_logging:
             try:
                 action: ActionType
@@ -183,6 +197,7 @@ class Freqlog:
                     else:  # Add key to chord
                         if self._is_key(key):
                             word += key
+                            _update_timing()
                         last_key_was_disallowed = True
                     self.q.task_done()
                     continue
@@ -207,8 +222,8 @@ class Freqlog:
                         banned_modifier_active = True
                         break
 
-                # Add new char to word and update word timing if no modifier keys are pressed
-                if self._is_key(key) and key and not banned_modifier_active:
+                # Add new char to word and update word timing if no banned modifier keys are pressed
+                if not banned_modifier_active:
                     # I think this is for chords that end in space
                     # If last key was disallowed and timing of this key is more than chord_char_threshold, log+reset
                     if (last_key_was_disallowed and word and word_end_time and
@@ -217,19 +232,13 @@ class Freqlog:
                         _log_and_reset_word()
                     word += key
                     chars_since_last_bs += 1
-
-                    # TODO: code below potentially needs to be copied to edge cases above
-                    if not word_start_time:
-                        word_start_time = time_pressed
-                    elif chars_since_last_bs > 1 and avg_char_time_after_last_bs:
-                        # Should only get here if chars_since_last_bs > 2
-                        avg_char_time_after_last_bs = (avg_char_time_after_last_bs * (chars_since_last_bs - 1) +
-                                                       (time_pressed - word_end_time)) / chars_since_last_bs
-                    elif chars_since_last_bs > 1:
-                        avg_char_time_after_last_bs = time_pressed - word_end_time
-                    word_end_time = time_pressed
+                    _update_timing()
                     self.q.task_done()
+                    continue
 
+                # Should never get here
+                logging.error(f"Uncaught key: {key}")
+                self.q.task_done()
             except EmptyException:  # Queue is empty
                 # If word is older than NEW_WORD_THRESHOLD seconds, log and reset word
                 if word:
