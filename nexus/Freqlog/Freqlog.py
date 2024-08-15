@@ -261,7 +261,7 @@ class Freqlog:
             self.chords = []
             started_logging = False  # prevent early short-circuit
             for chord, phrase in self.device.get_chordmaps():
-                self.chords.append(str(phrase).strip())
+                self.chords.append(''.join(phrase).strip())
                 if not self.is_logging:  # Short circuit if logging is stopped
                     if started_logging:
                         logging.info("Stopped getting chords from device")
