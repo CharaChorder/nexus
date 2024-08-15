@@ -70,7 +70,7 @@ jobs:
           pip install build twine
           pip install -r requirements.txt
           pip install -r test-requirements.txt
-          sudo apt-get install xvfb
+          sudo apt-get install xvfb libx11-dev libxcb-xtest0 libxdo3
       - name: Lint with flake8
         run: |
           flake8 --count --show-source --statistics --max-line-length=120 \

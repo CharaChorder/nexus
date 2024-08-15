@@ -1,7 +1,7 @@
 charachorder.py~=0.5.2
-pynput~=1.7.6
-pyinstaller~=5.13
-setuptools~=70.3
-PySide6~=6.5
 cryptography~=42.0
+pyinstaller~=5.13
+PySide6~=6.5
 requests~=2.32.1
+setuptools~=70.3
+vinput~=0.2.0
