@@ -539,7 +539,7 @@ class GUI(object):
         """Controller for right click menu/delete key delete entry"""
         # Get word(s) from selected row(s)
         table = self.chord_table if is_chord else self.chentry_table
-        selected_words = ([table.item(row.row(), 0).text() for row in table.selectionModel().selectedRows()]
+        selected_words = ({table.item(row.row(), 0).text(): None for row in table.selectionModel().selectedRows()}
                           if is_chord else {table.item(row.row(), 0).text(): CaseSensitivity.INSENSITIVE for row in
                                             table.selectionModel().selectedRows()})
         display_word = None

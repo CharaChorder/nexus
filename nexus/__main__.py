@@ -372,6 +372,7 @@ def main():
                     print(f"Word '{word}' not found")
                     exit_code = 5
         case "delchordentry":  # Delete chord entry
+            logging.debug("args.chord: " + str(args.chord))
             for chord in args.chord:
                 if not freqlog.delete_logged_chord(chord):
                     print(f"Chord '{chord}' not found")
