@@ -28,6 +28,7 @@ def main():
         6: Tried to ban already banned word or unban already unbanned word
         7: ValueError during merge db (likely requirements not met)
         8: Upgrade cancelled
+        9: Keyboard interrupt during startup banlist password input
         11: Python version < 3.11
         100: Feature not yet implemented
     """
@@ -270,20 +271,23 @@ def main():
         :param new: Whether this is a new password
         :param desc: Description of database (optional)
         """
-        if desc:
-            desc += " "
-        if new:
-            while True:
-                password = getpass(f"Choose a new password to encrypt your {desc}banlist with: ")
-                if len(password) < 8:
-                    logging.warning("Password should be at least 8 characters long.")
-                    if input(f"Continue without securely encrypting your {desc}banlist? [y/N]: ").lower() != "y":
-                        continue
-                if getpass(f"Confirm {desc}banlist password: ") == password:
-                    return password
-                logging.error("Passwords don't match")
-        else:
-            return getpass(f"Enter your {desc}banlist password: ")
+        try:
+            if desc:
+                desc += " "
+            if new:
+                while True:
+                    password = getpass(f"Choose a new password to encrypt your {desc}banlist with: ")
+                    if len(password) < 8:
+                        logging.warning("Password should be at least 8 characters long.")
+                        if input(f"Continue without securely encrypting your {desc}banlist? [y/N]: ").lower() != "y":
+                            continue
+                    if getpass(f"Confirm {desc}banlist password: ") == password:
+                        return password
+                    logging.error("Passwords don't match")
+            else:
+                return getpass(f"Enter your {desc}banlist password: ")
+        except KeyboardInterrupt:
+            sys.exit(9)
 
     # Parse commands
     if args.command == "mergedb":  # Merge databases
