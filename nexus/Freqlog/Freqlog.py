@@ -247,7 +247,7 @@ class Freqlog:
                     # Cleanup and exit if queue is empty and logging is stopped
                     self.backend.close()
                     logging.warning("Stopped freqlogging")
-                    break
+                    return
 
     def _get_chords(self):
         """
@@ -374,6 +374,7 @@ class Freqlog:
         self.is_logging = True
         logging.warning("Started freqlogging")
         self._process_queue()
+        exit(0)
 
     def _log_start(self):
         self.listener = vinput.EventListener(True, True, True)
