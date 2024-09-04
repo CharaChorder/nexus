@@ -1,5 +1,5 @@
 charachorder.py~=0.5.2
-cryptography~=42.0
+cryptography~=43.0
 pyinstaller~=5.13
 PySide6~=6.5
 requests~=2.32.1
