@@ -1,4 +1,4 @@
-"""All-in-one cross-platform CharaChorder desktop app."""
+"""CharaChorder's cross-platform logging and analysis desktop app."""
 
 __author__ = "CharaChorder"
 __name__ = "nexus"

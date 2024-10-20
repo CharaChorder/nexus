@@ -1,5 +1,5 @@
 [Desktop Entry]
-Comment=CharaChorder's all-in-one desktop app, supporting Linux, Windows, and macOS.
+Comment=CharaChorder's cross-platform logging and analysis desktop app.
 Exec=nexus
 Icon=ui/images/icon.ico
 Name=nexus
