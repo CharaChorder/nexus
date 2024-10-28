@@ -89,13 +89,6 @@ generates a platform-dependent executable in the `dist/` directory.
   Read [this](https://docs.python.org/3/using/windows.html#redirection-of-local-data-registry-and-temporary-paths) for
   more details.
 
-### Wayland
-
-- You need to have XWayland enabled, and allow X11 apps to read keystrokes in all apps (on KDE this is
-  in `Settings > Applications > Legacy X11 App Support`).
-- Move the `com.charachorder.nexus.desktop` file into either your `~/.local/share/applications/`
-  or `/usr/share/applications/` directory, and edit the path to point to the nexus icon.
-
 ## Contributing
 
 Please create PRs and issues, we welcome all contributions. See issues tagged with `Help Wanted` for where you can best
