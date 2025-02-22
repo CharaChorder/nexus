@@ -128,6 +128,5 @@ own risk.
 
 ### Reporting security issues/vulnerabilities
 
-If you find a security issue, please reach out to a CC Rep on Discord or through our support email (support at
-charachorder dot com). We will work with you to resolve the issue. Please do not create a GitHub issue for security
+If you find a security issue, please reach out to a CC Rep on Discord or through our [support chat](https://charachorder.com/?chat). We will work with you to resolve the issue. Please do not create a GitHub issue for security
 issues.
