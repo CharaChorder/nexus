@@ -8,13 +8,13 @@ CharaChorder's logging and analysis desktop app, supporting Linux, Windows, and 
 
 1. Download the appropriate executable for your OS:
 
-   | OS                                                                                | Executable                                                                                |
-   |-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
-   | Windows (Installer)                                                               | [nexus.msi](https://github.com/CharaChorder/nexus/releases/latest/download/nexus.msi)     |
-   | Windows (Portable GUI-only)                                                       | [nexusw.exe](https://github.com/CharaChorder/nexus/releases/latest/download/nexusw.exe)   |
-   | Windows (Portable with CLI)                                                       | [nexus.exe](https://github.com/CharaChorder/nexus/releases/latest/download/nexus.exe)     |
-   | Linux                                                                             | [nexus](https://github.com/CharaChorder/nexus/releases/latest/download/nexus)             |
-   | macOS (Currently CLI-only ([#7](https://github.com/CharaChorder/nexus/issues/7))) | [nexus-macos](https://github.com/CharaChorder/nexus/releases/latest/download/nexus-macos) |
+   | OS                          | Executable                                                                                |
+   |-----------------------------|-------------------------------------------------------------------------------------------|
+   | Windows (Installer)         | [nexus.msi](https://github.com/CharaChorder/nexus/releases/latest/download/nexus.msi)     |
+   | Windows (Portable GUI-only) | [nexusw.exe](https://github.com/CharaChorder/nexus/releases/latest/download/nexusw.exe)   |
+   | Windows (Portable with CLI) | [nexus.exe](https://github.com/CharaChorder/nexus/releases/latest/download/nexus.exe)     |
+   | Linux                       | [nexus](https://github.com/CharaChorder/nexus/releases/latest/download/nexus)             |
+   | macOS                       | [nexus-macos](https://github.com/CharaChorder/nexus/releases/latest/download/nexus-macos) |
 
 2.
    - **For the MSI**, run the installer. If Windows Defender/Smart Screen asks, choose `More info`, then `Run Anyway`. The MSI
