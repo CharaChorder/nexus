@@ -127,8 +127,7 @@ class Freqlog:
 
         def _update_timing():
             """Must be called after adding a key to word and before self.q.task_done()"""
-            nonlocal word_start_time, word_end_time, last_key_was_disallowed, chars_since_last_bs, \
-                avg_char_time_after_last_bs
+            nonlocal word_start_time, word_end_time, avg_char_time_after_last_bs
             if not word_start_time:
                 word_start_time = time_pressed
             elif chars_since_last_bs > 1 and avg_char_time_after_last_bs:

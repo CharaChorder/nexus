@@ -250,7 +250,6 @@ def main():
 
     def _prompt_for_upgrade(db_version: Version) -> None:
         """Prompt user to upgrade"""
-        nonlocal args
         logging.warning(
             f"You are running version {__version__} of nexus, but your database is on version {db_version}.")
         if not args.upgrade:
