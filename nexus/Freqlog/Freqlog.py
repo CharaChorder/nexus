@@ -392,6 +392,12 @@ class Freqlog:
         self.killed = True
         logging.warning("Stopping freqlog")
         if self.listener:
+            # stop() unblocks the listener's blocking start() call so its thread can
+            # return; without it the listener thread would hang and prevent a clean
+            # shutdown. Wait for the thread to exit before freeing the listener.
+            self.listener.stop()
+            if self.listener_thread.is_alive():
+                self.listener_thread.join()
             del self.listener
             self.listener = None
         self.is_logging = False
