@@ -250,7 +250,6 @@ def main():
 
     def _prompt_for_upgrade(db_version: Version) -> None:
         """Prompt user to upgrade"""
-        nonlocal args
         logging.warning(
             f"You are running version {__version__} of nexus, but your database is on version {db_version}.")
         if not args.upgrade:
@@ -352,7 +351,8 @@ def main():
             for mod in args.modifier_keys:
                 logging.debug(' - ' + str(mod))
                 setattr(mods, mod, True)
-            signal.signal(signal.SIGINT, lambda _: freqlog.stop_logging())
+            # Signal handlers are called with (signum, frame); accept and ignore both.
+            signal.signal(signal.SIGINT, lambda *_: freqlog.stop_logging())
             freqlog.start_logging(args.new_word_threshold, args.chord_char_threshold, args.allowed_chars,
                                   args.allowed_first_chars, mods)
         case "checkword":  # Check if word is banned
